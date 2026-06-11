@@ -10,7 +10,8 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+
+    async function loadInitial() {
       const loaded = await fetchCanvasFromLocation();
       let viewport = coerceViewport(null);
       if (loaded.canvas.id !== 'empty') {
@@ -19,8 +20,28 @@ export function App() {
       }
       if (!cancelled) setState({ ...loaded, initialViewport: viewport });
     }
-    load().catch((err) => setError(err instanceof Error ? err.message : String(err)));
-    return () => { cancelled = true; };
+
+    async function refreshCanvas() {
+      const loaded = await fetchCanvasFromLocation();
+      if (cancelled) return;
+      setState((current) => {
+        if (!current) return current;
+        if (current.canvas.id !== loaded.canvas.id) return { ...loaded, initialViewport: current.initialViewport };
+        if (current.canvas.revision === loaded.canvas.revision && current.canvas.updatedAt === loaded.canvas.updatedAt) return current;
+        return { ...current, canvas: loaded.canvas, readOnly: loaded.readOnly };
+      });
+    }
+
+    loadInitial().catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    const timer = window.setInterval(() => {
+      refreshCanvas().catch(() => {
+        // Best-effort canvas polling: transient service errors should not interrupt viewing.
+      });
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, []);
 
   if (error) return <div className="error">{error}</div>;

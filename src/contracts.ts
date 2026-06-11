@@ -57,6 +57,16 @@ export interface AssetElement extends CanvasElementBase {
   resolvedUrl?: string | null;
 }
 
+export interface GlbViewerElement extends CanvasElementBase {
+  type: 'glbViewer';
+  assetRef: AssetReference;
+  caption?: string | null;
+  alt?: string | null;
+  resolvedUrl?: string | null;
+  cameraControls?: boolean | null;
+  autoRotate?: boolean | null;
+}
+
 export interface ConnectorEndpoint {
   elementId?: string | null;
   x?: number | null;
@@ -91,7 +101,7 @@ export interface GroupElement extends CanvasElementBase {
   children: string[];
 }
 
-export type CanvasElement = TextElement | MarkdownElement | AssetElement | LineElement | TableElement | ShapeElement | GroupElement;
+export type CanvasElement = TextElement | MarkdownElement | AssetElement | GlbViewerElement | LineElement | TableElement | ShapeElement | GroupElement;
 
 export type CanvasElementType = CanvasElement['type'];
 

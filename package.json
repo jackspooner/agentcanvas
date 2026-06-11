@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@google/model-viewer": "^4.3.1",
     "@hono/node-server": "latest",
     "@modelcontextprotocol/sdk": "latest",
     "hono": "latest",

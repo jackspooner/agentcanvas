@@ -61,10 +61,14 @@ export function validateAssetRef(value: unknown): AssetReference {
   return { type: 'asset', project: value.project, assetId: value.assetId, assetBaseUrl: value.assetBaseUrl as string | undefined };
 }
 
-export function resolveAssetContentUrl(ref: AssetReference, defaultBaseUrl = 'http://127.0.0.1:23000'): string {
+export function resolveAssetRecordUrl(ref: AssetReference, defaultBaseUrl = 'http://127.0.0.1:23000'): string {
   const checked = validateAssetRef(ref);
   const base = (checked.assetBaseUrl ?? defaultBaseUrl).replace(/\/+$/, '');
-  return `${base}/projects/${encodeURIComponent(checked.project)}/assets/${encodeURIComponent(checked.assetId)}/content`;
+  return `${base}/projects/${encodeURIComponent(checked.project)}/assets/${encodeURIComponent(checked.assetId)}`;
+}
+
+export function resolveAssetContentUrl(ref: AssetReference, defaultBaseUrl = 'http://127.0.0.1:23000'): string {
+  return `${resolveAssetRecordUrl(ref, defaultBaseUrl)}/content`;
 }
 
 function endpoint(value: unknown): ConnectorEndpoint {
@@ -121,6 +125,19 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('asset caption must be string'),
         fit: ['contain', 'cover', 'stretch', 'original'].includes(String(value.fit)) ? value.fit as 'contain' | 'cover' | 'stretch' | 'original' : value.fit == null ? value.fit as null | undefined : validation('asset fit is invalid'),
         alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('asset alt must be string')
+      };
+    }
+    case 'glbViewer': {
+      return {
+        ...b,
+        type: 'glbViewer',
+        width: b.width ?? 320,
+        height: b.height ?? 240,
+        assetRef: validateAssetRef(value.assetRef),
+        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('GLB viewer caption must be string'),
+        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('GLB viewer alt must be string'),
+        cameraControls: typeof value.cameraControls === 'boolean' ? value.cameraControls : value.cameraControls == null ? true : validation('GLB viewer cameraControls must be boolean'),
+        autoRotate: typeof value.autoRotate === 'boolean' ? value.autoRotate : value.autoRotate == null ? false : validation('GLB viewer autoRotate must be boolean')
       };
     }
     case 'line':

@@ -40,4 +40,30 @@ describe('canvas contracts and validation', () => {
     });
     expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000000/content');
   });
+
+  it('accepts GLB viewer elements backed by a single Assets-2 asset ref', () => {
+    const element = normalizeCanvasElement({
+      id: 'glb_1',
+      type: 'glbViewer',
+      x: 25,
+      y: 35,
+      width: 320,
+      height: 240,
+      assetRef: {
+        type: 'asset',
+        project: 'demo',
+        assetId: '00000000-0000-4000-8000-000000000123'
+      },
+      caption: 'Chair.glb',
+      cameraControls: true,
+      autoRotate: false
+    });
+
+    expect(element.type).toBe('glbViewer');
+    if (element.type !== 'glbViewer') throw new Error('expected glbViewer element');
+    expect(element.assetRef.assetId).toBe('00000000-0000-4000-8000-000000000123');
+    expect(element.caption).toBe('Chair.glb');
+    expect(element.cameraControls).toBe(true);
+    expect(element.autoRotate).toBe(false);
+  });
 });

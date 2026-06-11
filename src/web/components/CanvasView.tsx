@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { AssetElement, CanvasElement, CanvasRecord, CanvasViewport, CanvasViewportState } from '../../contracts';
+import type { AssetElement, CanvasElement, CanvasRecord, CanvasViewport, CanvasViewportState, GlbViewerElement } from '../../contracts';
 import { coerceViewport, DEFAULT_REPORTED_VIEWPORT_HEIGHT, DEFAULT_REPORTED_VIEWPORT_WIDTH } from '../viewport';
 import { MarkdownBlock } from './MarkdownBlock';
 
@@ -36,6 +36,11 @@ function reportedViewport(viewport: CanvasViewport, source: 'user' | 'agent' | '
   };
 }
 
+function eventStartedInModelViewer(event: { target: EventTarget | null }): boolean {
+  const target = event.target;
+  return target instanceof Element && Boolean(target.closest('model-viewer'));
+}
+
 function AssetCard({ element }: { element: AssetElement }) {
   const [failed, setFailed] = useState(false);
   const label = element.caption ?? element.alt ?? element.id;
@@ -56,9 +61,38 @@ function AssetCard({ element }: { element: AssetElement }) {
   );
 }
 
+function GlbViewerCard({ element }: { element: GlbViewerElement }) {
+  const label = element.caption ?? element.alt ?? element.id;
+
+  return (
+    <figure className="canvas-card glb-viewer-card" style={elementStyle(element)}>
+      {element.resolvedUrl ? (
+        React.createElement('model-viewer', {
+          src: element.resolvedUrl,
+          'aria-label': label,
+          'camera-controls': element.cameraControls !== false ? '' : undefined,
+          'auto-rotate': element.autoRotate ? '' : undefined,
+          'interaction-prompt': 'auto',
+          'interaction-prompt-style': 'basic',
+          'touch-action': 'pan-y',
+          tabIndex: 0
+        })
+      ) : (
+        <div className="asset-placeholder" role="note" aria-label={`GLB asset ${element.assetRef.assetId} unavailable`}>
+          <strong>GLB unavailable</strong>
+          <span>{element.assetRef.assetId}</span>
+        </div>
+      )}
+      {element.caption && <figcaption>{element.caption}</figcaption>}
+      {element.resolvedUrl && <div className="glb-viewer-hint">Drag to orbit · scroll to zoom</div>}
+    </figure>
+  );
+}
+
 export function CanvasView({ canvas, readOnly = false, initialViewport, loadViewport, onViewportChange }: CanvasViewProps) {
   const [viewport, setViewport] = useState<CanvasViewport>(() => coerceViewport(initialViewport));
   const [isDragging, setIsDragging] = useState(false);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; centerX: number; centerY: number } | null>(null);
   const lastAgentViewport = useRef<string | null>(initialViewport?.source === 'agent' ? initialViewport.updatedAt : null);
   const connectors = canvas.elements.filter((el) => el.type === 'line' || el.type === 'arrow');
@@ -103,34 +137,46 @@ export function CanvasView({ canvas, readOnly = false, initialViewport, loadView
     setViewport((current) => coerceViewport({ ...current, centerX: 0, centerY: 0, zoom: 1 }));
   }
 
-  function onWheel(event: React.WheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    if (event.ctrlKey || event.metaKey) {
-      zoomBy(event.deltaY < 0 ? 1.12 : 1 / 1.12);
-      return;
-    }
-    setViewport((current) => coerceViewport({
-      ...current,
-      centerX: current.centerX + event.deltaX / current.zoom,
-      centerY: current.centerY + event.deltaY / current.zoom
-    }));
-  }
+  useEffect(() => {
+    const node = viewportRef.current;
+    if (!node) return undefined;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (eventStartedInModelViewer(event)) return;
+      event.preventDefault();
+      setViewport((current) => {
+        if (event.ctrlKey || event.metaKey) {
+          return coerceViewport({ ...current, zoom: current.zoom * (event.deltaY < 0 ? 1.12 : 1 / 1.12) });
+        }
+        return coerceViewport({
+          ...current,
+          centerX: current.centerX + event.deltaX / current.zoom,
+          centerY: current.centerY + event.deltaY / current.zoom
+        });
+      });
+    };
+
+    node.addEventListener('wheel', handleWheel, { passive: false });
+    return () => node.removeEventListener('wheel', handleWheel);
+  }, []);
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    if (eventStartedInModelViewer(event)) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     dragRef.current = { x: event.clientX, y: event.clientY, centerX: viewport.centerX, centerY: viewport.centerY };
     setIsDragging(true);
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (!dragRef.current) return;
-    const dx = event.clientX - dragRef.current.x;
-    const dy = event.clientY - dragRef.current.y;
+    const dragState = dragRef.current;
+    if (!dragState) return;
+    const dx = event.clientX - dragState.x;
+    const dy = event.clientY - dragState.y;
     setViewport((current) => coerceViewport({
       ...current,
-      centerX: dragRef.current!.centerX - dx / current.zoom,
-      centerY: dragRef.current!.centerY - dy / current.zoom
+      centerX: dragState.centerX - dx / current.zoom,
+      centerY: dragState.centerY - dy / current.zoom
     }));
   }
 
@@ -157,8 +203,8 @@ export function CanvasView({ canvas, readOnly = false, initialViewport, loadView
         </div>
       </header>
       <main
+        ref={viewportRef}
         className={`canvas-viewport ${isDragging ? 'is-dragging' : ''}`}
-        onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
@@ -188,6 +234,7 @@ export function CanvasView({ canvas, readOnly = false, initialViewport, loadView
               if (el.type === 'text') return <div key={el.id} className="canvas-card text-card" style={elementStyle(el)}>{el.text}</div>;
               if (el.type === 'markdown') return <div key={el.id} className="canvas-card markdown-card" style={elementStyle(el)}><MarkdownBlock markdown={el.markdown} /></div>;
               if (el.type === 'asset') return <AssetCard key={el.id} element={el} />;
+              if (el.type === 'glbViewer') return <GlbViewerCard key={el.id} element={el} />;
               if (el.type === 'table') return <div key={el.id} className="canvas-card table-card" style={elementStyle(el)}><table><thead><tr>{el.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead><tbody>{el.rows.map((row, idx) => <tr key={idx}>{row.map((cell, cidx) => <td key={cidx}>{cell}</td>)}</tr>)}</tbody></table></div>;
               if (el.type === 'shape') return <div key={el.id} className={`canvas-card shape-card ${el.shape}`} style={elementStyle(el)}>{el.label}</div>;
               return <div key={el.id} className="canvas-card" style={elementStyle(el)}>{el.id}</div>;

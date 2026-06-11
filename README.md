@@ -1,6 +1,6 @@
 # AgentCanvas
 
-Local agent-operable web canvas for Workspace2. Agents can create canvases, place text/Markdown/assets/connectors/tables, and return read-only browser links to the user.
+Local agent-operable web canvas for Workspace2. Agents can create canvases, place text/Markdown/assets/single-GLB 3D viewers/connectors/tables, and return read-only browser links to the user.
 
 ## Boundaries
 
@@ -80,6 +80,7 @@ hermes mcp test agent-canvas
 - `canvas_add_text`
 - `canvas_add_markdown`
 - `canvas_place_asset`
+- `canvas_place_glb_viewer`
 - `canvas_add_line`
 - `canvas_add_arrow`
 - `canvas_add_table`
@@ -111,6 +112,33 @@ The server resolves browser content URLs as:
 ```
 
 Local paths such as `C:/...`, `/c/...`, `file://...`, and arbitrary URL strings are rejected as asset inputs.
+
+## GLB viewer nodes
+
+Agents can place small single-file GLB viewers with `canvas_place_glb_viewer`. The viewer stores only an Assets-2 GLB asset ref plus placement metadata; the browser receives the resolved asset content URL and renders it through `<model-viewer>`.
+
+Example element:
+
+```json
+{
+  "id": "glb_robot",
+  "type": "glbViewer",
+  "x": 100,
+  "y": 120,
+  "width": 320,
+  "height": 240,
+  "assetRef": {
+    "type": "asset",
+    "project": "demo",
+    "assetId": "00000000-0000-4000-8000-000000000000"
+  },
+  "caption": "robot.glb",
+  "cameraControls": true,
+  "autoRotate": false
+}
+```
+
+This is for opening one GLB per node. Multi-model scenes/worlds belong in AgentWorld/3D world tooling rather than in a flat canvas node.
 
 ## Share links
 
