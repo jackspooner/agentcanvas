@@ -15,6 +15,7 @@
     "@hono/node-server": "latest",
     "@modelcontextprotocol/sdk": "latest",
     "hono": "latest",
+    "jszip": "^3.10.1",
     "nanoid": "latest",
     "react": "latest",
     "react-dom": "latest",

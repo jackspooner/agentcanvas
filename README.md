@@ -89,8 +89,11 @@ hermes mcp test agent-canvas
 - `canvas_clear`
 - `canvas_get_viewport`
 - `canvas_set_viewport`
+- `canvas_screenshot`
 
-Tool outputs are compact JSON with IDs, revisions, links, and viewport state. Large binaries/base64 are not returned through MCP.
+Tool outputs are compact JSON with IDs, revisions, links, element summaries, and viewport state by default. `canvas_get` returns a compact canvas summary with capped element summaries; pass `mode: "full"` only when the complete canvas payload is required. Canvas mutation tools such as `canvas_place_asset`, `canvas_add_markdown`, `canvas_update_element`, and `canvas_delete_element` return compact mutation acknowledgements by default; pass `mode: "full"` only when a follow-up full-canvas read would be more expensive than returning the whole canvas once.
+
+Large binaries/base64 are not returned through MCP by default. `canvas_screenshot` returns a retrievable screenshot URL and omits the inline SVG data URL unless `includeDataUrl: true` is explicitly passed.
 
 ## Asset placement
 

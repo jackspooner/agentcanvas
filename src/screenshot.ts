@@ -1,4 +1,5 @@
-import type { CanvasElement, CanvasRecord, CanvasViewportInput, LineElement } from './contracts';
+import type { BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewportInput, LineElement } from './contracts';
+import { elementHeight, elementWidth } from './geometry';
 
 export interface CanvasScreenshotOptions {
   width?: number;
@@ -38,17 +39,6 @@ function escapeXml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-function elementWidth(el: CanvasElement): number {
-  return finiteNumber(el.width, el.type === 'table' ? 520 : 240);
-}
-
-function elementHeight(el: CanvasElement): number {
-  if (typeof el.height === 'number' && Number.isFinite(el.height)) return el.height;
-  if (el.type === 'table') return 220;
-  if (el.type === 'text') return 100;
-  return 160;
 }
 
 function cardElements(canvas: CanvasRecord): CanvasElement[] {
@@ -152,16 +142,55 @@ function textLinesForElement(el: CanvasElement): string[] {
   }
   if (el.type === 'asset') return [el.caption ?? el.alt ?? `Asset ${el.assetRef.assetId}`];
   if (el.type === 'glbViewer') return [el.caption ?? el.alt ?? `GLB ${el.assetRef.assetId}`];
+  if (el.type === 'video') return [el.caption ?? el.alt ?? `Video ${el.assetRef.assetId}`];
+  if (el.type === 'bboxOverlay') return [el.caption ?? el.alt ?? `BBox overlay ${el.id}`];
   if (el.type === 'shape') return [el.label ?? el.id];
   if (el.type === 'group') return [`Group ${el.id}`];
   return [el.id];
 }
 
+function renderBBoxOverlayCard(el: BBoxOverlayElement): string {
+  const w = elementWidth(el);
+  const h = elementHeight(el);
+  const sx = w / el.canvasWidth;
+  const sy = h / el.canvasHeight;
+  const label = escapeXml(el.caption ?? el.alt ?? el.id);
+  const background = escapeXml(el.background ?? '#f8fafc');
+  const boxes = el.boxes.map((box, index) => {
+    const color = escapeXml(box.color ?? ['#2563eb', '#9333ea', '#0891b2', '#db2777', '#ea580c', '#16a34a'][index % 6]);
+    const x = el.x + box.x * sx;
+    const y = el.y + box.y * sy;
+    const bw = box.width * sx;
+    const bh = box.height * sy;
+    const text = escapeXml(box.label ?? box.id);
+    const align = box.labelAlign ?? 'left';
+    const verticalAlign = box.labelVerticalAlign ?? 'top';
+    const padding = box.labelPadding ?? 8;
+    const scaledPaddingX = padding * sx;
+    const scaledPaddingY = padding * sy;
+    const textAnchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start';
+    const textX = align === 'center' ? x + bw / 2 : align === 'right' ? x + bw - scaledPaddingX : x + scaledPaddingX;
+    const dominantBaseline = verticalAlign === 'middle' ? 'middle' : verticalAlign === 'bottom' ? 'text-after-edge' : 'hanging';
+    const textY = verticalAlign === 'middle' ? y + bh / 2 : verticalAlign === 'bottom' ? y + bh - scaledPaddingY : y + scaledPaddingY;
+    return `<g>
+      <rect data-bbox-id="${escapeXml(box.id)}" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${escapeXml(box.fill ?? `${color}22`)}" stroke="${color}" stroke-width="${box.strokeWidth ?? 2}" />
+      ${el.showLabels === false ? '' : `<text x="${textX}" y="${textY}" text-anchor="${textAnchor}" dominant-baseline="${dominantBaseline}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="${color}" stroke="#ffffff" stroke-width="3" paint-order="stroke">${text}</text>`}
+    </g>`;
+  }).join('\n');
+  return `<g data-node-id="${escapeXml(el.id)}">
+    <rect x="${el.x}" y="${el.y}" width="${w}" height="${h}" rx="10" fill="${background}" stroke="#d0d7de" />
+    ${el.imageAssetRef ? `<text x="${el.x + 14}" y="${el.y + 24}" font-family="Inter, Arial, sans-serif" font-size="13" fill="#64748b">image: ${escapeXml(el.imageAssetRef.project)}/${escapeXml(el.imageAssetRef.assetId)}</text>` : ''}
+    ${boxes}
+    <text x="${el.x + 14}" y="${el.y + h - 12}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f172a">${label}</text>
+  </g>`;
+}
+
 function renderCard(el: CanvasElement): string {
+  if (el.type === 'bboxOverlay') return renderBBoxOverlayCard(el);
   const w = elementWidth(el);
   const h = elementHeight(el);
   const radius = el.type === 'shape' && el.shape === 'ellipse' ? Math.min(w, h) / 2 : 10;
-  const fill = el.type === 'asset' || el.type === 'glbViewer' ? '#f8fafc' : '#ffffff';
+  const fill = el.type === 'asset' || el.type === 'glbViewer' || el.type === 'video' ? '#f8fafc' : '#ffffff';
   const stroke = el.type === 'shape' ? '#64748b' : '#d0d7de';
   const titleSize = 18;
   const bodySize = 13;

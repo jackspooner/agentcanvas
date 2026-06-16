@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { CanvasRecord, CanvasViewport } from '../contracts';
-import { fetchCanvasFromLocation, fetchViewportState, saveUserViewport } from './api';
+import { fetchCanvasFromLocation, fetchViewportState, moveCanvasElement, saveUserViewport } from './api';
 import { CanvasView } from './components/CanvasView';
 import { coerceViewport, readViewportCookie, writeViewportCookie } from './viewport';
 
@@ -53,6 +53,10 @@ export function App() {
       readOnly={state.readOnly}
       initialViewport={state.initialViewport}
       loadViewport={() => fetchViewportState(state.canvas.id)}
+      onElementMove={async (elementId, x, y) => {
+        const updatedCanvas = await moveCanvasElement(state.canvas.id, elementId, x, y);
+        setState((current) => current && current.canvas.id === updatedCanvas.id ? { ...current, canvas: updatedCanvas, readOnly: state.readOnly } : current);
+      }}
       onViewportChange={(viewport) => {
         writeViewportCookie(state.canvas.id, viewport);
         void saveUserViewport(state.canvas.id, viewport);

@@ -66,4 +66,33 @@ describe('canvas contracts and validation', () => {
     expect(element.cameraControls).toBe(true);
     expect(element.autoRotate).toBe(false);
   });
+
+  it('accepts bbox overlay elements over either an image asset or a plain coordinate canvas', () => {
+    const element = normalizeCanvasElement({
+      id: 'character_bboxes',
+      type: 'bboxOverlay',
+      x: 40,
+      y: 80,
+      width: 512,
+      height: 768,
+      canvasWidth: 1024,
+      canvasHeight: 1536,
+      imageAssetRef: {
+        type: 'asset',
+        project: 'kindeck',
+        assetId: '00000000-0000-4000-8000-000000000456'
+      },
+      caption: 'Character bbox contract',
+      showLabels: true,
+      boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title', color: '#d81b60', labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 }]
+    });
+
+    expect(element.type).toBe('bboxOverlay');
+    if (element.type !== 'bboxOverlay') throw new Error('expected bboxOverlay element');
+    expect(element.canvasWidth).toBe(1024);
+    expect(element.canvasHeight).toBe(1536);
+    expect(element.imageAssetRef?.assetId).toBe('00000000-0000-4000-8000-000000000456');
+    expect(element.boxes[0]).toMatchObject({ id: 'title', x: 105, y: 960, width: 814, height: 72, labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 });
+    expect(element.showLabels).toBe(true);
+  });
 });

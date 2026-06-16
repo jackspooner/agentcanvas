@@ -1,5 +1,5 @@
 import { CanvasError } from './errors';
-import type { AssetReference, CanvasElement, CanvasOperation, CanvasViewport, CanvasViewportInput, ConnectorEndpoint, TableElement } from './contracts';
+import type { AssetReference, BBoxOverlayBox, CanvasElement, CanvasOperation, CanvasViewport, CanvasViewportInput, ConnectorEndpoint, TableElement, VideoElement } from './contracts';
 
 export const LIMITS = {
   maxCanvasWidth: 20_000,
@@ -10,6 +10,7 @@ export const LIMITS = {
   maxTableColumns: 50,
   maxTableRows: 500,
   maxTableCellLength: 2_000,
+  maxBBoxes: 500,
   minZoom: 0.05,
   maxZoom: 8,
   defaultViewportWidth: 1920,
@@ -43,6 +44,13 @@ function optionalNumber(value: unknown, name: string): number | null | undefined
   return finiteNumber(value, name);
 }
 
+function optionalEnum<T extends string>(value: unknown, allowed: readonly T[], name: string): T | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'string' && (allowed as readonly string[]).includes(value)) return value as T;
+  validation(`${name} is invalid`);
+}
+
 export function validateSafeId(value: unknown, label = 'id'): string {
   if (typeof value !== 'string' || !SAFE_ID.test(value)) validation(`${label} must be a safe non-empty string`);
   return value;
@@ -69,6 +77,31 @@ export function resolveAssetRecordUrl(ref: AssetReference, defaultBaseUrl = 'htt
 
 export function resolveAssetContentUrl(ref: AssetReference, defaultBaseUrl = 'http://127.0.0.1:23000'): string {
   return `${resolveAssetRecordUrl(ref, defaultBaseUrl)}/content`;
+}
+
+function bboxBox(value: unknown): BBoxOverlayBox {
+  if (!isObject(value)) validation('bboxOverlay boxes must be objects');
+  const id = validateSafeId(value.id, 'bbox.id');
+  const x = finiteNumber(value.x, `bbox.${id}.x`);
+  const y = finiteNumber(value.y, `bbox.${id}.y`);
+  const width = finiteNumber(value.width, `bbox.${id}.width`);
+  const height = finiteNumber(value.height, `bbox.${id}.height`);
+  if (width <= 0 || height <= 0) validation(`bbox.${id} width and height must be positive`);
+  return {
+    id,
+    x,
+    y,
+    width,
+    height,
+    label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('bbox label must be string'),
+    color: typeof value.color === 'string' || value.color == null ? value.color as string | null | undefined : validation('bbox color must be string'),
+    fill: typeof value.fill === 'string' || value.fill == null ? value.fill as string | null | undefined : validation('bbox fill must be string'),
+    strokeWidth: optionalNumber(value.strokeWidth, 'bbox.strokeWidth'),
+    labelAlign: optionalEnum(value.labelAlign, ['left', 'center', 'right'] as const, 'bbox.labelAlign'),
+    labelVerticalAlign: optionalEnum(value.labelVerticalAlign, ['top', 'middle', 'bottom'] as const, 'bbox.labelVerticalAlign'),
+    labelPadding: optionalNumber(value.labelPadding, 'bbox.labelPadding'),
+    metadata: isObject(value.metadata) ? value.metadata : undefined
+  };
 }
 
 function endpoint(value: unknown): ConnectorEndpoint {
@@ -138,6 +171,43 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('GLB viewer alt must be string'),
         cameraControls: typeof value.cameraControls === 'boolean' ? value.cameraControls : value.cameraControls == null ? true : validation('GLB viewer cameraControls must be boolean'),
         autoRotate: typeof value.autoRotate === 'boolean' ? value.autoRotate : value.autoRotate == null ? false : validation('GLB viewer autoRotate must be boolean')
+      };
+    }
+    case 'video': {
+      return {
+        ...b,
+        type: 'video',
+        width: b.width ?? 480,
+        height: b.height ?? 270,
+        assetRef: validateAssetRef(value.assetRef),
+        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('video caption must be string'),
+        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('video alt must be string'),
+        controls: typeof value.controls === 'boolean' ? value.controls : value.controls == null ? true : validation('video controls must be boolean'),
+        autoplay: typeof value.autoplay === 'boolean' ? value.autoplay : value.autoplay == null ? false : validation('video autoplay must be boolean'),
+        loop: typeof value.loop === 'boolean' ? value.loop : value.loop == null ? false : validation('video loop must be boolean'),
+        muted: typeof value.muted === 'boolean' ? value.muted : value.muted == null ? true : validation('video muted must be boolean'),
+        posterAssetRef: value.posterAssetRef == null ? value.posterAssetRef as VideoElement['posterAssetRef'] : validateAssetRef(value.posterAssetRef)
+      };
+    }
+    case 'bboxOverlay': {
+      const canvasWidth = finiteNumber(value.canvasWidth, 'bboxOverlay.canvasWidth');
+      const canvasHeight = finiteNumber(value.canvasHeight, 'bboxOverlay.canvasHeight');
+      if (canvasWidth <= 0 || canvasHeight <= 0) validation('bboxOverlay canvasWidth and canvasHeight must be positive');
+      if (!Array.isArray(value.boxes)) validation('bboxOverlay requires boxes array');
+      if (value.boxes.length > LIMITS.maxBBoxes) validation('bboxOverlay has too many boxes');
+      return {
+        ...b,
+        type: 'bboxOverlay',
+        width: b.width ?? 320,
+        height: b.height ?? 240,
+        canvasWidth,
+        canvasHeight,
+        boxes: value.boxes.map(bboxBox),
+        imageAssetRef: value.imageAssetRef == null ? value.imageAssetRef as null | undefined : validateAssetRef(value.imageAssetRef),
+        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('bboxOverlay caption must be string'),
+        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('bboxOverlay alt must be string'),
+        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('bboxOverlay showLabels must be boolean'),
+        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('bboxOverlay background must be string')
       };
     }
     case 'line':

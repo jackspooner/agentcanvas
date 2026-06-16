@@ -1,4 +1,4 @@
-import type { CanvasRecord, CanvasViewport, CanvasViewportState } from '../contracts';
+import type { AssetDetailsResponse, CanvasRecord, CanvasViewport, CanvasViewportState } from '../contracts';
 
 export async function fetchCanvasFromLocation(): Promise<{ canvas: CanvasRecord; readOnly: boolean }> {
   const path = window.location.pathname;
@@ -41,4 +41,30 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
       height: viewport.height
     })
   });
+}
+
+export async function moveCanvasElement(canvasId: string, elementId: string, x: number, y: number): Promise<CanvasRecord> {
+  const response = await fetch(`/api/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      actor: 'web-ui',
+      operations: [{ op: 'patchElement', elementId, patch: { x, y } }]
+    })
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || `failed to move element: ${response.status}`);
+  }
+  const body = await response.json();
+  return body.canvas as CanvasRecord;
+}
+
+export async function fetchAssetDetails(project: string, assetId: string): Promise<AssetDetailsResponse> {
+  const response = await fetch(`/api/assets/${encodeURIComponent(project)}/${encodeURIComponent(assetId)}/details`);
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || `failed to load asset details: ${response.status}`);
+  }
+  return response.json() as Promise<AssetDetailsResponse>;
 }

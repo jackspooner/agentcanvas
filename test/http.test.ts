@@ -24,8 +24,41 @@ describe('AgentCanvas HTTP API', () => {
 
     const whoami = await app.request('/whoami');
     const body = await whoami.json();
-    expect(body.capabilities).toMatchObject({ markdown: true, sqlite: true, dedicated_mcp: true, glb_viewers: true });
+    expect(body.capabilities).toMatchObject({ markdown: true, sqlite: true, dedicated_mcp: true, glb_viewers: true, bbox_overlays: true });
     expect(body.port).toBe(23003);
+  });
+
+  it('warns when a placed node overlaps another node and reports the overlap percentage', async () => {
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const created = await app.request('/api/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'Overlap canvas' })
+    });
+    const body = await created.json();
+    const canvasId = body.canvas.id;
+
+    await app.request(`/api/canvases/${canvasId}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [
+        { op: 'upsertElement', element: { id: 'base', type: 'text', x: 0, y: 0, width: 100, height: 100, text: 'Base' } }
+      ] })
+    });
+
+    const response = await app.request(`/api/canvases/${canvasId}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [
+        { op: 'upsertElement', element: { id: 'overlap', type: 'text', x: 50, y: 25, width: 200, height: 100, text: 'Overlap' } }
+      ] })
+    });
+
+    expect(response.status).toBe(200);
+    const updated = await response.json();
+    expect(updated.warnings).toHaveLength(1);
+    expect(updated.warnings[0]).toContain('18.75% of "overlap"');
+    expect(updated.overlapWarnings).toMatchObject([{ code: 'element_overlap', elementId: 'overlap', overlapPercent: 18.75, overlapArea: 3750, overlaps: [{ elementId: 'base', overlapPercent: 18.75, intersectionArea: 3750 }] }]);
   });
 
   it('creates canvases, adds markdown/assets, and returns share links', async () => {
@@ -50,6 +83,47 @@ describe('AgentCanvas HTTP API', () => {
     expect(batch.status).toBe(200);
     const updated = await batch.json();
     expect(updated.canvas.elements).toHaveLength(2);
+  });
+
+  it('adds bbox overlay nodes and projects the optional backing image through the same-origin asset proxy', async () => {
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const created = await app.request('/api/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'BBox canvas', project: 'demo' })
+    });
+    const canvas = await created.json();
+
+    const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [{
+        op: 'upsertElement',
+        element: {
+          id: 'bbox_1',
+          type: 'bboxOverlay',
+          x: 120,
+          y: 140,
+          width: 512,
+          height: 768,
+          canvasWidth: 1024,
+          canvasHeight: 1536,
+          imageAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000777' },
+          caption: 'Character bboxes',
+          boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' }]
+        }
+      }] })
+    });
+
+    expect(batch.status).toBe(200);
+    const updated = await batch.json();
+    expect(updated.canvas.elements[0]).toMatchObject({
+      type: 'bboxOverlay',
+      imageResolvedUrl: '/api/assets/demo/00000000-0000-4000-8000-000000000777/content',
+      canvasWidth: 1024,
+      canvasHeight: 1536,
+      boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' }]
+    });
   });
 
   it('adds GLB viewer nodes and projects a host-relative proxied content URL', async () => {
@@ -111,7 +185,48 @@ describe('AgentCanvas HTTP API', () => {
     expect(await response.text()).toBe('glTF');
   });
 
-  it('rejects non-GLB content from the same-origin asset proxy', async () => {
+  it('proxies safe raster image content for same-origin preview thumbnails', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith('/content')) {
+        return new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+          headers: { 'content-type': 'image/png', 'content-length': '4' }
+        });
+      }
+      return new Response(JSON.stringify({ filename: 'preview.png', content_type: 'image/png' }), {
+        headers: { 'content-type': 'application/json' }
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request('/api/assets/demo/00000000-0000-4000-8000-000000000124/content');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('image/png');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects active upstream content even when asset metadata declares a safe image type', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/content')) {
+        return new Response('<svg><script>alert(1)</script></svg>', {
+          headers: { 'content-type': 'image/svg+xml' }
+        });
+      }
+      return new Response(JSON.stringify({ filename: 'preview.png', content_type: 'image/png' }), {
+        headers: { 'content-type': 'application/json' }
+      });
+    }));
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request('/api/assets/demo/00000000-0000-4000-8000-000000000125/content');
+
+    expect(response.status).toBe(415);
+    expect(await response.json()).toMatchObject({ code: 'unsupported_asset_type' });
+  });
+
+  it('rejects active image content from the same-origin asset proxy', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       if (url.endsWith('/content')) {
         return new Response('<svg><script>alert(1)</script></svg>', {
@@ -128,6 +243,119 @@ describe('AgentCanvas HTTP API', () => {
 
     expect(response.status).toBe(415);
     expect(await response.json()).toMatchObject({ code: 'unsupported_asset_type' });
+  });
+
+  it('returns normalized asset generation details with context image resolved URLs', async () => {
+    const assetId = '00000000-0000-4000-8000-000000000123';
+    const contextId = '00000000-0000-4000-8000-000000000456';
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toBe(`http://127.0.0.1:23000/projects/demo/assets/${assetId}`);
+      return new Response(JSON.stringify({
+        id: assetId,
+        project: 'demo',
+        filename: 'image-1.png',
+        content_type: 'image/png',
+        size_bytes: 1234,
+        content_sha256: 'abc123',
+        created_at: '2026-06-13T11:30:52.000Z',
+        updated_at: '2026-06-13T11:31:00.000Z',
+        metadata: {
+          title: 'Generated image',
+          kind: 'image',
+          generation: {
+            service: 'RouterImage-2',
+            tool: 'image_generate_asset',
+            provider: 'openai',
+            model: 'gpt-image-2',
+            requestId: 'req_1',
+            imageIndex: 1,
+            generatedAt: '2026-06-13T11:30:53.000Z',
+            settings: { quality: 'low', size: { width: 1024, height: 1536 }, controls: { style: 'storybook' } },
+            prompt: 'Draw a card.',
+            jsonPrompt: { text: 'Draw a card.', localPath: 'C:/private-user/secret.png', apiKey: 'must-not-leak' },
+            contextImages: [{ type: 'asset', project: 'demo', assetId: contextId }],
+            providerRequest: { model: 'gpt-image-2', quality: 'low', apiKey: 'must-not-leak' }
+          }
+        }
+      }), { headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request(`/api/assets/demo/${assetId}/details`);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = await response.json();
+    expect(body).toMatchObject({
+      ok: true,
+      asset: {
+        project: 'demo',
+        assetId,
+        filename: 'image-1.png',
+        contentType: 'image/png',
+        width: 1024,
+        height: 1536,
+        createdAt: '2026-06-13T11:30:52.000Z'
+      },
+      generation: {
+        provider: 'openai',
+        model: 'gpt-image-2',
+        quality: 'low',
+        prompt: 'Draw a card.',
+        jsonPrompt: { text: 'Draw a card.', localPath: '[redacted]' },
+        contextImages: [{ type: 'asset', project: 'demo', assetId: contextId, resolvedUrl: `/api/assets/demo/${contextId}/content` }],
+        controls: { style: 'storybook' },
+        providerRequest: { model: 'gpt-image-2', quality: 'low' },
+        requestId: 'req_1',
+        generatedAt: '2026-06-13T11:30:53.000Z'
+      },
+      warnings: []
+    });
+    expect(JSON.stringify(body)).not.toContain('must-not-leak');
+    expect(JSON.stringify(body)).not.toContain('C:/private-user');
+    expect(body.asset.metadata).toBeUndefined();
+  });
+
+  it('computes raster dimensions for uploaded images without generation metadata', async () => {
+    const assetId = '00000000-0000-4000-8000-000000000789';
+    const png = new Uint8Array(24);
+    png.set([0x89, 0x50, 0x4e, 0x47], 0);
+    const view = new DataView(png.buffer);
+    view.setUint32(16, 720, false);
+    view.setUint32(20, 316, false);
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === `http://127.0.0.1:23000/projects/demo/assets/${assetId}`) {
+        return new Response(JSON.stringify({
+          id: assetId,
+          project: 'demo',
+          filename: 'upload.png',
+          content_type: 'image/png',
+          size_bytes: 99,
+          content_sha256: 'def456',
+          created_at: '2026-06-13T11:30:52.000Z',
+          updated_at: '2026-06-13T11:31:00.000Z',
+          metadata: { title: 'Uploaded image', kind: 'image' }
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url === `http://127.0.0.1:23000/projects/demo/assets/${assetId}/content`) {
+        return new Response(png, { headers: { 'content-type': 'image/png' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request(`/api/assets/demo/${assetId}/details`);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      asset: { assetId, filename: 'upload.png', width: 720, height: 316 },
+      generation: null,
+      warnings: ['generation_not_recorded']
+    });
   });
 
   it('rejects invalid screenshot filenames before reading from disk', async () => {
