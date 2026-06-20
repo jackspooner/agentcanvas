@@ -7,7 +7,7 @@ Local agent-operable web canvas for Workspace2. Agents can create canvases, plac
 - HTTP service: `http://127.0.0.1:23003`
 - Host binding: `127.0.0.1`
 - Persistence: SQLite via Node `node:sqlite`
-- MCP: dedicated `AgentCanvasMcp`
+- MCP: dedicated `AgentCanvasMcp` over resident streamable HTTP at `http://127.0.0.1:23003/mcp`, with stdio compatibility preserved
 - Assets: `Assets-2` asset refs only
 - Legacy `asset_registry`, `asset-registry`, and `asset-registry-2` paths are disabled/out of scope
 - Canvas UI: white infinite-feeling surface centered around world coordinate `0,0`
@@ -45,6 +45,19 @@ ASSETS_BASE_URL=http://127.0.0.1:23000
 
 ## MCP
 
+Resident HTTP endpoint:
+
+```text
+http://127.0.0.1:23003/mcp
+```
+
+The HTTP endpoint uses stateless MCP Streamable HTTP with JSON responses. Clients should send `POST /mcp` JSON-RPC requests with:
+
+```text
+Content-Type: application/json
+Accept: application/json, text/event-stream
+```
+
 Development command:
 
 ```bash
@@ -81,6 +94,7 @@ hermes mcp test agent-canvas
 - `canvas_add_markdown`
 - `canvas_place_asset`
 - `canvas_place_glb_viewer`
+- `canvas_place_video`
 - `canvas_add_bbox_overlay`
 - `canvas_add_bbox_overlay_from_asset`
 - `canvas_add_path_overlay`

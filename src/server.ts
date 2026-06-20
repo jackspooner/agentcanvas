@@ -1,7 +1,8 @@
-import { serve } from '@hono/node-server';
+import { getRequestListener } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import fs from 'node:fs';
+import { createServer, type RequestListener } from 'node:http';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadConfig, type AgentCanvasConfig } from './config';
@@ -12,6 +13,7 @@ import { SqliteCanvasStore } from './store/sqlite';
 import { normalizeBBoxLayoutAssetDocument } from './bboxLayoutAssets';
 import { resolveAssetContentUrl, resolveAssetRecordUrl, validateAssetRef } from './validation';
 import type { AssetElement, BBoxOverlayElement, CanvasElement, CanvasRecord, GlbViewerElement, VideoElement } from './contracts';
+import { handleAgentCanvasMcpRequest } from './mcp/http';
 
 export interface CreateAppOptions {
   store?: SqliteCanvasStore;
@@ -394,7 +396,16 @@ export function createApp(options: CreateAppOptions = {}) {
       dedicated_mcp: true,
       viewport_control: true,
       screenshots: true,
-      screenshot_node_id_overlay: true
+      screenshot_node_id_overlay: true,
+      resident_http_mcp: true,
+      streamable_http_mcp: true
+    },
+    mcp: {
+      endpoint: `${config.publicBaseUrl}/mcp`,
+      transport: 'streamable-http',
+      session: 'stateless',
+      jsonResponse: true,
+      stdioCompatible: true
     },
     host: config.host,
     port: config.port,
@@ -407,6 +418,7 @@ export function createApp(options: CreateAppOptions = {}) {
     paths: {
       '/health': { get: { summary: 'Health check' } },
       '/whoami': { get: { summary: 'Service capabilities' } },
+      '/mcp': { post: { summary: 'Stateless streamable HTTP MCP endpoint for AgentCanvas tools' } },
       '/api/canvases': { get: { summary: 'List canvases' }, post: { summary: 'Create canvas' } },
       '/api/canvases/{canvasId}': { get: { summary: 'Get canvas' } },
       '/api/canvases/{canvasId}/elements:batch': { post: { summary: 'Apply element operations' } },
@@ -589,11 +601,41 @@ export function createApp(options: CreateAppOptions = {}) {
   return app;
 }
 
+function createInternalAppFetch(app: ReturnType<typeof createApp>) {
+  return async (url: string, init?: RequestInit) => {
+    const parsed = new URL(url);
+    return app.request(`${parsed.pathname}${parsed.search}`, init);
+  };
+}
+
+export function createAgentCanvasServiceHandler(options: CreateAppOptions = {}): RequestListener {
+  const config = loadConfig(options.config);
+  const store = options.store ?? new SqliteCanvasStore(config.databasePath, config);
+  const app = createApp({ ...options, store, config });
+  const honoHandler = getRequestListener(app.fetch, {
+    hostname: config.host,
+    overrideGlobalObjects: false
+  });
+
+  return async (request, response) => {
+    const requestUrl = new URL(request.url ?? '/', config.publicBaseUrl);
+    if (requestUrl.pathname === '/mcp') {
+      await handleAgentCanvasMcpRequest(request, response, {
+        baseUrl: config.publicBaseUrl,
+        fetchImpl: createInternalAppFetch(app)
+      });
+      return;
+    }
+    await honoHandler(request, response);
+  };
+}
+
 async function main() {
   const config = loadConfig();
-  const app = createApp({ config });
-  serve({ fetch: app.fetch, hostname: config.host, port: config.port });
-  console.log(`AgentCanvas listening on ${config.publicBaseUrl}`);
+  const server = createServer(createAgentCanvasServiceHandler({ config }));
+  server.listen(config.port, config.host, () => {
+    console.log(`AgentCanvas listening on ${config.publicBaseUrl}`);
+  });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

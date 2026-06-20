@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-type FetchImpl = (url: string, init?: RequestInit) => Promise<Response>;
+export type FetchImpl = (url: string, init?: RequestInit) => Promise<Response>;
 type JsonRecord = Record<string, unknown>;
 type ResponseMode = 'compact' | 'full';
 

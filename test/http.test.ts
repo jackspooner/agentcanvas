@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { appShell, createApp } from '../src/server';
+import { appShell, createAgentCanvasServiceHandler, createApp } from '../src/server';
 import { SqliteCanvasStore } from '../src/store/sqlite';
 
 describe('AgentCanvas HTTP API', () => {
@@ -25,7 +27,55 @@ describe('AgentCanvas HTTP API', () => {
     const whoami = await app.request('/whoami');
     const body = await whoami.json();
     expect(body.capabilities).toMatchObject({ markdown: true, sqlite: true, dedicated_mcp: true, glb_viewers: true, bbox_overlays: true });
+    expect(body.mcp).toMatchObject({ endpoint: 'http://127.0.0.1:23003/mcp', transport: 'streamable-http', stdioCompatible: true });
     expect(body.port).toBe(23003);
+  });
+
+  it('serves stateless streamable HTTP MCP at /mcp for initialization, tool listing, and read-only tool calls', async () => {
+    const store = new SqliteCanvasStore(':memory:');
+    const handler = createAgentCanvasServiceHandler({ store });
+    const server = createServer(handler);
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as AddressInfo;
+    const mcpUrl = `http://127.0.0.1:${port}/mcp`;
+
+    async function postMcp(body: Record<string, unknown>) {
+      const response = await fetch(mcpUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+        body: JSON.stringify(body)
+      });
+      expect(response.status).toBe(200);
+      return response.json() as Promise<Record<string, any>>;
+    }
+
+    try {
+      const initialized = await postMcp({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-11-25',
+          capabilities: {},
+          clientInfo: { name: 'agent-canvas-vitest', version: '0.1.0' }
+        }
+      });
+      expect(initialized.result.serverInfo).toMatchObject({ name: 'AgentCanvasMcp', version: '0.1.0' });
+
+      const listed = await postMcp({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+      expect(listed.result.tools.map((tool: { name: string }) => tool.name)).toContain('canvas_list');
+
+      const called = await postMcp({
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'canvas_list', arguments: {} }
+      });
+      expect(called.result.content[0].type).toBe('text');
+      expect(JSON.parse(called.result.content[0].text)).toMatchObject({ ok: true, canvases: [] });
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
   });
 
   it('warns when a placed node overlaps another node and reports the overlap percentage', async () => {
