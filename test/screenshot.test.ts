@@ -69,4 +69,33 @@ describe('canvas screenshot rendering', () => {
     expect(decoded).toContain('<svg');
     expect(decoded).toContain('Viewport note');
   });
+
+  it('renders path overlay geometry in screenshots', () => {
+    const rendered = renderCanvasScreenshotSvg(canvas([
+      {
+        id: 'path_1',
+        type: 'pathOverlay',
+        x: 40,
+        y: 60,
+        width: 420,
+        height: 220,
+        canvasWidth: 2932,
+        canvasHeight: 4096,
+        caption: 'Card name path',
+        paths: [{
+          id: 'name_panel',
+          d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+          label: 'CARD NAME',
+          color: '#e11d48',
+          fill: '#e11d4822',
+          strokeWidth: 10
+        }]
+      }
+    ]), { fullCanvas: true, width: 900, height: 600 });
+
+    expect(rendered.svg).toContain('data-node-id="path_1"');
+    expect(rendered.svg).toContain('data-path-id="name_panel"');
+    expect(rendered.svg).toContain('CARD NAME');
+    expect(rendered.svg).toContain('Card name path');
+  });
 });

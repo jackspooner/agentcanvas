@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AssetDetailsResponse, AssetElement, BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewport, CanvasViewportState, GlbViewerElement, VideoElement } from '../../contracts';
+import type { AssetDetailsResponse, AssetElement, BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewport, CanvasViewportState, GlbViewerElement, PathOverlayElement, VideoElement } from '../../contracts';
 import { fetchAssetDetails } from '../api';
 import { coerceViewport, DEFAULT_REPORTED_VIEWPORT_HEIGHT, DEFAULT_REPORTED_VIEWPORT_WIDTH } from '../viewport';
 import { AssetDetailsDialog } from './AssetDetailsDialog';
@@ -46,6 +46,10 @@ function canvasToBlob(canvas: HTMLCanvasElement, type = 'image/png'): Promise<Bl
 function slugifyFilenamePart(value: string): string {
   const slug = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   return slug || 'bbox';
+}
+
+function overlayAccent(index: number): string {
+  return ['#2563eb', '#9333ea', '#0891b2', '#db2777', '#ea580c', '#16a34a'][index % 6];
 }
 
 function elementStyle(el: CanvasElement): React.CSSProperties {
@@ -210,19 +214,23 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
   const label = element.caption ?? element.alt ?? element.id;
   const showLabels = element.showLabels !== false;
   const background = element.background ?? '#f8fafc';
+  const canvasWidth = element.canvasWidth ?? 1024;
+  const canvasHeight = element.canvasHeight ?? 1024;
+  const boxes = Array.isArray(element.boxes) ? element.boxes : [];
   const svgRef = useRef<SVGSVGElement>(null);
   const [exporting, setExporting] = useState(false);
+  const hasResolvedLayout = typeof element.canvasWidth === 'number' && typeof element.canvasHeight === 'number' && Array.isArray(element.boxes);
 
   const handleExportPng = useCallback(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || exporting) return;
+    if (!svgEl || exporting || !hasResolvedLayout) return;
     setExporting(true);
 
     try {
       // Clone the SVG and set native pixel dimensions
       const clone = svgEl.cloneNode(true) as SVGSVGElement;
-      clone.setAttribute('width', String(element.canvasWidth));
-      clone.setAttribute('height', String(element.canvasHeight));
+      clone.setAttribute('width', String(canvasWidth));
+      clone.setAttribute('height', String(canvasHeight));
 
       const serializer = new XMLSerializer();
       const svgString = serializer.serializeToString(clone);
@@ -232,8 +240,8 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = element.canvasWidth;
-        canvas.height = element.canvasHeight;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) { setExporting(false); return; }
 
@@ -245,7 +253,7 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
         canvas.toBlob((blob) => {
           setExporting(false);
           if (!blob) return;
-          downloadBlob(blob, `${element.id}-${element.canvasWidth}x${element.canvasHeight}.png`);
+          downloadBlob(blob, `${element.id}-${canvasWidth}x${canvasHeight}.png`);
         }, 'image/png');
 
         URL.revokeObjectURL(svgUrl);
@@ -258,21 +266,21 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
     } catch {
       setExporting(false);
     }
-  }, [element.canvasWidth, element.canvasHeight, element.id, background, exporting]);
+  }, [background, canvasHeight, canvasWidth, element.id, exporting, hasResolvedLayout]);
 
   const handleExportMasksZip = useCallback(async () => {
-    if (exporting) return;
+    if (exporting || !hasResolvedLayout || !Array.isArray(element.boxes) || typeof element.canvasWidth !== 'number' || typeof element.canvasHeight !== 'number') return;
     setExporting(true);
 
     try {
       const zip = new JSZip();
-      const folder = zip.folder(`${element.id}-${element.canvasWidth}x${element.canvasHeight}-masks`);
+      const folder = zip.folder(`${element.id}-${canvasWidth}x${canvasHeight}-masks`);
       if (!folder) throw new Error('failed to create bbox mask archive');
 
-      for (const [index, box] of element.boxes.entries()) {
+      for (const [index, box] of boxes.entries()) {
         const canvas = document.createElement('canvas');
-        canvas.width = element.canvasWidth;
-        canvas.height = element.canvasHeight;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('failed to create bbox mask canvas');
 
@@ -287,11 +295,11 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
       }
 
       const archive = await zip.generateAsync({ type: 'blob' });
-      downloadBlob(archive, `${element.id}-${element.canvasWidth}x${element.canvasHeight}-masks.zip`);
+      downloadBlob(archive, `${element.id}-${canvasWidth}x${canvasHeight}-masks.zip`);
     } finally {
       setExporting(false);
     }
-  }, [element.boxes, element.canvasHeight, element.canvasWidth, element.id, exporting]);
+  }, [boxes, canvasHeight, canvasWidth, element.id, exporting, hasResolvedLayout]);
 
   return (
     <figure className={`canvas-card bbox-overlay-card ${isMovable ? 'is-movable' : ''}`} style={style} {...handlers}>
@@ -302,7 +310,7 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
           className="bbox-export-btn"
           aria-label="Export bbox masks as ZIP"
           title="Export mask ZIP"
-          disabled={exporting}
+          disabled={exporting || !hasResolvedLayout}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
@@ -316,7 +324,7 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
           className="bbox-export-btn"
           aria-label="Export bbox overlay as PNG"
           title="Export as PNG"
-          disabled={exporting}
+          disabled={exporting || !hasResolvedLayout}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
@@ -326,11 +334,12 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
           {exporting ? '…' : 'Export PNG'}
         </button>
       </div>
-      <div className="bbox-overlay-stage" style={{ aspectRatio: `${element.canvasWidth} / ${element.canvasHeight}`, background }}>
+      {hasResolvedLayout && typeof element.canvasWidth === 'number' && typeof element.canvasHeight === 'number' && Array.isArray(element.boxes) ? (
+        <div className="bbox-overlay-stage" style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, background }}>
         {element.imageResolvedUrl ? <img className="bbox-overlay-image" src={element.imageResolvedUrl} alt={label} /> : <div className="bbox-overlay-plain" role="img" aria-label={label} />}
-        <svg ref={svgRef} className="bbox-overlay-svg" viewBox={`0 0 ${element.canvasWidth} ${element.canvasHeight}`} aria-label={`${label} bbox overlay`}>
-          {element.boxes.map((box, index) => {
-            const color = box.color ?? ['#2563eb', '#9333ea', '#0891b2', '#db2777', '#ea580c', '#16a34a'][index % 6];
+        <svg ref={svgRef} className="bbox-overlay-svg" viewBox={`0 0 ${canvasWidth} ${canvasHeight}`} aria-label={`${label} bbox overlay`}>
+          {boxes.map((box, index) => {
+            const color = box.color ?? overlayAccent(index);
             const align = box.labelAlign ?? 'left';
             const verticalAlign = box.labelVerticalAlign ?? 'top';
             const padding = box.labelPadding ?? 8;
@@ -338,39 +347,91 @@ function BBoxOverlayCard({ element, style, handlers, isMovable }: { element: BBo
             const textX = align === 'center' ? box.x + box.width / 2 : align === 'right' ? box.x + box.width - padding : box.x + padding;
             const dominantBaseline = verticalAlign === 'middle' ? 'middle' : verticalAlign === 'bottom' ? 'text-after-edge' : 'hanging';
             const textY = verticalAlign === 'middle' ? box.y + box.height / 2 : verticalAlign === 'bottom' ? box.y + box.height - padding : box.y + padding;
+              return (
+                <g key={box.id} className="bbox-overlay-box">
+                  <rect
+                    data-bbox-id={box.id}
+                    x={box.x}
+                    y={box.y}
+                    width={box.width}
+                    height={box.height}
+                    fill={box.fill ?? `${color}22`}
+                    stroke={color}
+                    strokeWidth={box.strokeWidth ?? Math.max(2, Math.round(canvasWidth / 512))}
+                  />
+                  {showLabels && (
+                    <text
+                      x={textX}
+                      y={textY}
+                      textAnchor={textAnchor}
+                      dominantBaseline={dominantBaseline}
+                      fill={color}
+                      fontSize={28}
+                      fontWeight={700}
+                      paintOrder="stroke"
+                      stroke="#ffffff"
+                      strokeWidth={5}
+                    >
+                      {box.label ?? box.id}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      ) : (
+        <div className="asset-placeholder" role="note" aria-label={`BBox layout asset for ${element.id} unavailable`}>
+          <strong>bbox layout unavailable</strong>
+          <span>{element.layoutAssetRef?.assetId ?? element.id}</span>
+          {element.layoutResolutionError && <span>{element.layoutResolutionError}</span>}
+        </div>
+      )}
+      {element.caption && <figcaption>{element.caption}</figcaption>}
+    </figure>
+  );
+}
+
+function PathOverlayCard({ element, style, handlers, isMovable }: { element: PathOverlayElement } & CardProps) {
+  const label = element.caption ?? element.alt ?? element.id;
+  const showLabels = element.showLabels !== false;
+  const background = element.background ?? '#f8fafc';
+
+  return (
+    <figure className={`canvas-card path-overlay-card ${isMovable ? 'is-movable' : ''}`} style={style} {...handlers}>
+      <DragHandle elementId={element.id} isMovable={isMovable} handlers={handlers} />
+      <div className="path-overlay-stage" style={{ aspectRatio: `${element.canvasWidth} / ${element.canvasHeight}`, background }} role="img" aria-label={label}>
+        <svg className="path-overlay-svg" viewBox={`0 0 ${element.canvasWidth} ${element.canvasHeight}`} aria-label={`${label} path overlay`}>
+          {element.paths.map((path, index) => {
+            const color = path.color ?? overlayAccent(index);
             return (
-              <g key={box.id} className="bbox-overlay-box">
-                <rect
-                  data-bbox-id={box.id}
-                  x={box.x}
-                  y={box.y}
-                  width={box.width}
-                  height={box.height}
-                  fill={box.fill ?? `${color}22`}
-                  stroke={color}
-                  strokeWidth={box.strokeWidth ?? Math.max(2, Math.round(element.canvasWidth / 512))}
-                />
-                {showLabels && (
-                  <text
-                    x={textX}
-                    y={textY}
-                    textAnchor={textAnchor}
-                    dominantBaseline={dominantBaseline}
-                    fill={color}
-                    fontSize={28}
-                    fontWeight={700}
-                    paintOrder="stroke"
-                    stroke="#ffffff"
-                    strokeWidth={5}
-                  >
-                    {box.label ?? box.id}
-                  </text>
-                )}
-              </g>
+              <path
+                key={path.id}
+                data-path-id={path.id}
+                d={path.d}
+                fill={path.fill ?? 'transparent'}
+                stroke={color}
+                strokeWidth={path.strokeWidth ?? Math.max(2, Math.round(element.canvasWidth / 512))}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
             );
           })}
         </svg>
       </div>
+      {showLabels && element.paths.length > 0 && (
+        <ul className="path-overlay-legend" aria-label={`${label} paths`}>
+          {element.paths.map((path, index) => {
+            const color = path.color ?? overlayAccent(index);
+            return (
+              <li key={path.id}>
+                <span className="path-overlay-swatch" style={{ backgroundColor: color }} aria-hidden="true" />
+                <span>{path.label ?? path.id}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {element.caption && <figcaption>{element.caption}</figcaption>}
     </figure>
   );
@@ -623,6 +684,7 @@ export function CanvasView({ canvas, readOnly = false, initialViewport, loadView
               if (el.type === 'glbViewer') return <GlbViewerCard key={el.id} element={el} {...props} />;
               if (el.type === 'video') return <VideoCard key={el.id} element={el} {...props} />;
               if (el.type === 'bboxOverlay') return <BBoxOverlayCard key={el.id} element={el} {...props} />;
+              if (el.type === 'pathOverlay') return <PathOverlayCard key={el.id} element={el} {...props} />;
               if (el.type === 'table') return <div key={el.id} className={`canvas-card table-card ${props.isMovable ? 'is-movable' : ''}`} style={props.style} {...props.handlers}><DragHandle elementId={el.id} isMovable={props.isMovable} handlers={props.handlers} /><table><thead><tr>{el.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead><tbody>{el.rows.map((row, idx) => <tr key={idx}>{row.map((cell, cidx) => <td key={cidx}>{cell}</td>)}</tr>)}</tbody></table></div>;
               if (el.type === 'shape') return <div key={el.id} className={`canvas-card shape-card ${el.shape} ${props.isMovable ? 'is-movable' : ''}`} style={props.style} {...props.handlers}><DragHandle elementId={el.id} isMovable={props.isMovable} handlers={props.handlers} />{el.label}</div>;
               return <div key={el.id} className="canvas-card" style={props.style} {...props.handlers}>{el.id}</div>;

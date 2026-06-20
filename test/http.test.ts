@@ -126,6 +126,98 @@ describe('AgentCanvas HTTP API', () => {
     });
   });
 
+  it('hydrates bbox overlay nodes from a bbox layout asset instead of inline canvas data', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000888/content');
+      return new Response(JSON.stringify({
+        schema: 'bbox-layout/v1',
+        canvasWidth: 2932,
+        canvasHeight: 4096,
+        caption: 'Asset-backed layout',
+        background: '#fafaf9',
+        boxes: [{ id: 'title', x: 240, y: 2528, width: 2464, height: 224, label: 'CARD NAME' }]
+      }), { headers: { 'content-type': 'application/json' } });
+    }));
+
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const created = await app.request('/api/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'BBox canvas', project: 'demo' })
+    });
+    const canvas = await created.json();
+
+    const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [{
+        op: 'upsertElement',
+        element: {
+          id: 'bbox_1',
+          type: 'bboxOverlay',
+          x: 120,
+          y: 140,
+          width: 512,
+          height: 768,
+          layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000888' }
+        }
+      }] })
+    });
+
+    expect(batch.status).toBe(200);
+    const updated = await batch.json();
+    expect(updated.canvas.elements[0]).toMatchObject({
+      type: 'bboxOverlay',
+      layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000888' },
+      layoutResolvedUrl: 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000888',
+      layoutSchema: 'bbox-layout/v1',
+      canvasWidth: 2932,
+      canvasHeight: 4096,
+      boxes: [{ id: 'title', x: 240, y: 2528, width: 2464, height: 224, label: 'CARD NAME' }],
+      caption: 'Asset-backed layout'
+    });
+  });
+
+  it('adds path overlay nodes and returns their internal coordinate-space geometry', async () => {
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const created = await app.request('/api/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'Path canvas', project: 'demo' })
+    });
+    const canvas = await created.json();
+
+    const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [{
+        op: 'upsertElement',
+        element: {
+          id: 'path_1',
+          type: 'pathOverlay',
+          x: 120,
+          y: 140,
+          width: 512,
+          height: 768,
+          canvasWidth: 2932,
+          canvasHeight: 4096,
+          caption: 'Card name path',
+          paths: [{ id: 'name_panel', d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z', label: 'CARD NAME' }]
+        }
+      }] })
+    });
+
+    expect(batch.status).toBe(200);
+    const updated = await batch.json();
+    expect(updated.canvas.elements[0]).toMatchObject({
+      type: 'pathOverlay',
+      canvasWidth: 2932,
+      canvasHeight: 4096,
+      caption: 'Card name path',
+      paths: [{ id: 'name_panel', label: 'CARD NAME' }]
+    });
+  });
+
   it('adds GLB viewer nodes and projects a host-relative proxied content URL', async () => {
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
     const created = await app.request('/api/canvases', {

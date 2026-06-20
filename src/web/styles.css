@@ -344,6 +344,69 @@ button {
   white-space: nowrap;
 }
 
+.path-overlay-card {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.path-overlay-stage {
+  position: relative;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, .08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, .08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.path-overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.path-overlay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.path-overlay-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.path-overlay-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.path-overlay-card figcaption {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bbox-export-actions {
   position: absolute;
   right: 10px;

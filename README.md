@@ -1,6 +1,6 @@
 # AgentCanvas
 
-Local agent-operable web canvas for Workspace2. Agents can create canvases, place text/Markdown/assets/single-GLB 3D viewers/connectors/tables, and return read-only browser links to the user.
+Local agent-operable web canvas for Workspace2. Agents can create canvases, place text/Markdown/assets/single-GLB 3D viewers/connectors/tables/path overlays, and return read-only browser links to the user.
 
 ## Boundaries
 
@@ -81,6 +81,9 @@ hermes mcp test agent-canvas
 - `canvas_add_markdown`
 - `canvas_place_asset`
 - `canvas_place_glb_viewer`
+- `canvas_add_bbox_overlay`
+- `canvas_add_bbox_overlay_from_asset`
+- `canvas_add_path_overlay`
 - `canvas_add_line`
 - `canvas_add_arrow`
 - `canvas_add_table`
@@ -91,9 +94,62 @@ hermes mcp test agent-canvas
 - `canvas_set_viewport`
 - `canvas_screenshot`
 
-Tool outputs are compact JSON with IDs, revisions, links, element summaries, and viewport state by default. `canvas_get` returns a compact canvas summary with capped element summaries; pass `mode: "full"` only when the complete canvas payload is required. Canvas mutation tools such as `canvas_place_asset`, `canvas_add_markdown`, `canvas_update_element`, and `canvas_delete_element` return compact mutation acknowledgements by default; pass `mode: "full"` only when a follow-up full-canvas read would be more expensive than returning the whole canvas once.
+Tool outputs are compact JSON with IDs, revisions, links, element counts/summaries, and viewport state by default. `canvas_list` returns compact canvas metadata and element counts without full element payloads. `canvas_get` returns a compact canvas summary with capped element summaries; pass `mode: "full"` only when the complete canvas payload is required. Canvas mutation tools such as `canvas_place_asset`, `canvas_add_markdown`, `canvas_update_element`, and `canvas_delete_element` return compact mutation acknowledgements by default; pass `mode: "full"` only when a follow-up full-canvas read would be more expensive than returning the whole canvas once.
 
 Large binaries/base64 are not returned through MCP by default. `canvas_screenshot` returns a retrievable screenshot URL and omits the inline SVG data URL unless `includeDataUrl: true` is explicitly passed.
+
+## BBox layout assets
+
+`bboxOverlay` nodes can now be owned by a durable `Assets-2` JSON asset instead of storing `canvasWidth`, `canvasHeight`, and `boxes` inline inside the canvas record. This is the preferred ownership model for reusable card/layout templates.
+
+Asset-backed overlays use a JSON asset shaped like:
+
+```json
+{
+  "schema": "bbox-layout/v1",
+  "canvasWidth": 2932,
+  "canvasHeight": 4096,
+  "boxes": [
+    { "id": "artwork", "x": 288, "y": 496, "width": 2352, "height": 1936, "label": "ARTWORK AREA" }
+  ],
+  "imageAssetRef": { "type": "asset", "project": "demo", "assetId": "..." },
+  "caption": "63:88 bbox layout",
+  "showLabels": true,
+  "background": "#FAFAF9"
+}
+```
+
+Use `canvas_add_bbox_overlay_from_asset` when the overlay should read from this asset, or `canvas_add_bbox_overlay` with `layoutAssetRef` when you want the general bbox overlay tool to resolve it the same way.
+
+## Path overlay nodes
+
+Agents can place render-only SVG path overlays with `canvas_add_path_overlay`. A path overlay stores a fixed internal coordinate space (`canvasWidth`/`canvasHeight`) plus one or more SVG `path.d` strings; the node view renders the shapes directly and shows a small legend for path labels when `showLabels` is not disabled.
+
+Example element:
+
+```json
+{
+  "id": "path_card_name",
+  "type": "pathOverlay",
+  "x": 40,
+  "y": 980,
+  "width": 630,
+  "height": 880,
+  "canvasWidth": 2932,
+  "canvasHeight": 4096,
+  "caption": "Card name path",
+  "paths": [
+    {
+      "id": "name_panel",
+      "d": "M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z",
+      "label": "CARD NAME",
+      "color": "#e11d48",
+      "fill": "#e11d4822",
+      "strokeWidth": 10
+    }
+  ]
+}
+```
 
 ## Asset placement
 

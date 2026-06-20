@@ -140,11 +140,36 @@ export interface BBoxOverlayBox {
 
 export interface BBoxOverlayElement extends CanvasElementBase {
   type: 'bboxOverlay';
-  canvasWidth: number;
-  canvasHeight: number;
-  boxes: BBoxOverlayBox[];
+  canvasWidth?: number;
+  canvasHeight?: number;
+  boxes?: BBoxOverlayBox[];
+  layoutAssetRef?: AssetReference | null;
+  layoutResolvedUrl?: string | null;
+  layoutSchema?: string | null;
+  layoutResolutionError?: string | null;
   imageAssetRef?: AssetReference | null;
   imageResolvedUrl?: string | null;
+  caption?: string | null;
+  alt?: string | null;
+  showLabels?: boolean | null;
+  background?: string | null;
+}
+
+export interface PathOverlayPath {
+  id: string;
+  d: string;
+  label?: string | null;
+  color?: string | null;
+  fill?: string | null;
+  strokeWidth?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PathOverlayElement extends CanvasElementBase {
+  type: 'pathOverlay';
+  canvasWidth: number;
+  canvasHeight: number;
+  paths: PathOverlayPath[];
   caption?: string | null;
   alt?: string | null;
   showLabels?: boolean | null;
@@ -185,7 +210,7 @@ export interface GroupElement extends CanvasElementBase {
   children: string[];
 }
 
-export type CanvasElement = TextElement | MarkdownElement | AssetElement | GlbViewerElement | VideoElement | BBoxOverlayElement | LineElement | TableElement | ShapeElement | GroupElement;
+export type CanvasElement = TextElement | MarkdownElement | AssetElement | GlbViewerElement | VideoElement | BBoxOverlayElement | PathOverlayElement | LineElement | TableElement | ShapeElement | GroupElement;
 
 export type CanvasElementType = CanvasElement['type'];
 

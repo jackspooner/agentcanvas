@@ -162,6 +162,46 @@ describe('CanvasView asset fallback', () => {
     expect(titleLabel.getAttribute('dominant-baseline')).toBe('middle');
   });
 
+  it('renders path overlay nodes with scaled SVG paths and a visible path legend', () => {
+    const canvas: CanvasRecord = {
+      id: 'canvas_path',
+      title: 'Paths',
+      createdBy: 'agent',
+      createdAt: '2026-06-11T00:00:00.000Z',
+      updatedAt: '2026-06-11T00:00:00.000Z',
+      width: 800,
+      height: 600,
+      revision: 1,
+      elements: [{
+        id: 'path_1',
+        type: 'pathOverlay',
+        x: 10,
+        y: 10,
+        width: 512,
+        height: 768,
+        canvasWidth: 2932,
+        canvasHeight: 4096,
+        caption: 'Card name path',
+        paths: [{
+          id: 'name_panel',
+          d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+          label: 'CARD NAME',
+          color: '#e11d48',
+          fill: '#e11d4822',
+          strokeWidth: 10
+        }]
+      }]
+    };
+
+    const { container } = render(<CanvasView canvas={canvas} readOnly />);
+
+    expect(container.querySelector('.path-overlay-svg')).toBeTruthy();
+    const path = container.querySelector('path[data-path-id="name_panel"]');
+    expect(path).toBeTruthy();
+    expect(path?.getAttribute('d')).toContain('Q 320 2520');
+    expect(screen.getByText('CARD NAME')).toBeTruthy();
+  });
+
   it('renders GLB viewer nodes with a model-viewer pointing at the resolved asset URL', () => {
     const canvas: CanvasRecord = {
       id: 'canvas_glb',

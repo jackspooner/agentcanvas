@@ -9,7 +9,8 @@ import { toCanvasError } from './errors';
 import { changedElementIdsFromOperations, computeOverlapWarnings } from './geometry';
 import { coerceScreenshotOptions, renderCanvasScreenshotSvg, screenshotDataUrl } from './screenshot';
 import { SqliteCanvasStore } from './store/sqlite';
-import { resolveAssetContentUrl, resolveAssetRecordUrl } from './validation';
+import { normalizeBBoxLayoutAssetDocument } from './bboxLayoutAssets';
+import { resolveAssetContentUrl, resolveAssetRecordUrl, validateAssetRef } from './validation';
 import type { AssetElement, BBoxOverlayElement, CanvasElement, CanvasRecord, GlbViewerElement, VideoElement } from './contracts';
 
 export interface CreateAppOptions {
@@ -25,10 +26,56 @@ function proxiedAssetContentUrl(_config: AgentCanvasConfig, ref: { project: stri
   return `/api/assets/${encodeURIComponent(ref.project)}/${encodeURIComponent(ref.assetId)}/content`;
 }
 
-function projectAssetUrls(canvas: CanvasRecord, config: AgentCanvasConfig): CanvasRecord {
+async function resolveBBoxOverlayElement(overlay: BBoxOverlayElement, config: AgentCanvasConfig): Promise<BBoxOverlayElement> {
+  const layoutResolvedUrl = overlay.layoutAssetRef ? resolveAssetRecordUrl(overlay.layoutAssetRef, config.assetsBaseUrl) : null;
+  if (!overlay.layoutAssetRef) {
+    return {
+      ...overlay,
+      imageResolvedUrl: overlay.imageAssetRef ? proxiedAssetContentUrl(config, overlay.imageAssetRef) : null,
+      layoutResolvedUrl,
+      layoutSchema: null,
+      layoutResolutionError: null
+    };
+  }
+
+  try {
+    const response = await fetch(resolveAssetContentUrl(overlay.layoutAssetRef, config.assetsBaseUrl));
+    if (!response.ok) {
+      throw new Error(`layout asset fetch failed: ${response.status}`);
+    }
+    const content = await response.json().catch(() => null);
+    const layout = normalizeBBoxLayoutAssetDocument(content, { validateAssetRef });
+    const imageAssetRef = overlay.imageAssetRef ?? layout.imageAssetRef ?? null;
+    return {
+      ...overlay,
+      canvasWidth: layout.canvasWidth,
+      canvasHeight: layout.canvasHeight,
+      boxes: layout.boxes,
+      imageAssetRef,
+      imageResolvedUrl: imageAssetRef ? proxiedAssetContentUrl(config, imageAssetRef) : null,
+      caption: overlay.caption ?? layout.caption,
+      alt: overlay.alt ?? layout.alt,
+      showLabels: overlay.showLabels ?? layout.showLabels ?? true,
+      background: overlay.background ?? layout.background,
+      layoutResolvedUrl,
+      layoutSchema: layout.schema,
+      layoutResolutionError: null
+    };
+  } catch (error) {
+    return {
+      ...overlay,
+      imageResolvedUrl: overlay.imageAssetRef ? proxiedAssetContentUrl(config, overlay.imageAssetRef) : null,
+      layoutResolvedUrl,
+      layoutSchema: null,
+      layoutResolutionError: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+async function projectAssetUrls(canvas: CanvasRecord, config: AgentCanvasConfig): Promise<CanvasRecord> {
   return {
     ...canvas,
-    elements: canvas.elements.map((el: CanvasElement) => {
+    elements: await Promise.all(canvas.elements.map(async (el: CanvasElement) => {
       if (el.type === 'asset') {
         const asset = el as AssetElement;
         return { ...asset, resolvedUrl: resolveAssetContentUrl(asset.assetRef, config.assetsBaseUrl) };
@@ -46,14 +93,10 @@ function projectAssetUrls(canvas: CanvasRecord, config: AgentCanvasConfig): Canv
         };
       }
       if (el.type === 'bboxOverlay') {
-        const overlay = el as BBoxOverlayElement;
-        return {
-          ...overlay,
-          imageResolvedUrl: overlay.imageAssetRef ? proxiedAssetContentUrl(config, overlay.imageAssetRef) : null
-        };
+        return resolveBBoxOverlayElement(el as BBoxOverlayElement, config);
       }
       return el;
-    })
+    }))
   };
 }
 
@@ -345,6 +388,7 @@ export function createApp(options: CreateAppOptions = {}) {
       glb_viewers: true,
       video_assets: true,
       bbox_overlays: true,
+      path_overlays: true,
       markdown: true,
       sqlite: true,
       dedicated_mcp: true,
@@ -376,11 +420,11 @@ export function createApp(options: CreateAppOptions = {}) {
     }
   }));
 
-  app.get('/api/canvases', (c) => {
+  app.get('/api/canvases', async (c) => {
     const project = c.req.query('project');
     const conversationId = c.req.query('conversationId');
     const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined;
-    const canvases = store.listCanvases({ project, conversationId, limit }).map((canvas) => projectAssetUrls(canvas, config));
+    const canvases = await Promise.all(store.listCanvases({ project, conversationId, limit }).map((canvas) => projectAssetUrls(canvas, config)));
     return c.json({ ok: true, canvases, links: { self: `${config.publicBaseUrl}/api/canvases` } });
   });
 
@@ -392,17 +436,17 @@ export function createApp(options: CreateAppOptions = {}) {
       const share = store.createShareLink(canvas.id, { mode: 'read' });
       responseLinks.share = share.url;
     }
-    return c.json({ ok: true, canvas: projectAssetUrls(canvas, config), links: responseLinks }, 201);
+    return c.json({ ok: true, canvas: await projectAssetUrls(canvas, config), links: responseLinks }, 201);
   });
 
-  app.get('/api/canvases/:canvasId', (c) => {
+  app.get('/api/canvases/:canvasId', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
-    return c.json({ ok: true, canvas: projectAssetUrls(canvas, config), links: links(config, canvas.id) });
+    return c.json({ ok: true, canvas: await projectAssetUrls(canvas, config), links: links(config, canvas.id) });
   });
 
   app.patch('/api/canvases/:canvasId', async (c) => {
     const existing = store.getCanvas(c.req.param('canvasId'));
-    return c.json({ ok: true, canvas: projectAssetUrls(existing, config), links: links(config, existing.id), warning: 'patch metadata is not implemented in V1; use element batch operations' });
+    return c.json({ ok: true, canvas: await projectAssetUrls(existing, config), links: links(config, existing.id), warning: 'patch metadata is not implemented in V1; use element batch operations' });
   });
 
   app.post('/api/canvases/:canvasId/elements:batch', async (c) => {
@@ -410,7 +454,7 @@ export function createApp(options: CreateAppOptions = {}) {
     const canvas = store.applyOperations(c.req.param('canvasId'), body);
     const overlapWarnings = computeOverlapWarnings(canvas, changedElementIdsFromOperations(body?.operations));
     const warnings = overlapWarnings.map((warning) => warning.message);
-    return c.json({ ok: true, canvas: projectAssetUrls(canvas, config), revision: canvas.revision, links: links(config, canvas.id), warnings, overlapWarnings });
+    return c.json({ ok: true, canvas: await projectAssetUrls(canvas, config), revision: canvas.revision, links: links(config, canvas.id), warnings, overlapWarnings });
   });
 
   app.get('/api/assets/:project/:assetId/details', async (c) => {
@@ -533,9 +577,9 @@ export function createApp(options: CreateAppOptions = {}) {
     });
   });
 
-  app.get('/api/share/:token', (c) => {
+  app.get('/api/share/:token', async (c) => {
     const resolved = store.resolveShareToken(c.req.param('token'));
-    return c.json({ ok: true, link: resolved.link, canvas: projectAssetUrls(resolved.canvas, config), readOnly: true });
+    return c.json({ ok: true, link: resolved.link, canvas: await projectAssetUrls(resolved.canvas, config), readOnly: true });
   });
 
   app.get('/canvases', (c) => c.html(appShell('AgentCanvas')));

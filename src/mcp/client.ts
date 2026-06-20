@@ -91,8 +91,10 @@ function compactElement(value: unknown): JsonRecord {
     markdownSnippet: snippet(value.markdown),
     columns: Array.isArray(value.columns) ? value.columns.slice(0, 12) : undefined,
     rowCount: Array.isArray(value.rows) ? value.rows.length : undefined,
+    pathCount: Array.isArray(value.paths) ? value.paths.length : undefined,
     assetRef: compactAssetRef(value.assetRef),
     imageAssetRef: compactAssetRef(value.imageAssetRef),
+    layoutAssetRef: compactAssetRef(value.layoutAssetRef),
     resolvedUrl: stringValue(value.resolvedUrl)
   });
 }
@@ -120,6 +122,32 @@ function compactCanvasResult(result: unknown, input: { elementLimit?: number } =
       truncated: elements.length > returnedElements.length,
       elements: returnedElements.map(compactElement)
     })
+  };
+}
+
+function compactCanvasSummary(value: unknown): JsonRecord {
+  if (!isRecord(value)) return { value };
+  const elements = Array.isArray(value.elements) ? value.elements : [];
+  return cleanObject({
+    id: stringValue(value.id),
+    title: stringValue(value.title),
+    description: snippet(value.description, 300),
+    project: stringValue(value.project),
+    conversationId: stringValue(value.conversationId),
+    width: numberValue(value.width),
+    height: numberValue(value.height),
+    revision: numberValue(value.revision),
+    createdAt: stringValue(value.createdAt),
+    updatedAt: stringValue(value.updatedAt),
+    elementCount: elements.length
+  });
+}
+
+function compactCanvasListResult(result: unknown) {
+  if (!isRecord(result) || !Array.isArray(result.canvases)) return result;
+  return {
+    ...result,
+    canvases: result.canvases.map(compactCanvasSummary)
   };
 }
 
@@ -171,7 +199,7 @@ export function createCanvasMcpHandlers(options: McpHandlerOptions = {}) {
     canvas_list: (input: Record<string, unknown> = {}) => {
       const params = new URLSearchParams();
       for (const [k, v] of Object.entries(input)) if (v !== undefined && v !== null) params.set(k, String(v));
-      return get(`/api/canvases${params.size ? `?${params}` : ''}`);
+      return get(`/api/canvases${params.size ? `?${params}` : ''}`).then(compactCanvasListResult);
     },
     canvas_get: async (input: CanvasGetInput) => {
       const result = await get(`/api/canvases/${encodeURIComponent(input.canvasId)}`);
@@ -183,7 +211,9 @@ export function createCanvasMcpHandlers(options: McpHandlerOptions = {}) {
     canvas_place_asset: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; fit?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `asset_${nanoid(8)}`, type: 'asset', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width, height: input.height, caption: input.caption, alt: input.alt, fit: input.fit } }], input.mode),
     canvas_place_glb_viewer: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; cameraControls?: boolean; autoRotate?: boolean; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `glb_${nanoid(8)}`, type: 'glbViewer', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width ?? 320, height: input.height ?? 240, caption: input.caption, alt: input.alt, cameraControls: input.cameraControls, autoRotate: input.autoRotate } }], input.mode),
     canvas_place_video: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; controls?: boolean; autoplay?: boolean; loop?: boolean; muted?: boolean; posterAssetRef?: unknown; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `video_${nanoid(8)}`, type: 'video', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 270, caption: input.caption, alt: input.alt, controls: input.controls, autoplay: input.autoplay, loop: input.loop, muted: input.muted, posterAssetRef: input.posterAssetRef } }], input.mode),
-    canvas_add_bbox_overlay: (input: { canvasId: string; id?: string; imageAssetRef?: unknown; canvasWidth: number; canvasHeight: number; boxes: unknown[]; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `bbox_${nanoid(8)}`, type: 'bboxOverlay', imageAssetRef: input.imageAssetRef, canvasWidth: input.canvasWidth, canvasHeight: input.canvasHeight, boxes: input.boxes, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background } }], input.mode),
+    canvas_add_bbox_overlay: (input: { canvasId: string; id?: string; imageAssetRef?: unknown; layoutAssetRef?: unknown; canvasWidth?: number; canvasHeight?: number; boxes?: unknown[]; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: cleanObject({ id: input.id ?? `bbox_${nanoid(8)}`, type: 'bboxOverlay', imageAssetRef: input.imageAssetRef, layoutAssetRef: input.layoutAssetRef, canvasWidth: input.canvasWidth, canvasHeight: input.canvasHeight, boxes: input.boxes, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background }) }], input.mode),
+    canvas_add_bbox_overlay_from_asset: (input: { canvasId: string; id?: string; layoutAssetRef: unknown; imageAssetRef?: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: cleanObject({ id: input.id ?? `bbox_${nanoid(8)}`, type: 'bboxOverlay', layoutAssetRef: input.layoutAssetRef, imageAssetRef: input.imageAssetRef, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background }) }], input.mode),
+    canvas_add_path_overlay: (input: { canvasId: string; id?: string; canvasWidth: number; canvasHeight: number; paths: unknown[]; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `path_${nanoid(8)}`, type: 'pathOverlay', canvasWidth: input.canvasWidth, canvasHeight: input.canvasHeight, paths: input.paths, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background } }], input.mode),
     canvas_add_line: (input: { canvasId: string; id?: string; from: unknown; to: unknown; stroke?: string; strokeWidth?: number; label?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `line_${nanoid(8)}`, type: 'line', x: 0, y: 0, from: input.from, to: input.to, stroke: input.stroke, strokeWidth: input.strokeWidth, label: input.label } }], input.mode),
     canvas_add_arrow: (input: { canvasId: string; id?: string; from: unknown; to: unknown; stroke?: string; strokeWidth?: number; label?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `arrow_${nanoid(8)}`, type: 'arrow', x: 0, y: 0, from: input.from, to: input.to, stroke: input.stroke, strokeWidth: input.strokeWidth, label: input.label } }], input.mode),
     canvas_add_table: (input: { canvasId: string; id?: string; columns: string[]; rows: string[][]; x: number; y: number; width?: number; height?: number; caption?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `table_${nanoid(8)}`, type: 'table', columns: input.columns, rows: input.rows, x: input.x, y: input.y, width: input.width, height: input.height, caption: input.caption } }], input.mode),

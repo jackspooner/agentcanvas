@@ -92,7 +92,68 @@ describe('canvas contracts and validation', () => {
     expect(element.canvasWidth).toBe(1024);
     expect(element.canvasHeight).toBe(1536);
     expect(element.imageAssetRef?.assetId).toBe('00000000-0000-4000-8000-000000000456');
-    expect(element.boxes[0]).toMatchObject({ id: 'title', x: 105, y: 960, width: 814, height: 72, labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 });
+    expect(element.boxes).toBeDefined();
+    expect(element.boxes?.[0]).toMatchObject({ id: 'title', x: 105, y: 960, width: 814, height: 72, labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 });
     expect(element.showLabels).toBe(true);
+  });
+
+  it('accepts bbox overlay elements that read their layout from an Assets-2 JSON asset', () => {
+    const element = normalizeCanvasElement({
+      id: 'character_bboxes_asset_backed',
+      type: 'bboxOverlay',
+      x: 40,
+      y: 80,
+      width: 512,
+      height: 768,
+      layoutAssetRef: {
+        type: 'asset',
+        project: 'kindeck',
+        assetId: '00000000-0000-4000-8000-000000000654'
+      },
+      caption: 'Character bbox contract',
+      showLabels: true
+    });
+
+    expect(element.type).toBe('bboxOverlay');
+    if (element.type !== 'bboxOverlay') throw new Error('expected bboxOverlay element');
+    expect(element.layoutAssetRef?.assetId).toBe('00000000-0000-4000-8000-000000000654');
+    expect(element.canvasWidth).toBeUndefined();
+    expect(element.canvasHeight).toBeUndefined();
+    expect(element.boxes).toBeUndefined();
+  });
+
+  it('accepts path overlay elements with SVG path data in a fixed internal coordinate space', () => {
+    const element = normalizeCanvasElement({
+      id: 'card_name_shape',
+      type: 'pathOverlay',
+      x: 40,
+      y: 80,
+      width: 512,
+      height: 768,
+      canvasWidth: 2932,
+      canvasHeight: 4096,
+      caption: 'Card name path overlay',
+      background: '#fafaf9',
+      paths: [{
+        id: 'name_panel',
+        d: 'M 260 2700 Q 320 2520 520 2520 L 1200 2520 Q 1466 2460 1732 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+        label: 'CARD NAME',
+        color: '#e11d48',
+        fill: '#e11d4822',
+        strokeWidth: 10
+      }]
+    });
+
+    expect(element.type).toBe('pathOverlay');
+    if (element.type !== 'pathOverlay') throw new Error('expected pathOverlay element');
+    expect(element.canvasWidth).toBe(2932);
+    expect(element.canvasHeight).toBe(4096);
+    expect(element.paths[0]).toMatchObject({
+      id: 'name_panel',
+      label: 'CARD NAME',
+      color: '#e11d48',
+      fill: '#e11d4822',
+      strokeWidth: 10
+    });
   });
 });

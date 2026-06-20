@@ -1,4 +1,4 @@
-import type { BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewportInput, LineElement } from './contracts';
+import type { BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewportInput, LineElement, PathOverlayElement } from './contracts';
 import { elementHeight, elementWidth } from './geometry';
 
 export interface CanvasScreenshotOptions {
@@ -39,6 +39,10 @@ function escapeXml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function overlayAccent(index: number): string {
+  return ['#2563eb', '#9333ea', '#0891b2', '#db2777', '#ea580c', '#16a34a'][index % 6];
 }
 
 function cardElements(canvas: CanvasRecord): CanvasElement[] {
@@ -144,12 +148,24 @@ function textLinesForElement(el: CanvasElement): string[] {
   if (el.type === 'glbViewer') return [el.caption ?? el.alt ?? `GLB ${el.assetRef.assetId}`];
   if (el.type === 'video') return [el.caption ?? el.alt ?? `Video ${el.assetRef.assetId}`];
   if (el.type === 'bboxOverlay') return [el.caption ?? el.alt ?? `BBox overlay ${el.id}`];
+  if (el.type === 'pathOverlay') return [el.caption ?? el.alt ?? `Path overlay ${el.id}`];
   if (el.type === 'shape') return [el.label ?? el.id];
   if (el.type === 'group') return [`Group ${el.id}`];
   return [el.id];
 }
 
 function renderBBoxOverlayCard(el: BBoxOverlayElement): string {
+  if (typeof el.canvasWidth !== 'number' || typeof el.canvasHeight !== 'number' || !Array.isArray(el.boxes)) {
+    const w = elementWidth(el);
+    const h = elementHeight(el);
+    const label = escapeXml(el.caption ?? el.alt ?? el.id);
+    const error = escapeXml(el.layoutResolutionError ?? 'BBox layout asset is unresolved.');
+    return `<g data-node-id="${escapeXml(el.id)}">
+      <rect x="${el.x}" y="${el.y}" width="${w}" height="${h}" rx="10" fill="#fff7ed" stroke="#f97316" />
+      <text x="${el.x + 14}" y="${el.y + 28}" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#9a3412">${label}</text>
+      <text x="${el.x + 14}" y="${el.y + 52}" font-family="Inter, Arial, sans-serif" font-size="12" fill="#9a3412">${error}</text>
+    </g>`;
+  }
   const w = elementWidth(el);
   const h = elementHeight(el);
   const sx = w / el.canvasWidth;
@@ -157,7 +173,7 @@ function renderBBoxOverlayCard(el: BBoxOverlayElement): string {
   const label = escapeXml(el.caption ?? el.alt ?? el.id);
   const background = escapeXml(el.background ?? '#f8fafc');
   const boxes = el.boxes.map((box, index) => {
-    const color = escapeXml(box.color ?? ['#2563eb', '#9333ea', '#0891b2', '#db2777', '#ea580c', '#16a34a'][index % 6]);
+    const color = escapeXml(box.color ?? overlayAccent(index));
     const x = el.x + box.x * sx;
     const y = el.y + box.y * sy;
     const bw = box.width * sx;
@@ -185,8 +201,40 @@ function renderBBoxOverlayCard(el: BBoxOverlayElement): string {
   </g>`;
 }
 
+function renderPathOverlayCard(el: PathOverlayElement): string {
+  const w = elementWidth(el);
+  const h = elementHeight(el);
+  const label = escapeXml(el.caption ?? el.alt ?? el.id);
+  const background = escapeXml(el.background ?? '#f8fafc');
+  const legend = el.showLabels === false ? '' : el.paths.map((path, index) => {
+    const color = escapeXml(path.color ?? overlayAccent(index));
+    const text = escapeXml(path.label ?? path.id);
+    const x = el.x + 14;
+    const y = el.y + h - 16 - (el.paths.length - index - 1) * 16;
+    return `<g data-legend-for="${escapeXml(path.id)}">
+      <circle cx="${x + 6}" cy="${y - 4}" r="5" fill="${color}" />
+      <text x="${x + 18}" y="${y}" font-family="Inter, Arial, sans-serif" font-size="12" fill="#475569">${text}</text>
+    </g>`;
+  }).join('\n');
+  const paths = el.paths.map((path, index) => {
+    const color = escapeXml(path.color ?? overlayAccent(index));
+    return `<path data-path-id="${escapeXml(path.id)}" d="${escapeXml(path.d)}" fill="${escapeXml(path.fill ?? 'transparent')}" stroke="${color}" stroke-width="${path.strokeWidth ?? 2}" stroke-linejoin="round" stroke-linecap="round" />`;
+  }).join('\n');
+  const scaleX = w / el.canvasWidth;
+  const scaleY = h / el.canvasHeight;
+  return `<g data-node-id="${escapeXml(el.id)}">
+    <rect x="${el.x}" y="${el.y}" width="${w}" height="${h}" rx="10" fill="${background}" stroke="#d0d7de" />
+    <g transform="translate(${el.x} ${el.y}) scale(${scaleX} ${scaleY})">
+      ${paths}
+    </g>
+    ${legend}
+    <text x="${el.x + 14}" y="${el.y + 24}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f172a">${label}</text>
+  </g>`;
+}
+
 function renderCard(el: CanvasElement): string {
   if (el.type === 'bboxOverlay') return renderBBoxOverlayCard(el);
+  if (el.type === 'pathOverlay') return renderPathOverlayCard(el);
   const w = elementWidth(el);
   const h = elementHeight(el);
   const radius = el.type === 'shape' && el.shape === 'ellipse' ? Math.min(w, h) / 2 : 10;

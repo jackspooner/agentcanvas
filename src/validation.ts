@@ -1,5 +1,6 @@
 import { CanvasError } from './errors';
-import type { AssetReference, BBoxOverlayBox, CanvasElement, CanvasOperation, CanvasViewport, CanvasViewportInput, ConnectorEndpoint, TableElement, VideoElement } from './contracts';
+import { normalizeBBoxOverlayBox } from './bboxLayoutAssets';
+import type { AssetReference, BBoxOverlayBox, CanvasElement, CanvasOperation, CanvasViewport, CanvasViewportInput, ConnectorEndpoint, PathOverlayPath, TableElement, VideoElement } from './contracts';
 
 export const LIMITS = {
   maxCanvasWidth: 20_000,
@@ -11,6 +12,8 @@ export const LIMITS = {
   maxTableRows: 500,
   maxTableCellLength: 2_000,
   maxBBoxes: 500,
+  maxOverlayPaths: 500,
+  maxPathLength: 20_000,
   minZoom: 0.05,
   maxZoom: 8,
   defaultViewportWidth: 1920,
@@ -80,26 +83,25 @@ export function resolveAssetContentUrl(ref: AssetReference, defaultBaseUrl = 'ht
 }
 
 function bboxBox(value: unknown): BBoxOverlayBox {
-  if (!isObject(value)) validation('bboxOverlay boxes must be objects');
-  const id = validateSafeId(value.id, 'bbox.id');
-  const x = finiteNumber(value.x, `bbox.${id}.x`);
-  const y = finiteNumber(value.y, `bbox.${id}.y`);
-  const width = finiteNumber(value.width, `bbox.${id}.width`);
-  const height = finiteNumber(value.height, `bbox.${id}.height`);
-  if (width <= 0 || height <= 0) validation(`bbox.${id} width and height must be positive`);
+  try {
+    return normalizeBBoxOverlayBox(value);
+  } catch (error) {
+    validation(error instanceof Error ? error.message : String(error));
+  }
+}
+
+function pathOverlayPath(value: unknown): PathOverlayPath {
+  if (!isObject(value)) validation('pathOverlay paths must be objects');
+  const id = validateSafeId(value.id, 'path.id');
+  if (typeof value.d !== 'string' || value.d.trim().length === 0) validation(`path.${id}.d must be a non-empty SVG path string`);
+  if (value.d.length > LIMITS.maxPathLength) validation(`path.${id}.d is too long`);
   return {
     id,
-    x,
-    y,
-    width,
-    height,
-    label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('bbox label must be string'),
-    color: typeof value.color === 'string' || value.color == null ? value.color as string | null | undefined : validation('bbox color must be string'),
-    fill: typeof value.fill === 'string' || value.fill == null ? value.fill as string | null | undefined : validation('bbox fill must be string'),
-    strokeWidth: optionalNumber(value.strokeWidth, 'bbox.strokeWidth'),
-    labelAlign: optionalEnum(value.labelAlign, ['left', 'center', 'right'] as const, 'bbox.labelAlign'),
-    labelVerticalAlign: optionalEnum(value.labelVerticalAlign, ['top', 'middle', 'bottom'] as const, 'bbox.labelVerticalAlign'),
-    labelPadding: optionalNumber(value.labelPadding, 'bbox.labelPadding'),
+    d: value.d,
+    label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('path label must be string'),
+    color: typeof value.color === 'string' || value.color == null ? value.color as string | null | undefined : validation('path color must be string'),
+    fill: typeof value.fill === 'string' || value.fill == null ? value.fill as string | null | undefined : validation('path fill must be string'),
+    strokeWidth: optionalNumber(value.strokeWidth, 'path.strokeWidth'),
     metadata: isObject(value.metadata) ? value.metadata : undefined
   };
 }
@@ -190,24 +192,52 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
       };
     }
     case 'bboxOverlay': {
+      const layoutAssetRef = value.layoutAssetRef == null ? value.layoutAssetRef as null | undefined : validateAssetRef(value.layoutAssetRef);
+      const baseOverlay = {
+        ...b,
+        type: 'bboxOverlay' as const,
+        width: b.width ?? 320,
+        height: b.height ?? 240,
+        layoutAssetRef,
+        imageAssetRef: value.imageAssetRef == null ? value.imageAssetRef as null | undefined : validateAssetRef(value.imageAssetRef),
+        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('bboxOverlay caption must be string'),
+        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('bboxOverlay alt must be string'),
+        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('bboxOverlay showLabels must be boolean'),
+        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('bboxOverlay background must be string')
+      };
+      if (layoutAssetRef) {
+        return baseOverlay;
+      }
       const canvasWidth = finiteNumber(value.canvasWidth, 'bboxOverlay.canvasWidth');
       const canvasHeight = finiteNumber(value.canvasHeight, 'bboxOverlay.canvasHeight');
       if (canvasWidth <= 0 || canvasHeight <= 0) validation('bboxOverlay canvasWidth and canvasHeight must be positive');
       if (!Array.isArray(value.boxes)) validation('bboxOverlay requires boxes array');
       if (value.boxes.length > LIMITS.maxBBoxes) validation('bboxOverlay has too many boxes');
       return {
+        ...baseOverlay,
+        canvasWidth,
+        canvasHeight,
+        boxes: value.boxes.map(bboxBox)
+      };
+    }
+    case 'pathOverlay': {
+      const canvasWidth = finiteNumber(value.canvasWidth, 'pathOverlay.canvasWidth');
+      const canvasHeight = finiteNumber(value.canvasHeight, 'pathOverlay.canvasHeight');
+      if (canvasWidth <= 0 || canvasHeight <= 0) validation('pathOverlay canvasWidth and canvasHeight must be positive');
+      if (!Array.isArray(value.paths)) validation('pathOverlay requires paths array');
+      if (value.paths.length > LIMITS.maxOverlayPaths) validation('pathOverlay has too many paths');
+      return {
         ...b,
-        type: 'bboxOverlay',
+        type: 'pathOverlay',
         width: b.width ?? 320,
         height: b.height ?? 240,
         canvasWidth,
         canvasHeight,
-        boxes: value.boxes.map(bboxBox),
-        imageAssetRef: value.imageAssetRef == null ? value.imageAssetRef as null | undefined : validateAssetRef(value.imageAssetRef),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('bboxOverlay caption must be string'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('bboxOverlay alt must be string'),
-        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('bboxOverlay showLabels must be boolean'),
-        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('bboxOverlay background must be string')
+        paths: value.paths.map(pathOverlayPath),
+        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('pathOverlay caption must be string'),
+        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('pathOverlay alt must be string'),
+        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('pathOverlay showLabels must be boolean'),
+        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('pathOverlay background must be string')
       };
     }
     case 'line':

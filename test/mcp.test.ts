@@ -99,6 +99,90 @@ describe('AgentCanvasMcp handlers', () => {
     expect(JSON.parse(String(requests[0].init?.body))).toMatchObject({ overlayNodeIds: true, fullCanvas: true, width: 1200, height: 800 });
   });
 
+  it('maps canvas_add_path_overlay to a path overlay batch mutation', async () => {
+    const requests: Array<{ path: string; init?: RequestInit }> = [];
+    const handlers = createCanvasMcpHandlers({
+      baseUrl: 'http://127.0.0.1:23003',
+      fetchImpl: vi.fn(async (url: string, init?: RequestInit) => {
+        requests.push({ path: url.replace('http://127.0.0.1:23003', ''), init });
+        return new Response(JSON.stringify({ ok: true, canvas: { id: 'canvas_1', revision: 2 }, revision: 2 }), { headers: { 'content-type': 'application/json' } });
+      })
+    });
+
+    await handlers.canvas_add_path_overlay({
+      canvasId: 'canvas_1',
+      id: 'path_1',
+      x: 100,
+      y: 200,
+      width: 480,
+      height: 320,
+      canvasWidth: 2932,
+      canvasHeight: 4096,
+      caption: 'Card name path',
+      paths: [{
+        id: 'name_panel',
+        d: 'M 260 2700 L 2672 2700 Z',
+        label: 'CARD NAME',
+        color: '#e11d48',
+        fill: '#e11d4822',
+        strokeWidth: 8
+      }]
+    });
+
+    expect(requests[0].path).toBe('/api/canvases/canvas_1/elements:batch');
+    expect(JSON.parse(String(requests[0].init?.body)).operations[0].element).toMatchObject({
+      id: 'path_1',
+      type: 'pathOverlay',
+      canvasWidth: 2932,
+      canvasHeight: 4096,
+      caption: 'Card name path',
+      paths: [{
+        id: 'name_panel',
+        d: 'M 260 2700 L 2672 2700 Z',
+        label: 'CARD NAME',
+        color: '#e11d48',
+        fill: '#e11d4822',
+        strokeWidth: 8
+      }]
+    });
+  });
+
+  it('maps canvas_add_bbox_overlay_from_asset to an asset-backed bbox overlay batch mutation', async () => {
+    const requests: Array<{ path: string; init?: RequestInit }> = [];
+    const handlers = createCanvasMcpHandlers({
+      baseUrl: 'http://127.0.0.1:23003',
+      fetchImpl: vi.fn(async (url: string, init?: RequestInit) => {
+        requests.push({ path: url.replace('http://127.0.0.1:23003', ''), init });
+        return new Response(JSON.stringify({ ok: true, canvas: { id: 'canvas_1', revision: 2 }, revision: 2 }), { headers: { 'content-type': 'application/json' } });
+      })
+    });
+
+    await handlers.canvas_add_bbox_overlay_from_asset({
+      canvasId: 'canvas_1',
+      id: 'bbox_1',
+      layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000999' },
+      x: 100,
+      y: 200,
+      width: 480,
+      height: 320,
+      caption: 'Asset layout overlay'
+    });
+
+    expect(requests[0].path).toBe('/api/canvases/canvas_1/elements:batch');
+    expect(JSON.parse(String(requests[0].init?.body)).operations[0].element).toMatchObject({
+      id: 'bbox_1',
+      type: 'bboxOverlay',
+      layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000999' },
+      x: 100,
+      y: 200,
+      width: 480,
+      height: 320,
+      caption: 'Asset layout overlay'
+    });
+    expect(JSON.parse(String(requests[0].init?.body)).operations[0].element).not.toHaveProperty('boxes');
+    expect(JSON.parse(String(requests[0].init?.body)).operations[0].element).not.toHaveProperty('canvasWidth');
+  });
+
   it('keeps screenshot data URLs only when explicitly requested', async () => {
     const handlers = createCanvasMcpHandlers({
       baseUrl: 'http://127.0.0.1:23003',
@@ -139,5 +223,43 @@ describe('AgentCanvasMcp handlers', () => {
     expect(result.canvas.elements[0].markdownSnippet.length).toBeLessThan(250);
     expect(result.canvas.elements[0]).not.toHaveProperty('markdown');
     expect(result.canvas.elements[1]).not.toHaveProperty('metadata');
+  });
+
+  it('returns compact canvas summaries from canvas_list by default', async () => {
+    const handlers = createCanvasMcpHandlers({
+      baseUrl: 'http://127.0.0.1:23003',
+      fetchImpl: vi.fn(async () => new Response(JSON.stringify({
+        ok: true,
+        canvases: [
+          {
+            id: 'canvas_1',
+            title: 'Large list canvas',
+            description: 'Demo',
+            project: 'demo',
+            revision: 7,
+            width: 1600,
+            height: 1000,
+            metadata: { noisy: true },
+            elements: [
+              { id: 'markdown_1', type: 'markdown', markdown: 'x'.repeat(1000), x: 10, y: 20 },
+              { id: 'asset_1', type: 'asset', assetRef: { type: 'asset', project: 'demo', assetId: 'asset_1' }, x: 40, y: 50 }
+            ]
+          }
+        ],
+        links: { self: 'http://canvas/api/canvases' }
+      }), { headers: { 'content-type': 'application/json' } }))
+    });
+
+    const result = await handlers.canvas_list({}) as { canvases: Array<Record<string, unknown>>; links: Record<string, unknown> };
+
+    expect(result.canvases[0]).toMatchObject({
+      id: 'canvas_1',
+      title: 'Large list canvas',
+      project: 'demo',
+      elementCount: 2
+    });
+    expect(result.canvases[0]).not.toHaveProperty('elements');
+    expect(result.canvases[0]).not.toHaveProperty('metadata');
+    expect(result.links).toMatchObject({ self: 'http://canvas/api/canvases' });
   });
 });
