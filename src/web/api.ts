@@ -1,4 +1,11 @@
-import type { AssetDetailsResponse, CanvasRecord, CanvasViewport, CanvasViewportState } from '../contracts';
+import type { AssetDetailsResponse, AssetReference, CanvasRecord, CanvasViewport, CanvasViewportState } from '../contracts';
+
+export async function fetchCanvasList(limit = 200): Promise<CanvasRecord[]> {
+  const response = await fetch(`/api/canvases?limit=${encodeURIComponent(String(limit))}`);
+  if (!response.ok) throw new Error(`failed to load canvases: ${response.status}`);
+  const body = await response.json();
+  return Array.isArray(body.canvases) ? body.canvases : [];
+}
 
 export async function fetchCanvasFromLocation(): Promise<{ canvas: CanvasRecord; readOnly: boolean }> {
   const path = window.location.pathname;
@@ -60,11 +67,17 @@ export async function moveCanvasElement(canvasId: string, elementId: string, x: 
   return body.canvas as CanvasRecord;
 }
 
-export async function fetchAssetDetails(project: string, assetId: string): Promise<AssetDetailsResponse> {
-  const response = await fetch(`/api/assets/${encodeURIComponent(project)}/${encodeURIComponent(assetId)}/details`);
+export async function fetchAssetDetails(assetRef: AssetReference): Promise<AssetDetailsResponse> {
+  const response = await fetch(assetDetailsPath(assetRef));
   if (!response.ok) {
     const text = await response.text().catch(() => '');
     throw new Error(text || `failed to load asset details: ${response.status}`);
   }
   return response.json() as Promise<AssetDetailsResponse>;
+}
+
+function assetDetailsPath(assetRef: AssetReference): string {
+  if (assetRef.assetId) return `/api/assets/${encodeURIComponent(assetRef.project)}/${encodeURIComponent(assetRef.assetId)}/details`;
+  if (assetRef.assetKey) return `/api/assets/${encodeURIComponent(assetRef.project)}/by-key/details?assetKey=${encodeURIComponent(assetRef.assetKey)}`;
+  throw new Error('asset details require assetId or assetKey');
 }

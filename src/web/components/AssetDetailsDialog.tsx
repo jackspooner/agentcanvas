@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import type { AssetDetailsContextImage, AssetDetailsResponse } from '../../contracts';
+import type { AssetCostDetails, AssetDetailsContextImage, AssetDetailsResponse } from '../../contracts';
 
 interface AssetDetailsDialogProps {
   open: boolean;
@@ -28,6 +28,22 @@ function formatProviderModel(provider?: string | null, model?: string | null): s
   return [provider, model].filter(Boolean).join(' / ') || 'not recorded';
 }
 
+function formatCost(cost?: AssetCostDetails | null): string {
+  if (!cost || typeof cost.amount !== 'number' || !cost.currency) return 'not recorded';
+  const tinyPositive = cost.amount > 0 && cost.amount < 0.01;
+  const amount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: cost.currency,
+    minimumFractionDigits: tinyPositive ? 3 : 2,
+    maximumFractionDigits: tinyPositive ? 6 : 2
+  }).format(cost.amount);
+  return `${amount}${cost.estimated ? ' estimated' : ''}`;
+}
+
+function formatPricingSource(cost?: AssetCostDetails | null): string {
+  return [cost?.pricingSource, cost?.pricingVersion].filter(Boolean).join(' / ') || 'not recorded';
+}
+
 function formatJson(value: unknown): string {
   if (value === null || value === undefined) return 'not recorded';
   if (typeof value === 'string') return value;
@@ -52,6 +68,7 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
 
   const generation = details?.generation ?? null;
   const asset = details?.asset ?? null;
+  const cost = details?.cost ?? null;
   const contextImages = generation?.contextImages ?? [];
 
   return (
@@ -85,6 +102,8 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
               <dd>{formatProviderModel(generation?.provider, generation?.model)}</dd>
               <dt>Quality</dt>
               <dd>{generation?.quality ?? 'not recorded'}</dd>
+              <dt>Cost</dt>
+              <dd>{formatCost(cost)}</dd>
               <dt>Dimensions</dt>
               <dd>{formatDimension(generation?.width ?? asset?.width, generation?.height ?? asset?.height)}</dd>
               <dt>Generated at</dt>
@@ -140,6 +159,8 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
                 <dd>{generation?.imageIndex ?? 'not recorded'}</dd>
                 <dt>Content type</dt>
                 <dd>{asset?.contentType ?? 'not recorded'}</dd>
+                <dt>Pricing source</dt>
+                <dd>{formatPricingSource(cost)}</dd>
               </dl>
               {generation?.providerRequest && <pre className="asset-details-pre">{formatJson(generation.providerRequest)}</pre>}
             </details>

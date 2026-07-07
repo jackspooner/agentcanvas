@@ -61,4 +61,34 @@ describe('App canvas refresh', () => {
     expect(document.body.textContent).toContain('revision 2');
     rendered.unmount();
   });
+
+  it('renders a root canvas chooser with links to every returned canvas', async () => {
+    window.history.pushState({}, '', '/');
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/canvases?limit=200')) {
+        return new Response(JSON.stringify({
+          ok: true,
+          canvases: [
+            canvas(2, [{ id: 'text_1', type: 'text', x: 0, y: 0, text: 'First' }]),
+            { ...canvas(1), id: 'canvas_second', title: 'Second canvas', project: 'demo', elements: [] }
+          ]
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    }));
+
+    let rendered!: ReturnType<typeof render>;
+    await act(async () => {
+      rendered = render(<App />);
+      await Promise.resolve();
+    });
+
+    await vi.waitFor(() => expect(screen.getByText('Polling canvas')).toBeTruthy());
+    expect(screen.getByText('Second canvas')).toBeTruthy();
+    expect(screen.getByText('2 canvases')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Polling canvas/ }).getAttribute('href')).toBe('/canvases/canvas_poll');
+    expect(screen.getByRole('link', { name: /Second canvas/ }).getAttribute('href')).toBe('/canvases/canvas_second');
+    rendered.unmount();
+  });
 });

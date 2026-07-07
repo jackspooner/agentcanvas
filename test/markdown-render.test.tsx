@@ -104,6 +104,13 @@ describe('CanvasView asset fallback', () => {
           imageIndex: 1,
           generatedAt: '2026-06-13T11:30:53.000Z'
         },
+        cost: {
+          currency: 'USD',
+          amount: 0.006,
+          estimated: true,
+          pricingSource: 'pricing-catalog',
+          pricingVersion: '2026-06-19'
+        },
         warnings: []
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     });
@@ -117,6 +124,8 @@ describe('CanvasView asset fallback', () => {
     expect(screen.getByText(assetId)).toBeTruthy();
     expect(screen.getByText('openai / gpt-image-2')).toBeTruthy();
     expect(screen.getByText('low')).toBeTruthy();
+    expect(screen.getByText('$0.006 estimated')).toBeTruthy();
+    expect(screen.getByText('pricing-catalog / 2026-06-19')).toBeTruthy();
     expect(screen.getByText('1024 × 1536')).toBeTruthy();
     expect(screen.getByText('Draw a premium card.')).toBeTruthy();
     expect(screen.getByText(contextId)).toBeTruthy();

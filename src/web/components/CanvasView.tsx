@@ -508,7 +508,7 @@ export function CanvasView({ canvas, readOnly = false, initialViewport, loadView
   const openAssetDetails = useCallback(async (element: AssetElement) => {
     setAssetDetails({ open: true, loading: true, error: null, details: null });
     try {
-      const details = await fetchAssetDetails(element.assetRef.project, element.assetRef.assetId);
+      const details = await fetchAssetDetails(element.assetRef);
       setAssetDetails({ open: true, loading: false, error: null, details });
     } catch (error) {
       setAssetDetails({ open: true, loading: false, error: error instanceof Error ? error.message : String(error), details: null });

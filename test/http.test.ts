@@ -19,6 +19,14 @@ describe('AgentCanvas HTTP API', () => {
     fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html><div id="root"></div><script type="module" src="/assets/app.js"></script>');
     expect(appShell('AgentCanvas', dir)).toContain('/assets/app.js');
   });
+
+  it('serves the web app shell from the root canvas chooser route', async () => {
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const response = await app.request('/');
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('AgentCanvas');
+  });
+
   it('reports health and whoami capabilities', async () => {
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
     const health = await app.request('/health');
@@ -303,6 +311,41 @@ describe('AgentCanvas HTTP API', () => {
     });
   });
 
+  it('adds GLB viewer nodes by assetKey and projects a host-relative proxied content URL', async () => {
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+    const created = await app.request('/api/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'GLB canvas', project: 'demo' })
+    });
+    const canvas = await created.json();
+
+    const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ operations: [{
+        op: 'upsertElement',
+        element: {
+          id: 'glb_key_1',
+          type: 'glbViewer',
+          x: 120,
+          y: 140,
+          width: 320,
+          height: 240,
+          assetRef: { type: 'asset', project: 'demo', assetKey: 'models/glb/chair-v1' },
+          caption: 'chair.glb'
+        }
+      }] })
+    });
+
+    expect(batch.status).toBe(200);
+    const updated = await batch.json();
+    expect(updated.canvas.elements[0]).toMatchObject({
+      type: 'glbViewer',
+      resolvedUrl: '/api/assets/demo/by-key/content?assetKey=models%2Fglb%2Fchair-v1'
+    });
+  });
+
   it('proxies GLB asset content through AgentCanvas so model-viewer can fetch same-origin bytes', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url === 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000123') {
@@ -324,6 +367,29 @@ describe('AgentCanvas HTTP API', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(response.headers.get('content-type')).toContain('model/gltf-binary');
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(await response.text()).toBe('glTF');
+  });
+
+  it('proxies GLB asset content by project-scoped assetKey', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'http://127.0.0.1:23000/projects/demo/assets/by-key/models/glb/chair-v1') {
+        return new Response(JSON.stringify({ filename: 'chair.glb', content_type: 'model/gltf-binary' }), {
+          headers: { 'content-type': 'application/json' }
+        });
+      }
+      expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/by-key/models/glb/chair-v1/content');
+      return new Response(new Uint8Array([0x67, 0x6c, 0x54, 0x46]), {
+        headers: { 'content-type': 'model/gltf-binary', 'content-length': '4' }
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request('/api/assets/demo/by-key/content?assetKey=models%2Fglb%2Fchair-v1');
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(response.headers.get('content-type')).toContain('model/gltf-binary');
     expect(await response.text()).toBe('glTF');
   });
 
@@ -404,6 +470,13 @@ describe('AgentCanvas HTTP API', () => {
         metadata: {
           title: 'Generated image',
           kind: 'image',
+          cost: {
+            currency: 'USD',
+            amount: 0.006,
+            estimated: true,
+            pricingSource: 'pricing-catalog',
+            pricingVersion: '2026-06-19'
+          },
           generation: {
             service: 'RouterImage-2',
             tool: 'image_generate_asset',
@@ -440,6 +513,13 @@ describe('AgentCanvas HTTP API', () => {
         height: 1536,
         createdAt: '2026-06-13T11:30:52.000Z'
       },
+      cost: {
+        currency: 'USD',
+        amount: 0.006,
+        estimated: true,
+        pricingSource: 'pricing-catalog',
+        pricingVersion: '2026-06-19'
+      },
       generation: {
         provider: 'openai',
         model: 'gpt-image-2',
@@ -457,6 +537,35 @@ describe('AgentCanvas HTTP API', () => {
     expect(JSON.stringify(body)).not.toContain('must-not-leak');
     expect(JSON.stringify(body)).not.toContain('C:/private-user');
     expect(body.asset.metadata).toBeUndefined();
+  });
+
+  it('returns normalized asset details by project-scoped assetKey', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/by-key/images/generated/card-v1');
+      return new Response(JSON.stringify({
+        id: '00000000-0000-4000-8000-000000000321',
+        asset_key: 'images/generated/card-v1',
+        project: 'demo',
+        filename: 'card.png',
+        content_type: 'image/png',
+        size_bytes: 1234,
+        image_width_px: 720,
+        image_height_px: 960,
+        metadata: { title: 'Generated card', kind: 'image' }
+      }), { headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const app = createApp({ store: new SqliteCanvasStore(':memory:') });
+
+    const response = await app.request('/api/assets/demo/by-key/details?assetKey=images%2Fgenerated%2Fcard-v1');
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      asset: { assetId: '00000000-0000-4000-8000-000000000321', filename: 'card.png', width: 720, height: 960 },
+      generation: null
+    });
   });
 
   it('computes raster dimensions for uploaded images without generation metadata', async () => {

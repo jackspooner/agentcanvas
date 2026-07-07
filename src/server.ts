@@ -12,7 +12,7 @@ import { coerceScreenshotOptions, renderCanvasScreenshotSvg, screenshotDataUrl }
 import { SqliteCanvasStore } from './store/sqlite';
 import { normalizeBBoxLayoutAssetDocument } from './bboxLayoutAssets';
 import { resolveAssetContentUrl, resolveAssetRecordUrl, validateAssetRef } from './validation';
-import type { AssetElement, BBoxOverlayElement, CanvasElement, CanvasRecord, GlbViewerElement, VideoElement } from './contracts';
+import type { AssetElement, AssetReference, BBoxOverlayElement, CanvasElement, CanvasRecord, GlbViewerElement, VideoElement } from './contracts';
 import { handleAgentCanvasMcpRequest } from './mcp/http';
 
 export interface CreateAppOptions {
@@ -24,8 +24,10 @@ function links(config: AgentCanvasConfig, canvasId: string) {
   return { view: `${config.publicBaseUrl}/canvases/${canvasId}` };
 }
 
-function proxiedAssetContentUrl(_config: AgentCanvasConfig, ref: { project: string; assetId: string }): string {
-  return `/api/assets/${encodeURIComponent(ref.project)}/${encodeURIComponent(ref.assetId)}/content`;
+function proxiedAssetContentUrl(_config: AgentCanvasConfig, ref: AssetReference): string {
+  const checked = validateAssetRef(ref);
+  if (checked.assetId) return `/api/assets/${encodeURIComponent(checked.project)}/${encodeURIComponent(checked.assetId)}/content`;
+  return `/api/assets/${encodeURIComponent(checked.project)}/by-key/content?assetKey=${encodeURIComponent(checked.assetKey ?? '')}`;
 }
 
 async function resolveBBoxOverlayElement(overlay: BBoxOverlayElement, config: AgentCanvasConfig): Promise<BBoxOverlayElement> {
@@ -250,7 +252,7 @@ function readRasterDimensions(buffer: ArrayBuffer): RasterDimensions | null {
   return readPngDimensions(bytes) ?? readGifDimensions(bytes) ?? readWebpDimensions(bytes) ?? readJpegDimensions(bytes);
 }
 
-async function fetchRasterDimensions(ref: { type: 'asset'; project: string; assetId: string }, asset: Record<string, unknown>, config: AgentCanvasConfig): Promise<RasterDimensions | null> {
+async function fetchRasterDimensions(ref: AssetReference, asset: Record<string, unknown>, config: AgentCanvasConfig): Promise<RasterDimensions | null> {
   const declared = headerContentType(typeof asset.content_type === 'string' ? asset.content_type : null);
   const ext = filenameExt(asset.filename);
   const maybeRaster = declared.startsWith('image/') || ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext);
@@ -262,6 +264,57 @@ async function fetchRasterDimensions(ref: { type: 'asset'; project: string; asse
   }
   const buffer = await response.arrayBuffer();
   return readRasterDimensions(buffer);
+}
+
+async function assetDetailsResponse(ref: AssetReference, config: AgentCanvasConfig): Promise<Response> {
+  const assetResponse = await fetch(resolveAssetRecordUrl(ref, config.assetsBaseUrl));
+  if (!assetResponse.ok) {
+    return Response.json({ code: 'asset_details_failed', message: `asset metadata fetch failed: ${assetResponse.status}` }, { status: assetResponse.status });
+  }
+  const asset = await assetResponse.json().catch(() => null) as Record<string, unknown> | null;
+  if (!asset || typeof asset !== 'object') {
+    return Response.json({ code: 'asset_details_failed', message: 'asset metadata response was invalid' }, { status: 502 });
+  }
+  const preliminary = normalizeAssetDetails(asset, config);
+  const preliminaryAsset = isRecord(preliminary.asset) ? preliminary.asset : {};
+  if (typeof preliminaryAsset.width === 'number' && typeof preliminaryAsset.height === 'number') {
+    return Response.json(preliminary);
+  }
+  const measuredDimensions = await fetchRasterDimensions(ref, asset, config).catch(() => null);
+  return Response.json(normalizeAssetDetails(asset, config, measuredDimensions));
+}
+
+async function assetContentProxyResponse(ref: AssetReference, config: AgentCanvasConfig): Promise<Response> {
+  const assetResponse = await fetch(resolveAssetRecordUrl(ref, config.assetsBaseUrl));
+  if (!assetResponse.ok) {
+    return Response.json({ code: 'asset_proxy_failed', message: `asset metadata fetch failed: ${assetResponse.status}` }, { status: assetResponse.status });
+  }
+  const asset = await assetResponse.json().catch(() => null) as Record<string, unknown> | null;
+  if (!asset || typeof asset !== 'object') {
+    return Response.json({ code: 'asset_proxy_failed', message: 'asset metadata response was invalid' }, { status: 502 });
+  }
+
+  const upstream = await fetch(resolveAssetContentUrl(ref, config.assetsBaseUrl));
+  if (!upstream.ok) {
+    return Response.json({ code: 'asset_proxy_failed', message: `asset fetch failed: ${upstream.status}` }, { status: upstream.status });
+  }
+  if (!isAllowedProxyContent(asset, upstream.headers.get('content-type'))) {
+    await upstream.body?.cancel().catch(() => undefined);
+    return Response.json({ code: 'unsupported_asset_type', message: 'only GLB/glTF, video, and safe raster image assets can be proxied through this endpoint' }, { status: 415 });
+  }
+  const headers = new Headers();
+  const contentType = upstream.headers.get('content-type') || fallbackContentTypeForAsset(asset);
+  const contentLength = upstream.headers.get('content-length');
+  headers.set('content-type', contentType);
+  if (contentLength) headers.set('content-length', contentLength);
+  headers.set('cache-control', 'private, max-age=60');
+  headers.set('x-content-type-options', 'nosniff');
+  return new Response(upstream.body, { status: upstream.status, headers });
+}
+
+function byKeyRefFromRequest(project: string, assetKey: string | undefined): AssetReference {
+  if (!assetKey) throw new Error('assetKey query parameter is required');
+  return validateAssetRef({ type: 'asset', project, assetKey });
 }
 
 function looksSensitiveString(value: string): boolean {
@@ -323,10 +376,27 @@ function normalizeGeneration(generation: Record<string, unknown>, config: AgentC
   };
 }
 
+function normalizeCost(costValue: unknown): Record<string, unknown> | null {
+  const cost = sanitizeDetailsRecord(costValue);
+  if (!cost) return null;
+  const amount = readNumber(cost.amount);
+  const currency = typeof cost.currency === 'string' && cost.currency.trim() ? cost.currency.trim() : null;
+  if (amount === null || amount < 0 || !currency) return null;
+  return {
+    currency,
+    amount,
+    estimated: typeof cost.estimated === 'boolean' ? cost.estimated : null,
+    pricingSource: typeof cost.pricingSource === 'string' ? cost.pricingSource : null,
+    pricingVersion: typeof cost.pricingVersion === 'string' ? cost.pricingVersion : null,
+    calculatedAt: typeof cost.calculatedAt === 'string' ? cost.calculatedAt : null
+  };
+}
+
 function normalizeAssetDetails(asset: Record<string, unknown>, config: AgentCanvasConfig, measuredDimensions?: RasterDimensions | null): Record<string, unknown> {
   const metadata = isRecord(asset.metadata) ? asset.metadata : {};
   const generationRecord = isRecord(metadata.generation) ? metadata.generation : null;
   const normalizedGeneration = generationRecord ? normalizeGeneration(generationRecord, config) : null;
+  const normalizedCost = normalizeCost(metadata.cost);
   const measuredWidth = readNumber(asset.image_width_px) ?? readNumber(isRecord(metadata.dimensions) ? metadata.dimensions.width : undefined) ?? readNumber(metadata.width) ?? measuredDimensions?.width ?? null;
   const measuredHeight = readNumber(asset.image_height_px) ?? readNumber(isRecord(metadata.dimensions) ? metadata.dimensions.height : undefined) ?? readNumber(metadata.height) ?? measuredDimensions?.height ?? null;
   const width = readNumber(normalizedGeneration?.width) ?? measuredWidth;
@@ -347,6 +417,7 @@ function normalizeAssetDetails(asset: Record<string, unknown>, config: AgentCanv
       updatedAt: asset.updated_at ?? null
     },
     generation: normalizedGeneration,
+    cost: normalizedCost,
     warnings
   };
 }
@@ -416,19 +487,32 @@ export function createApp(options: CreateAppOptions = {}) {
     openapi: '3.1.0',
     info: { title: 'AgentCanvas API', version: '0.1.0' },
     paths: {
-      '/health': { get: { summary: 'Health check' } },
-      '/whoami': { get: { summary: 'Service capabilities' } },
-      '/mcp': { post: { summary: 'Stateless streamable HTTP MCP endpoint for AgentCanvas tools' } },
-      '/api/canvases': { get: { summary: 'List canvases' }, post: { summary: 'Create canvas' } },
-      '/api/canvases/{canvasId}': { get: { summary: 'Get canvas' } },
-      '/api/canvases/{canvasId}/elements:batch': { post: { summary: 'Apply element operations' } },
-      '/api/assets/{project}/{assetId}/details': { get: { summary: 'Fetch normalized asset metadata and image generation provenance for UI display' } },
-      '/api/assets/{project}/{assetId}/content': { get: { summary: 'Proxy asset bytes for same-origin GLB viewers and video elements' } },
-      '/api/canvases/{canvasId}/share-links': { post: { summary: 'Create read-only share link' } },
-      '/api/canvases/{canvasId}/viewport': { get: { summary: 'Get user and agent viewport state' }, post: { summary: 'Record browser/user viewport state' } },
-      '/api/canvases/{canvasId}/viewport/focus': { post: { summary: 'Set agent-controlled viewport focus' } },
-      '/api/canvases/{canvasId}/screenshot': { post: { summary: 'Render a canvas screenshot SVG' } },
-      '/api/canvases/{canvasId}/screenshots/{filename}': { get: { summary: 'Fetch a rendered canvas screenshot SVG' } }
+      '/': { get: { operationId: 'openCanvasChooser', summary: 'Canvas chooser web app' } },
+      '/canvases': { get: { operationId: 'openCanvasChooserAlias', summary: 'Canvas chooser web app' } },
+      '/canvases/{canvasId}': { get: { operationId: 'openCanvas', summary: 'Editable canvas web app' } },
+      '/c/{shareToken}': { get: { operationId: 'openShareCanvas', summary: 'Read-only share canvas web app' } },
+      '/health': { get: { operationId: 'getHealth', summary: 'Health check' } },
+      '/whoami': { get: { operationId: 'getWhoami', summary: 'Service capabilities' } },
+      '/mcp': { post: { operationId: 'postMcp', summary: 'Stateless streamable HTTP MCP endpoint for AgentCanvas tools' } },
+      '/api/canvases': { get: { operationId: 'listCanvases', summary: 'List canvases' }, post: { operationId: 'createCanvas', summary: 'Create canvas' } },
+      '/api/canvases/{canvasId}': {
+        get: { operationId: 'getCanvas', summary: 'Get canvas' },
+        patch: { operationId: 'patchCanvasMetadataV1', summary: 'V1 metadata patch placeholder' }
+      },
+      '/api/canvases/{canvasId}/elements:batch': { post: { operationId: 'applyCanvasElementBatch', summary: 'Apply element operations' } },
+      '/api/assets/{project}/{assetId}/details': { get: { operationId: 'getAssetDetails', summary: 'Fetch normalized asset metadata, image generation provenance, and generation cost for UI display' } },
+      '/api/assets/{project}/{assetId}/content': { get: { operationId: 'getAssetContent', summary: 'Proxy asset bytes for same-origin GLB viewers and video elements' } },
+      '/api/assets/{project}/by-key/details': { get: { operationId: 'getAssetDetailsByKey', summary: 'Fetch normalized asset metadata by project-scoped assetKey query parameter' } },
+      '/api/assets/{project}/by-key/content': { get: { operationId: 'getAssetContentByKey', summary: 'Proxy asset bytes by project-scoped assetKey query parameter' } },
+      '/api/canvases/{canvasId}/share-links': { post: { operationId: 'createCanvasShareLink', summary: 'Create read-only share link' } },
+      '/api/share/{token}': { get: { operationId: 'resolveShareLink', summary: 'Resolve a read-only share link token' } },
+      '/api/canvases/{canvasId}/viewport': {
+        get: { operationId: 'getCanvasViewport', summary: 'Get user and agent viewport state' },
+        post: { operationId: 'recordCanvasViewport', summary: 'Record browser/user viewport state' }
+      },
+      '/api/canvases/{canvasId}/viewport/focus': { post: { operationId: 'setCanvasViewportFocus', summary: 'Set agent-controlled viewport focus' } },
+      '/api/canvases/{canvasId}/screenshot': { post: { operationId: 'renderCanvasScreenshot', summary: 'Render a canvas screenshot SVG' } },
+      '/api/canvases/{canvasId}/screenshots/{filename}': { get: { operationId: 'getCanvasScreenshot', summary: 'Fetch a rendered canvas screenshot SVG' } }
     }
   }));
 
@@ -469,56 +553,32 @@ export function createApp(options: CreateAppOptions = {}) {
     return c.json({ ok: true, canvas: await projectAssetUrls(canvas, config), revision: canvas.revision, links: links(config, canvas.id), warnings, overlapWarnings });
   });
 
+  app.get('/api/assets/:project/by-key/details', async (c) => {
+    try {
+      return assetDetailsResponse(byKeyRefFromRequest(c.req.param('project'), c.req.query('assetKey')), config);
+    } catch (error) {
+      return c.json({ code: 'invalid_asset_key', message: error instanceof Error ? error.message : String(error) }, 400);
+    }
+  });
+
   app.get('/api/assets/:project/:assetId/details', async (c) => {
     const project = c.req.param('project');
     const assetId = c.req.param('assetId');
-    const ref = { type: 'asset' as const, project, assetId };
-    const assetResponse = await fetch(resolveAssetRecordUrl(ref, config.assetsBaseUrl));
-    if (!assetResponse.ok) {
-      return c.json({ code: 'asset_details_failed', message: `asset metadata fetch failed: ${assetResponse.status}` }, assetResponse.status as 400 | 404 | 500);
+    return assetDetailsResponse({ type: 'asset' as const, project, assetId }, config);
+  });
+
+  app.get('/api/assets/:project/by-key/content', async (c) => {
+    try {
+      return assetContentProxyResponse(byKeyRefFromRequest(c.req.param('project'), c.req.query('assetKey')), config);
+    } catch (error) {
+      return c.json({ code: 'invalid_asset_key', message: error instanceof Error ? error.message : String(error) }, 400);
     }
-    const asset = await assetResponse.json().catch(() => null) as Record<string, unknown> | null;
-    if (!asset || typeof asset !== 'object') {
-      return c.json({ code: 'asset_details_failed', message: 'asset metadata response was invalid' }, 502);
-    }
-    const preliminary = normalizeAssetDetails(asset, config);
-    const preliminaryAsset = isRecord(preliminary.asset) ? preliminary.asset : {};
-    if (typeof preliminaryAsset.width === 'number' && typeof preliminaryAsset.height === 'number') {
-      return c.json(preliminary);
-    }
-    const measuredDimensions = await fetchRasterDimensions(ref, asset, config).catch(() => null);
-    return c.json(normalizeAssetDetails(asset, config, measuredDimensions));
   });
 
   app.get('/api/assets/:project/:assetId/content', async (c) => {
     const project = c.req.param('project');
     const assetId = c.req.param('assetId');
-    const ref = { type: 'asset' as const, project, assetId };
-    const assetResponse = await fetch(resolveAssetRecordUrl(ref, config.assetsBaseUrl));
-    if (!assetResponse.ok) {
-      return c.json({ code: 'asset_proxy_failed', message: `asset metadata fetch failed: ${assetResponse.status}` }, assetResponse.status as 400 | 404 | 500);
-    }
-    const asset = await assetResponse.json().catch(() => null) as Record<string, unknown> | null;
-    if (!asset || typeof asset !== 'object') {
-      return c.json({ code: 'asset_proxy_failed', message: 'asset metadata response was invalid' }, 502);
-    }
-
-    const upstream = await fetch(resolveAssetContentUrl(ref, config.assetsBaseUrl));
-    if (!upstream.ok) {
-      return c.json({ code: 'asset_proxy_failed', message: `asset fetch failed: ${upstream.status}` }, upstream.status as 400 | 404 | 500);
-    }
-    if (!isAllowedProxyContent(asset, upstream.headers.get('content-type'))) {
-      await upstream.body?.cancel().catch(() => undefined);
-      return c.json({ code: 'unsupported_asset_type', message: 'only GLB/glTF, video, and safe raster image assets can be proxied through this endpoint' }, 415);
-    }
-    const headers = new Headers();
-    const contentType = upstream.headers.get('content-type') || fallbackContentTypeForAsset(asset);
-    const contentLength = upstream.headers.get('content-length');
-    headers.set('content-type', contentType);
-    if (contentLength) headers.set('content-length', contentLength);
-    headers.set('cache-control', 'private, max-age=60');
-    headers.set('x-content-type-options', 'nosniff');
-    return new Response(upstream.body, { status: upstream.status, headers });
+    return assetContentProxyResponse({ type: 'asset' as const, project, assetId }, config);
   });
 
   app.post('/api/canvases/:canvasId/share-links', async (c) => {
@@ -594,6 +654,7 @@ export function createApp(options: CreateAppOptions = {}) {
     return c.json({ ok: true, link: resolved.link, canvas: await projectAssetUrls(resolved.canvas, config), readOnly: true });
   });
 
+  app.get('/', (c) => c.html(appShell('AgentCanvas')));
   app.get('/canvases', (c) => c.html(appShell('AgentCanvas')));
   app.get('/canvases/:canvasId', (c) => c.html(appShell('AgentCanvas')));
   app.get('/c/:shareToken', (c) => c.html(appShell('AgentCanvas Share')));
@@ -631,6 +692,8 @@ export function createAgentCanvasServiceHandler(options: CreateAppOptions = {}):
 }
 
 async function main() {
+  const { loadAgentCanvasDotenv } = await import('./dotenv');
+  loadAgentCanvasDotenv();
   const config = loadConfig();
   const server = createServer(createAgentCanvasServiceHandler({ config }));
   server.listen(config.port, config.host, () => {
