@@ -12,11 +12,11 @@ interface AssetDetailsDialogProps {
 function isAssetContextImage(value: unknown): value is AssetDetailsContextImage {
   return Boolean(
     value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    (value as Record<string, unknown>).type === 'asset' &&
-    typeof (value as Record<string, unknown>).project === 'string' &&
-    typeof (value as Record<string, unknown>).assetId === 'string'
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      (value as Record<string, unknown>).type === 'asset' &&
+      typeof (value as Record<string, unknown>).project === 'string' &&
+      typeof (value as Record<string, unknown>).assetId === 'string'
   );
 }
 
@@ -85,7 +85,9 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
             <h2 id="asset-details-title">Asset details</h2>
             {asset?.filename && <p>{asset.filename}</p>}
           </div>
-          <button type="button" className="asset-details-close" aria-label="Close asset details" onClick={onClose}>×</button>
+          <button type="button" className="asset-details-close" aria-label="Close asset details" onClick={onClose}>
+            ×
+          </button>
         </header>
 
         {loading && <p className="asset-details-muted">Loading asset details…</p>}
@@ -142,7 +144,11 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
                         </figure>
                       );
                     }
-                    return <pre className="asset-details-context-text" key={index}>{formatJson(item)}</pre>;
+                    return (
+                      <pre className="asset-details-context-text" key={index}>
+                        {formatJson(item)}
+                      </pre>
+                    );
                   })}
                 </div>
               ) : (
@@ -162,7 +168,9 @@ export function AssetDetailsDialog({ open, loading, error, details, onClose }: A
                 <dt>Pricing source</dt>
                 <dd>{formatPricingSource(cost)}</dd>
               </dl>
-              {generation?.providerRequest && <pre className="asset-details-pre">{formatJson(generation.providerRequest)}</pre>}
+              {generation?.providerRequest && (
+                <pre className="asset-details-pre">{formatJson(generation.providerRequest)}</pre>
+              )}
             </details>
           </div>
         )}

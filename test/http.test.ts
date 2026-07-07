@@ -8,15 +8,16 @@ import { appShell, createAgentCanvasServiceHandler, createApp } from '../src/ser
 import { SqliteCanvasStore } from '../src/store/sqlite';
 
 describe('AgentCanvas HTTP API', () => {
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-
   it('uses the built Vite app shell when dist/web/index.html exists', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-canvas-web-'));
-    fs.writeFileSync(path.join(dir, 'index.html'), '<!doctype html><div id="root"></div><script type="module" src="/assets/app.js"></script>');
+    fs.writeFileSync(
+      path.join(dir, 'index.html'),
+      '<!doctype html><div id="root"></div><script type="module" src="/assets/app.js"></script>'
+    );
     expect(appShell('AgentCanvas', dir)).toContain('/assets/app.js');
   });
 
@@ -34,8 +35,18 @@ describe('AgentCanvas HTTP API', () => {
 
     const whoami = await app.request('/whoami');
     const body = await whoami.json();
-    expect(body.capabilities).toMatchObject({ markdown: true, sqlite: true, dedicated_mcp: true, glb_viewers: true, bbox_overlays: true });
-    expect(body.mcp).toMatchObject({ endpoint: 'http://127.0.0.1:23003/mcp', transport: 'streamable-http', stdioCompatible: true });
+    expect(body.capabilities).toMatchObject({
+      markdown: true,
+      sqlite: true,
+      dedicated_mcp: true,
+      glb_viewers: true,
+      bbox_overlays: true
+    });
+    expect(body.mcp).toMatchObject({
+      endpoint: 'http://127.0.0.1:23003/mcp',
+      transport: 'streamable-http',
+      stdioCompatible: true
+    });
     expect(body.port).toBe(23003);
   });
 
@@ -82,7 +93,7 @@ describe('AgentCanvas HTTP API', () => {
       expect(called.result.content[0].type).toBe('text');
       expect(JSON.parse(called.result.content[0].text)).toMatchObject({ ok: true, canvases: [] });
     } finally {
-      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
     }
   });
 
@@ -99,24 +110,42 @@ describe('AgentCanvas HTTP API', () => {
     await app.request(`/api/canvases/${canvasId}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [
-        { op: 'upsertElement', element: { id: 'base', type: 'text', x: 0, y: 0, width: 100, height: 100, text: 'Base' } }
-      ] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: { id: 'base', type: 'text', x: 0, y: 0, width: 100, height: 100, text: 'Base' }
+          }
+        ]
+      })
     });
 
     const response = await app.request(`/api/canvases/${canvasId}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [
-        { op: 'upsertElement', element: { id: 'overlap', type: 'text', x: 50, y: 25, width: 200, height: 100, text: 'Overlap' } }
-      ] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: { id: 'overlap', type: 'text', x: 50, y: 25, width: 200, height: 100, text: 'Overlap' }
+          }
+        ]
+      })
     });
 
     expect(response.status).toBe(200);
     const updated = await response.json();
     expect(updated.warnings).toHaveLength(1);
     expect(updated.warnings[0]).toContain('18.75% of "overlap"');
-    expect(updated.overlapWarnings).toMatchObject([{ code: 'element_overlap', elementId: 'overlap', overlapPercent: 18.75, overlapArea: 3750, overlaps: [{ elementId: 'base', overlapPercent: 18.75, intersectionArea: 3750 }] }]);
+    expect(updated.overlapWarnings).toMatchObject([
+      {
+        code: 'element_overlap',
+        elementId: 'overlap',
+        overlapPercent: 18.75,
+        overlapArea: 3750,
+        overlaps: [{ elementId: 'base', overlapPercent: 18.75, intersectionArea: 3750 }]
+      }
+    ]);
   });
 
   it('creates canvases, adds markdown/assets, and returns share links', async () => {
@@ -133,10 +162,21 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [
-        { op: 'upsertElement', element: { id: 'md', type: 'markdown', x: 10, y: 10, markdown: '## Hello' } },
-        { op: 'upsertElement', element: { id: 'asset', type: 'asset', x: 50, y: 50, assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000000' } } }
-      ] })
+      body: JSON.stringify({
+        operations: [
+          { op: 'upsertElement', element: { id: 'md', type: 'markdown', x: 10, y: 10, markdown: '## Hello' } },
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'asset',
+              type: 'asset',
+              x: 50,
+              y: 50,
+              assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000000' }
+            }
+          }
+        ]
+      })
     });
     expect(batch.status).toBe(200);
     const updated = await batch.json();
@@ -155,22 +195,26 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [{
-        op: 'upsertElement',
-        element: {
-          id: 'bbox_1',
-          type: 'bboxOverlay',
-          x: 120,
-          y: 140,
-          width: 512,
-          height: 768,
-          canvasWidth: 1024,
-          canvasHeight: 1536,
-          imageAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000777' },
-          caption: 'Character bboxes',
-          boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' }]
-        }
-      }] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'bbox_1',
+              type: 'bboxOverlay',
+              x: 120,
+              y: 140,
+              width: 512,
+              height: 768,
+              canvasWidth: 1024,
+              canvasHeight: 1536,
+              imageAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000777' },
+              caption: 'Character bboxes',
+              boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' }]
+            }
+          }
+        ]
+      })
     });
 
     expect(batch.status).toBe(200);
@@ -185,17 +229,23 @@ describe('AgentCanvas HTTP API', () => {
   });
 
   it('hydrates bbox overlay nodes from a bbox layout asset instead of inline canvas data', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000888/content');
-      return new Response(JSON.stringify({
-        schema: 'bbox-layout/v1',
-        canvasWidth: 2932,
-        canvasHeight: 4096,
-        caption: 'Asset-backed layout',
-        background: '#fafaf9',
-        boxes: [{ id: 'title', x: 240, y: 2528, width: 2464, height: 224, label: 'CARD NAME' }]
-      }), { headers: { 'content-type': 'application/json' } });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000888/content');
+        return new Response(
+          JSON.stringify({
+            schema: 'bbox-layout/v1',
+            canvasWidth: 2932,
+            canvasHeight: 4096,
+            caption: 'Asset-backed layout',
+            background: '#fafaf9',
+            boxes: [{ id: 'title', x: 240, y: 2528, width: 2464, height: 224, label: 'CARD NAME' }]
+          }),
+          { headers: { 'content-type': 'application/json' } }
+        );
+      })
+    );
 
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
     const created = await app.request('/api/canvases', {
@@ -208,18 +258,22 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [{
-        op: 'upsertElement',
-        element: {
-          id: 'bbox_1',
-          type: 'bboxOverlay',
-          x: 120,
-          y: 140,
-          width: 512,
-          height: 768,
-          layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000888' }
-        }
-      }] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'bbox_1',
+              type: 'bboxOverlay',
+              x: 120,
+              y: 140,
+              width: 512,
+              height: 768,
+              layoutAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000888' }
+            }
+          }
+        ]
+      })
     });
 
     expect(batch.status).toBe(200);
@@ -248,21 +302,31 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [{
-        op: 'upsertElement',
-        element: {
-          id: 'path_1',
-          type: 'pathOverlay',
-          x: 120,
-          y: 140,
-          width: 512,
-          height: 768,
-          canvasWidth: 2932,
-          canvasHeight: 4096,
-          caption: 'Card name path',
-          paths: [{ id: 'name_panel', d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z', label: 'CARD NAME' }]
-        }
-      }] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'path_1',
+              type: 'pathOverlay',
+              x: 120,
+              y: 140,
+              width: 512,
+              height: 768,
+              canvasWidth: 2932,
+              canvasHeight: 4096,
+              caption: 'Card name path',
+              paths: [
+                {
+                  id: 'name_panel',
+                  d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+                  label: 'CARD NAME'
+                }
+              ]
+            }
+          }
+        ]
+      })
     });
 
     expect(batch.status).toBe(200);
@@ -288,19 +352,23 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [{
-        op: 'upsertElement',
-        element: {
-          id: 'glb_1',
-          type: 'glbViewer',
-          x: 120,
-          y: 140,
-          width: 320,
-          height: 240,
-          assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
-          caption: 'single.glb'
-        }
-      }] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'glb_1',
+              type: 'glbViewer',
+              x: 120,
+              y: 140,
+              width: 320,
+              height: 240,
+              assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
+              caption: 'single.glb'
+            }
+          }
+        ]
+      })
     });
 
     expect(batch.status).toBe(200);
@@ -323,19 +391,23 @@ describe('AgentCanvas HTTP API', () => {
     const batch = await app.request(`/api/canvases/${canvas.canvas.id}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [{
-        op: 'upsertElement',
-        element: {
-          id: 'glb_key_1',
-          type: 'glbViewer',
-          x: 120,
-          y: 140,
-          width: 320,
-          height: 240,
-          assetRef: { type: 'asset', project: 'demo', assetKey: 'models/glb/chair-v1' },
-          caption: 'chair.glb'
-        }
-      }] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'glb_key_1',
+              type: 'glbViewer',
+              x: 120,
+              y: 140,
+              width: 320,
+              height: 240,
+              assetRef: { type: 'asset', project: 'demo', assetKey: 'models/glb/chair-v1' },
+              caption: 'chair.glb'
+            }
+          }
+        ]
+      })
     });
 
     expect(batch.status).toBe(200);
@@ -416,16 +488,19 @@ describe('AgentCanvas HTTP API', () => {
   });
 
   it('rejects active upstream content even when asset metadata declares a safe image type', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (url.endsWith('/content')) {
-        return new Response('<svg><script>alert(1)</script></svg>', {
-          headers: { 'content-type': 'image/svg+xml' }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/content')) {
+          return new Response('<svg><script>alert(1)</script></svg>', {
+            headers: { 'content-type': 'image/svg+xml' }
+          });
+        }
+        return new Response(JSON.stringify({ filename: 'preview.png', content_type: 'image/png' }), {
+          headers: { 'content-type': 'application/json' }
         });
-      }
-      return new Response(JSON.stringify({ filename: 'preview.png', content_type: 'image/png' }), {
-        headers: { 'content-type': 'application/json' }
-      });
-    }));
+      })
+    );
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
 
     const response = await app.request('/api/assets/demo/00000000-0000-4000-8000-000000000125/content');
@@ -435,16 +510,19 @@ describe('AgentCanvas HTTP API', () => {
   });
 
   it('rejects active image content from the same-origin asset proxy', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (url.endsWith('/content')) {
-        return new Response('<svg><script>alert(1)</script></svg>', {
-          headers: { 'content-type': 'image/svg+xml' }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/content')) {
+          return new Response('<svg><script>alert(1)</script></svg>', {
+            headers: { 'content-type': 'image/svg+xml' }
+          });
+        }
+        return new Response(JSON.stringify({ filename: 'xss.svg', content_type: 'image/svg+xml' }), {
+          headers: { 'content-type': 'application/json' }
         });
-      }
-      return new Response(JSON.stringify({ filename: 'xss.svg', content_type: 'image/svg+xml' }), {
-        headers: { 'content-type': 'application/json' }
-      });
-    }));
+      })
+    );
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
 
     const response = await app.request('/api/assets/demo/00000000-0000-4000-8000-000000000123/content');
@@ -458,41 +536,44 @@ describe('AgentCanvas HTTP API', () => {
     const contextId = '00000000-0000-4000-8000-000000000456';
     const fetchMock = vi.fn(async (url: string) => {
       expect(url).toBe(`http://127.0.0.1:23000/projects/demo/assets/${assetId}`);
-      return new Response(JSON.stringify({
-        id: assetId,
-        project: 'demo',
-        filename: 'image-1.png',
-        content_type: 'image/png',
-        size_bytes: 1234,
-        content_sha256: 'abc123',
-        created_at: '2026-06-13T11:30:52.000Z',
-        updated_at: '2026-06-13T11:31:00.000Z',
-        metadata: {
-          title: 'Generated image',
-          kind: 'image',
-          cost: {
-            currency: 'USD',
-            amount: 0.006,
-            estimated: true,
-            pricingSource: 'pricing-catalog',
-            pricingVersion: '2026-06-19'
-          },
-          generation: {
-            service: 'RouterImage-2',
-            tool: 'image_generate_asset',
-            provider: 'openai',
-            model: 'gpt-image-2',
-            requestId: 'req_1',
-            imageIndex: 1,
-            generatedAt: '2026-06-13T11:30:53.000Z',
-            settings: { quality: 'low', size: { width: 1024, height: 1536 }, controls: { style: 'storybook' } },
-            prompt: 'Draw a card.',
-            jsonPrompt: { text: 'Draw a card.', localPath: 'C:/private-user/secret.png', apiKey: 'must-not-leak' },
-            contextImages: [{ type: 'asset', project: 'demo', assetId: contextId }],
-            providerRequest: { model: 'gpt-image-2', quality: 'low', apiKey: 'must-not-leak' }
+      return new Response(
+        JSON.stringify({
+          id: assetId,
+          project: 'demo',
+          filename: 'image-1.png',
+          content_type: 'image/png',
+          size_bytes: 1234,
+          content_sha256: 'abc123',
+          created_at: '2026-06-13T11:30:52.000Z',
+          updated_at: '2026-06-13T11:31:00.000Z',
+          metadata: {
+            title: 'Generated image',
+            kind: 'image',
+            cost: {
+              currency: 'USD',
+              amount: 0.006,
+              estimated: true,
+              pricingSource: 'pricing-catalog',
+              pricingVersion: '2026-06-19'
+            },
+            generation: {
+              service: 'RouterImage-2',
+              tool: 'image_generate_asset',
+              provider: 'openai',
+              model: 'gpt-image-2',
+              requestId: 'req_1',
+              imageIndex: 1,
+              generatedAt: '2026-06-13T11:30:53.000Z',
+              settings: { quality: 'low', size: { width: 1024, height: 1536 }, controls: { style: 'storybook' } },
+              prompt: 'Draw a card.',
+              jsonPrompt: { text: 'Draw a card.', localPath: 'C:/private-user/secret.png', apiKey: 'must-not-leak' },
+              contextImages: [{ type: 'asset', project: 'demo', assetId: contextId }],
+              providerRequest: { model: 'gpt-image-2', quality: 'low', apiKey: 'must-not-leak' }
+            }
           }
-        }
-      }), { headers: { 'content-type': 'application/json' } });
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      );
     });
     vi.stubGlobal('fetch', fetchMock);
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
@@ -526,7 +607,9 @@ describe('AgentCanvas HTTP API', () => {
         quality: 'low',
         prompt: 'Draw a card.',
         jsonPrompt: { text: 'Draw a card.', localPath: '[redacted]' },
-        contextImages: [{ type: 'asset', project: 'demo', assetId: contextId, resolvedUrl: `/api/assets/demo/${contextId}/content` }],
+        contextImages: [
+          { type: 'asset', project: 'demo', assetId: contextId, resolvedUrl: `/api/assets/demo/${contextId}/content` }
+        ],
         controls: { style: 'storybook' },
         providerRequest: { model: 'gpt-image-2', quality: 'low' },
         requestId: 'req_1',
@@ -542,17 +625,20 @@ describe('AgentCanvas HTTP API', () => {
   it('returns normalized asset details by project-scoped assetKey', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       expect(url).toBe('http://127.0.0.1:23000/projects/demo/assets/by-key/images/generated/card-v1');
-      return new Response(JSON.stringify({
-        id: '00000000-0000-4000-8000-000000000321',
-        asset_key: 'images/generated/card-v1',
-        project: 'demo',
-        filename: 'card.png',
-        content_type: 'image/png',
-        size_bytes: 1234,
-        image_width_px: 720,
-        image_height_px: 960,
-        metadata: { title: 'Generated card', kind: 'image' }
-      }), { headers: { 'content-type': 'application/json' } });
+      return new Response(
+        JSON.stringify({
+          id: '00000000-0000-4000-8000-000000000321',
+          asset_key: 'images/generated/card-v1',
+          project: 'demo',
+          filename: 'card.png',
+          content_type: 'image/png',
+          size_bytes: 1234,
+          image_width_px: 720,
+          image_height_px: 960,
+          metadata: { title: 'Generated card', kind: 'image' }
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      );
     });
     vi.stubGlobal('fetch', fetchMock);
     const app = createApp({ store: new SqliteCanvasStore(':memory:') });
@@ -577,17 +663,20 @@ describe('AgentCanvas HTTP API', () => {
     view.setUint32(20, 316, false);
     const fetchMock = vi.fn(async (url: string) => {
       if (url === `http://127.0.0.1:23000/projects/demo/assets/${assetId}`) {
-        return new Response(JSON.stringify({
-          id: assetId,
-          project: 'demo',
-          filename: 'upload.png',
-          content_type: 'image/png',
-          size_bytes: 99,
-          content_sha256: 'def456',
-          created_at: '2026-06-13T11:30:52.000Z',
-          updated_at: '2026-06-13T11:31:00.000Z',
-          metadata: { title: 'Uploaded image', kind: 'image' }
-        }), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            id: assetId,
+            project: 'demo',
+            filename: 'upload.png',
+            content_type: 'image/png',
+            size_bytes: 99,
+            content_sha256: 'def456',
+            created_at: '2026-06-13T11:30:52.000Z',
+            updated_at: '2026-06-13T11:31:00.000Z',
+            metadata: { title: 'Uploaded image', kind: 'image' }
+          }),
+          { headers: { 'content-type': 'application/json' } }
+        );
       }
       if (url === `http://127.0.0.1:23000/projects/demo/assets/${assetId}/content`) {
         return new Response(png, { headers: { 'content-type': 'image/png' } });
@@ -630,7 +719,11 @@ describe('AgentCanvas HTTP API', () => {
 
     const initial = await app.request(`/api/canvases/${canvasId}/viewport`);
     expect(initial.status).toBe(200);
-    expect(await initial.json()).toMatchObject({ ok: true, userViewport: { centerX: 0, centerY: 0, zoom: 1, width: 1920, height: 900, source: 'default' }, agentViewport: null });
+    expect(await initial.json()).toMatchObject({
+      ok: true,
+      userViewport: { centerX: 0, centerY: 0, zoom: 1, width: 1920, height: 900, source: 'default' },
+      agentViewport: null
+    });
 
     const saved = await app.request(`/api/canvases/${canvasId}/viewport`, {
       method: 'POST',
@@ -638,7 +731,10 @@ describe('AgentCanvas HTTP API', () => {
       body: JSON.stringify({ source: 'user', centerX: -300, centerY: 250, zoom: 1.25, width: 1600, height: 900 })
     });
     expect(saved.status).toBe(200);
-    expect(await saved.json()).toMatchObject({ ok: true, viewport: { source: 'user', centerX: -300, centerY: 250, zoom: 1.25 } });
+    expect(await saved.json()).toMatchObject({
+      ok: true,
+      viewport: { source: 'user', centerX: -300, centerY: 250, zoom: 1.25 }
+    });
 
     const focused = await app.request(`/api/canvases/${canvasId}/viewport/focus`, {
       method: 'POST',
@@ -646,7 +742,10 @@ describe('AgentCanvas HTTP API', () => {
       body: JSON.stringify({ centerX: 1000, centerY: -500, zoom: 0.8 })
     });
     expect(focused.status).toBe(200);
-    expect(await focused.json()).toMatchObject({ ok: true, viewport: { source: 'agent', centerX: 1000, centerY: -500, zoom: 0.8, width: 1920, height: 900 } });
+    expect(await focused.json()).toMatchObject({
+      ok: true,
+      viewport: { source: 'agent', centerX: 1000, centerY: -500, zoom: 0.8, width: 1920, height: 900 }
+    });
   });
 
   it('renders a canvas screenshot SVG with optional visible node id overlays', async () => {
@@ -662,10 +761,26 @@ describe('AgentCanvas HTTP API', () => {
     await app.request(`/api/canvases/${canvasId}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ operations: [
-        { op: 'upsertElement', element: { id: 'person_card', type: 'markdown', x: 10, y: 20, width: 260, height: 140, markdown: '## Family Hero\n\n- Charm 92' } },
-        { op: 'upsertElement', element: { id: 'note_1', type: 'text', x: 320, y: 20, width: 180, height: 80, text: 'Proof gate' } }
-      ] })
+      body: JSON.stringify({
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'person_card',
+              type: 'markdown',
+              x: 10,
+              y: 20,
+              width: 260,
+              height: 140,
+              markdown: '## Family Hero\n\n- Charm 92'
+            }
+          },
+          {
+            op: 'upsertElement',
+            element: { id: 'note_1', type: 'text', x: 320, y: 20, width: 180, height: 80, text: 'Proof gate' }
+          }
+        ]
+      })
     });
 
     const response = await app.request(`/api/canvases/${canvasId}/screenshot`, {
@@ -676,8 +791,14 @@ describe('AgentCanvas HTTP API', () => {
 
     expect(response.status).toBe(200);
     const screenshot = await response.json();
-    expect(screenshot).toMatchObject({ ok: true, screenshot: { format: 'svg', mimeType: 'image/svg+xml', overlayNodeIds: true } });
-    const svg = Buffer.from(String(screenshot.screenshot.dataUrl).replace(/^data:image\/svg\+xml;base64,/, ''), 'base64').toString('utf-8');
+    expect(screenshot).toMatchObject({
+      ok: true,
+      screenshot: { format: 'svg', mimeType: 'image/svg+xml', overlayNodeIds: true }
+    });
+    const svg = Buffer.from(
+      String(screenshot.screenshot.dataUrl).replace(/^data:image\/svg\+xml;base64,/, ''),
+      'base64'
+    ).toString('utf-8');
     expect(svg).toContain('Family Hero');
     expect(svg).toContain('person_card');
     expect(svg).toContain('note_1');

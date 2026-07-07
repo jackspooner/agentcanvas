@@ -18,13 +18,15 @@ describe('canvas contracts and validation', () => {
   });
 
   it('rejects overlong markdown elements', () => {
-    expect(() => normalizeCanvasElement({
-      id: 'too-big',
-      type: 'markdown',
-      x: 0,
-      y: 0,
-      markdown: 'x'.repeat(20001)
-    })).toThrow(/markdown/i);
+    expect(() =>
+      normalizeCanvasElement({
+        id: 'too-big',
+        type: 'markdown',
+        x: 0,
+        y: 0,
+        markdown: 'x'.repeat(20001)
+      })
+    ).toThrow(/markdown/i);
   });
 
   it('rejects local paths as asset refs', () => {
@@ -84,7 +86,20 @@ describe('canvas contracts and validation', () => {
       },
       caption: 'Character bbox contract',
       showLabels: true,
-      boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title', color: '#d81b60', labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 }]
+      boxes: [
+        {
+          id: 'title',
+          x: 105,
+          y: 960,
+          width: 814,
+          height: 72,
+          label: 'Title',
+          color: '#d81b60',
+          labelAlign: 'center',
+          labelVerticalAlign: 'middle',
+          labelPadding: 12
+        }
+      ]
     });
 
     expect(element.type).toBe('bboxOverlay');
@@ -93,7 +108,16 @@ describe('canvas contracts and validation', () => {
     expect(element.canvasHeight).toBe(1536);
     expect(element.imageAssetRef?.assetId).toBe('00000000-0000-4000-8000-000000000456');
     expect(element.boxes).toBeDefined();
-    expect(element.boxes?.[0]).toMatchObject({ id: 'title', x: 105, y: 960, width: 814, height: 72, labelAlign: 'center', labelVerticalAlign: 'middle', labelPadding: 12 });
+    expect(element.boxes?.[0]).toMatchObject({
+      id: 'title',
+      x: 105,
+      y: 960,
+      width: 814,
+      height: 72,
+      labelAlign: 'center',
+      labelVerticalAlign: 'middle',
+      labelPadding: 12
+    });
     expect(element.showLabels).toBe(true);
   });
 
@@ -134,14 +158,16 @@ describe('canvas contracts and validation', () => {
       canvasHeight: 4096,
       caption: 'Card name path overlay',
       background: '#fafaf9',
-      paths: [{
-        id: 'name_panel',
-        d: 'M 260 2700 Q 320 2520 520 2520 L 1200 2520 Q 1466 2460 1732 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
-        label: 'CARD NAME',
-        color: '#e11d48',
-        fill: '#e11d4822',
-        strokeWidth: 10
-      }]
+      paths: [
+        {
+          id: 'name_panel',
+          d: 'M 260 2700 Q 320 2520 520 2520 L 1200 2520 Q 1466 2460 1732 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+          label: 'CARD NAME',
+          color: '#e11d48',
+          fill: '#e11d4822',
+          strokeWidth: 10
+        }
+      ]
     });
 
     expect(element.type).toBe('pathOverlay');

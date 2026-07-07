@@ -1,4 +1,11 @@
-import type { BBoxOverlayElement, CanvasElement, CanvasRecord, CanvasViewportInput, LineElement, PathOverlayElement } from './contracts';
+import type {
+  BBoxOverlayElement,
+  CanvasElement,
+  CanvasRecord,
+  CanvasViewportInput,
+  LineElement,
+  PathOverlayElement
+} from './contracts';
 import { elementHeight, elementWidth } from './geometry';
 
 export interface CanvasScreenshotOptions {
@@ -58,12 +65,17 @@ function anchorPoint(el: CanvasElement, anchor: string | null | undefined = 'cen
   const w = elementWidth(el);
   const h = elementHeight(el);
   switch (anchor) {
-    case 'top': return { x: el.x + w / 2, y: el.y };
-    case 'right': return { x: el.x + w, y: el.y + h / 2 };
-    case 'bottom': return { x: el.x + w / 2, y: el.y + h };
-    case 'left': return { x: el.x, y: el.y + h / 2 };
+    case 'top':
+      return { x: el.x + w / 2, y: el.y };
+    case 'right':
+      return { x: el.x + w, y: el.y + h / 2 };
+    case 'bottom':
+      return { x: el.x + w / 2, y: el.y + h };
+    case 'left':
+      return { x: el.x, y: el.y + h / 2 };
     case 'center':
-    default: return { x: el.x + w / 2, y: el.y + h / 2 };
+    default:
+      return { x: el.x + w / 2, y: el.y + h / 2 };
   }
 }
 
@@ -73,9 +85,13 @@ function endpointPoint(canvas: CanvasRecord, endpoint: LineElement['from']): { x
   return { x: finiteNumber(endpoint.x, 0), y: finiteNumber(endpoint.y, 0) };
 }
 
-function computeFullViewBox(canvas: CanvasRecord, padding: number): { x: number; y: number; width: number; height: number } {
+function computeFullViewBox(
+  canvas: CanvasRecord,
+  padding: number
+): { x: number; y: number; width: number; height: number } {
   const cards = cardElements(canvas);
-  if (cards.length === 0) return { x: -padding, y: -padding, width: canvas.width + padding * 2, height: canvas.height + padding * 2 };
+  if (cards.length === 0)
+    return { x: -padding, y: -padding, width: canvas.width + padding * 2, height: canvas.height + padding * 2 };
 
   let minX = Infinity;
   let minY = Infinity;
@@ -95,7 +111,12 @@ function computeFullViewBox(canvas: CanvasRecord, padding: number): { x: number;
   };
 }
 
-function computeViewportViewBox(options: CanvasScreenshotOptions): { x: number; y: number; width: number; height: number } {
+function computeViewportViewBox(options: CanvasScreenshotOptions): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   const width = finiteNumber(options.width, DEFAULT_WIDTH);
   const height = finiteNumber(options.height, DEFAULT_HEIGHT);
   const zoom = clamp(finiteNumber(options.zoom, 1), 0.05, 8);
@@ -136,10 +157,7 @@ function wrapText(text: string, maxChars: number): string[] {
 function textLinesForElement(el: CanvasElement): string[] {
   if (el.type === 'text') return String(el.text).split('\n');
   if (el.type === 'markdown') {
-    return el.markdown
-      .split('\n')
-      .map(stripMarkdownLine)
-      .filter(Boolean);
+    return el.markdown.split('\n').map(stripMarkdownLine).filter(Boolean);
   }
   if (el.type === 'table') {
     return [el.caption ?? '', el.columns.join(' | '), ...el.rows.map((row) => row.join(' | '))].filter(Boolean);
@@ -172,27 +190,35 @@ function renderBBoxOverlayCard(el: BBoxOverlayElement): string {
   const sy = h / el.canvasHeight;
   const label = escapeXml(el.caption ?? el.alt ?? el.id);
   const background = escapeXml(el.background ?? '#f8fafc');
-  const boxes = el.boxes.map((box, index) => {
-    const color = escapeXml(box.color ?? overlayAccent(index));
-    const x = el.x + box.x * sx;
-    const y = el.y + box.y * sy;
-    const bw = box.width * sx;
-    const bh = box.height * sy;
-    const text = escapeXml(box.label ?? box.id);
-    const align = box.labelAlign ?? 'left';
-    const verticalAlign = box.labelVerticalAlign ?? 'top';
-    const padding = box.labelPadding ?? 8;
-    const scaledPaddingX = padding * sx;
-    const scaledPaddingY = padding * sy;
-    const textAnchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start';
-    const textX = align === 'center' ? x + bw / 2 : align === 'right' ? x + bw - scaledPaddingX : x + scaledPaddingX;
-    const dominantBaseline = verticalAlign === 'middle' ? 'middle' : verticalAlign === 'bottom' ? 'text-after-edge' : 'hanging';
-    const textY = verticalAlign === 'middle' ? y + bh / 2 : verticalAlign === 'bottom' ? y + bh - scaledPaddingY : y + scaledPaddingY;
-    return `<g>
+  const boxes = el.boxes
+    .map((box, index) => {
+      const color = escapeXml(box.color ?? overlayAccent(index));
+      const x = el.x + box.x * sx;
+      const y = el.y + box.y * sy;
+      const bw = box.width * sx;
+      const bh = box.height * sy;
+      const text = escapeXml(box.label ?? box.id);
+      const align = box.labelAlign ?? 'left';
+      const verticalAlign = box.labelVerticalAlign ?? 'top';
+      const padding = box.labelPadding ?? 8;
+      const scaledPaddingX = padding * sx;
+      const scaledPaddingY = padding * sy;
+      const textAnchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start';
+      const textX = align === 'center' ? x + bw / 2 : align === 'right' ? x + bw - scaledPaddingX : x + scaledPaddingX;
+      const dominantBaseline =
+        verticalAlign === 'middle' ? 'middle' : verticalAlign === 'bottom' ? 'text-after-edge' : 'hanging';
+      const textY =
+        verticalAlign === 'middle'
+          ? y + bh / 2
+          : verticalAlign === 'bottom'
+            ? y + bh - scaledPaddingY
+            : y + scaledPaddingY;
+      return `<g>
       <rect data-bbox-id="${escapeXml(box.id)}" x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${escapeXml(box.fill ?? `${color}22`)}" stroke="${color}" stroke-width="${box.strokeWidth ?? 2}" />
       ${el.showLabels === false ? '' : `<text x="${textX}" y="${textY}" text-anchor="${textAnchor}" dominant-baseline="${dominantBaseline}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="${color}" stroke="#ffffff" stroke-width="3" paint-order="stroke">${text}</text>`}
     </g>`;
-  }).join('\n');
+    })
+    .join('\n');
   return `<g data-node-id="${escapeXml(el.id)}">
     <rect x="${el.x}" y="${el.y}" width="${w}" height="${h}" rx="10" fill="${background}" stroke="#d0d7de" />
     ${el.imageAssetRef ? `<text x="${el.x + 14}" y="${el.y + 24}" font-family="Inter, Arial, sans-serif" font-size="13" fill="#64748b">image: ${escapeXml(el.imageAssetRef.project)}/${escapeXml(el.imageAssetRef.assetId)}</text>` : ''}
@@ -206,20 +232,27 @@ function renderPathOverlayCard(el: PathOverlayElement): string {
   const h = elementHeight(el);
   const label = escapeXml(el.caption ?? el.alt ?? el.id);
   const background = escapeXml(el.background ?? '#f8fafc');
-  const legend = el.showLabels === false ? '' : el.paths.map((path, index) => {
-    const color = escapeXml(path.color ?? overlayAccent(index));
-    const text = escapeXml(path.label ?? path.id);
-    const x = el.x + 14;
-    const y = el.y + h - 16 - (el.paths.length - index - 1) * 16;
-    return `<g data-legend-for="${escapeXml(path.id)}">
+  const legend =
+    el.showLabels === false
+      ? ''
+      : el.paths
+          .map((path, index) => {
+            const color = escapeXml(path.color ?? overlayAccent(index));
+            const text = escapeXml(path.label ?? path.id);
+            const x = el.x + 14;
+            const y = el.y + h - 16 - (el.paths.length - index - 1) * 16;
+            return `<g data-legend-for="${escapeXml(path.id)}">
       <circle cx="${x + 6}" cy="${y - 4}" r="5" fill="${color}" />
       <text x="${x + 18}" y="${y}" font-family="Inter, Arial, sans-serif" font-size="12" fill="#475569">${text}</text>
     </g>`;
-  }).join('\n');
-  const paths = el.paths.map((path, index) => {
-    const color = escapeXml(path.color ?? overlayAccent(index));
-    return `<path data-path-id="${escapeXml(path.id)}" d="${escapeXml(path.d)}" fill="${escapeXml(path.fill ?? 'transparent')}" stroke="${color}" stroke-width="${path.strokeWidth ?? 2}" stroke-linejoin="round" stroke-linecap="round" />`;
-  }).join('\n');
+          })
+          .join('\n');
+  const paths = el.paths
+    .map((path, index) => {
+      const color = escapeXml(path.color ?? overlayAccent(index));
+      return `<path data-path-id="${escapeXml(path.id)}" d="${escapeXml(path.d)}" fill="${escapeXml(path.fill ?? 'transparent')}" stroke="${color}" stroke-width="${path.strokeWidth ?? 2}" stroke-linejoin="round" stroke-linecap="round" />`;
+    })
+    .join('\n');
   const scaleX = w / el.canvasWidth;
   const scaleY = h / el.canvasHeight;
   return `<g data-node-id="${escapeXml(el.id)}">
@@ -244,13 +277,17 @@ function renderCard(el: CanvasElement): string {
   const bodySize = 13;
   const maxChars = Math.max(12, Math.floor(w / 7.2));
   const rawLines = textLinesForElement(el);
-  const lines = rawLines.flatMap((line, idx) => wrapText(line, idx === 0 ? Math.max(8, Math.floor(w / 10)) : maxChars)).slice(0, Math.max(3, Math.floor((h - 36) / 17)));
-  const body = lines.map((line, idx) => {
-    const y = el.y + 24 + idx * 17;
-    const size = idx === 0 && (el.type === 'markdown' || el.type === 'text') ? titleSize : bodySize;
-    const weight = idx === 0 ? 700 : 400;
-    return `<text x="${el.x + 14}" y="${y}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="#0f172a">${escapeXml(line)}</text>`;
-  }).join('\n');
+  const lines = rawLines
+    .flatMap((line, idx) => wrapText(line, idx === 0 ? Math.max(8, Math.floor(w / 10)) : maxChars))
+    .slice(0, Math.max(3, Math.floor((h - 36) / 17)));
+  const body = lines
+    .map((line, idx) => {
+      const y = el.y + 24 + idx * 17;
+      const size = idx === 0 && (el.type === 'markdown' || el.type === 'text') ? titleSize : bodySize;
+      const weight = idx === 0 ? 700 : 400;
+      return `<text x="${el.x + 14}" y="${y}" font-family="Inter, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="#0f172a">${escapeXml(line)}</text>`;
+    })
+    .join('\n');
 
   return `<g data-node-id="${escapeXml(el.id)}">
     <rect x="${el.x}" y="${el.y}" width="${w}" height="${h}" rx="${radius}" fill="${fill}" stroke="${stroke}" />
@@ -277,11 +314,16 @@ function renderNodeIdOverlay(el: CanvasElement): string {
   </g>`;
 }
 
-export function renderCanvasScreenshotSvg(canvas: CanvasRecord, options: CanvasScreenshotOptions = {}): RenderedCanvasScreenshot {
+export function renderCanvasScreenshotSvg(
+  canvas: CanvasRecord,
+  options: CanvasScreenshotOptions = {}
+): RenderedCanvasScreenshot {
   const width = Math.round(clamp(finiteNumber(options.width, DEFAULT_WIDTH), 320, 4096));
   const height = Math.round(clamp(finiteNumber(options.height, DEFAULT_HEIGHT), 240, 4096));
   const padding = finiteNumber(options.padding, DEFAULT_PADDING);
-  const viewBox = options.fullCanvas ? computeFullViewBox(canvas, padding) : computeViewportViewBox({ ...options, width, height });
+  const viewBox = options.fullCanvas
+    ? computeFullViewBox(canvas, padding)
+    : computeViewportViewBox({ ...options, width, height });
   const connectors = canvas.elements.filter((el): el is LineElement => el.type === 'line' || el.type === 'arrow');
   const cards = cardElements(canvas);
   const overlayNodeIds = Boolean(options.overlayNodeIds);
@@ -308,7 +350,9 @@ export function screenshotDataUrl(svg: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg, 'utf-8').toString('base64')}`;
 }
 
-export function coerceScreenshotOptions(input: Partial<CanvasScreenshotOptions & CanvasViewportInput> | null | undefined): CanvasScreenshotOptions {
+export function coerceScreenshotOptions(
+  input: Partial<CanvasScreenshotOptions & CanvasViewportInput> | null | undefined
+): CanvasScreenshotOptions {
   return {
     width: finiteNumber(input?.width, DEFAULT_WIDTH),
     height: finiteNumber(input?.height, DEFAULT_HEIGHT),

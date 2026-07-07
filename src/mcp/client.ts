@@ -185,9 +185,17 @@ function compactScreenshotResult(result: unknown, includeDataUrl: boolean | unde
 }
 
 export function createCanvasMcpHandlers(options: McpHandlerOptions = {}) {
-  const baseUrl = (options.baseUrl ?? process.env.AGENT_CANVAS_BASE_URL ?? 'http://127.0.0.1:23003').replace(/\/+$/, '');
+  const baseUrl = (options.baseUrl ?? process.env.AGENT_CANVAS_BASE_URL ?? 'http://127.0.0.1:23003').replace(
+    /\/+$/,
+    ''
+  );
   const fetchImpl = options.fetchImpl ?? fetch;
-  const post = (path: string, body: unknown) => fetchImpl(`${baseUrl}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(readJson);
+  const post = (path: string, body: unknown) =>
+    fetchImpl(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(readJson);
   const get = (path: string) => fetchImpl(`${baseUrl}${path}`).then(readJson);
   const postElementsBatch = async (canvasId: string, operations: JsonRecord[], mode: ResponseMode | undefined) => {
     const result = await post(`/api/canvases/${encodeURIComponent(canvasId)}/elements:batch`, { operations });
@@ -205,25 +213,437 @@ export function createCanvasMcpHandlers(options: McpHandlerOptions = {}) {
       const result = await get(`/api/canvases/${encodeURIComponent(input.canvasId)}`);
       return input.mode === 'full' ? result : compactCanvasResult(result, input);
     },
-    canvas_get_link: (input: { canvasId: string; label?: string }) => post(`/api/canvases/${encodeURIComponent(input.canvasId)}/share-links`, { mode: 'read', label: input.label }),
-    canvas_add_text: (input: { canvasId: string; id?: string; text: string; x: number; y: number; width?: number; height?: number; style?: unknown; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `text_${nanoid(8)}`, type: 'text', text: input.text, x: input.x, y: input.y, width: input.width, height: input.height, style: input.style } }], input.mode),
-    canvas_add_markdown: (input: { canvasId: string; id?: string; markdown: string; x: number; y: number; width?: number; height?: number; style?: unknown; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `markdown_${nanoid(8)}`, type: 'markdown', markdown: input.markdown, x: input.x, y: input.y, width: input.width, height: input.height, style: input.style } }], input.mode),
-    canvas_place_asset: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; fit?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `asset_${nanoid(8)}`, type: 'asset', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width, height: input.height, caption: input.caption, alt: input.alt, fit: input.fit } }], input.mode),
-    canvas_place_glb_viewer: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; cameraControls?: boolean; autoRotate?: boolean; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `glb_${nanoid(8)}`, type: 'glbViewer', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width ?? 320, height: input.height ?? 240, caption: input.caption, alt: input.alt, cameraControls: input.cameraControls, autoRotate: input.autoRotate } }], input.mode),
-    canvas_place_video: (input: { canvasId: string; id?: string; assetRef: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; controls?: boolean; autoplay?: boolean; loop?: boolean; muted?: boolean; posterAssetRef?: unknown; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `video_${nanoid(8)}`, type: 'video', assetRef: input.assetRef, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 270, caption: input.caption, alt: input.alt, controls: input.controls, autoplay: input.autoplay, loop: input.loop, muted: input.muted, posterAssetRef: input.posterAssetRef } }], input.mode),
-    canvas_add_bbox_overlay: (input: { canvasId: string; id?: string; imageAssetRef?: unknown; layoutAssetRef?: unknown; canvasWidth?: number; canvasHeight?: number; boxes?: unknown[]; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: cleanObject({ id: input.id ?? `bbox_${nanoid(8)}`, type: 'bboxOverlay', imageAssetRef: input.imageAssetRef, layoutAssetRef: input.layoutAssetRef, canvasWidth: input.canvasWidth, canvasHeight: input.canvasHeight, boxes: input.boxes, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background }) }], input.mode),
-    canvas_add_bbox_overlay_from_asset: (input: { canvasId: string; id?: string; layoutAssetRef: unknown; imageAssetRef?: unknown; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: cleanObject({ id: input.id ?? `bbox_${nanoid(8)}`, type: 'bboxOverlay', layoutAssetRef: input.layoutAssetRef, imageAssetRef: input.imageAssetRef, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background }) }], input.mode),
-    canvas_add_path_overlay: (input: { canvasId: string; id?: string; canvasWidth: number; canvasHeight: number; paths: unknown[]; x: number; y: number; width?: number; height?: number; caption?: string; alt?: string; showLabels?: boolean; background?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `path_${nanoid(8)}`, type: 'pathOverlay', canvasWidth: input.canvasWidth, canvasHeight: input.canvasHeight, paths: input.paths, x: input.x, y: input.y, width: input.width ?? 480, height: input.height ?? 320, caption: input.caption, alt: input.alt, showLabels: input.showLabels, background: input.background } }], input.mode),
-    canvas_add_line: (input: { canvasId: string; id?: string; from: unknown; to: unknown; stroke?: string; strokeWidth?: number; label?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `line_${nanoid(8)}`, type: 'line', x: 0, y: 0, from: input.from, to: input.to, stroke: input.stroke, strokeWidth: input.strokeWidth, label: input.label } }], input.mode),
-    canvas_add_arrow: (input: { canvasId: string; id?: string; from: unknown; to: unknown; stroke?: string; strokeWidth?: number; label?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `arrow_${nanoid(8)}`, type: 'arrow', x: 0, y: 0, from: input.from, to: input.to, stroke: input.stroke, strokeWidth: input.strokeWidth, label: input.label } }], input.mode),
-    canvas_add_table: (input: { canvasId: string; id?: string; columns: string[]; rows: string[][]; x: number; y: number; width?: number; height?: number; caption?: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'upsertElement', element: { id: input.id ?? `table_${nanoid(8)}`, type: 'table', columns: input.columns, rows: input.rows, x: input.x, y: input.y, width: input.width, height: input.height, caption: input.caption } }], input.mode),
-    canvas_update_element: (input: { canvasId: string; elementId: string; patch: Record<string, unknown>; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'patchElement', elementId: input.elementId, patch: input.patch }], input.mode),
-    canvas_delete_element: (input: { canvasId: string; elementId: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'deleteElement', elementId: input.elementId }], input.mode),
-    canvas_clear: (input: { canvasId: string; mode?: ResponseMode }) => postElementsBatch(input.canvasId, [{ op: 'clear' }], input.mode),
-    canvas_get_viewport: (input: { canvasId: string }) => get(`/api/canvases/${encodeURIComponent(input.canvasId)}/viewport`),
-    canvas_set_viewport: (input: { canvasId: string; centerX?: number; centerY?: number; zoom?: number; width?: number; height?: number }) => post(`/api/canvases/${encodeURIComponent(input.canvasId)}/viewport/focus`, { centerX: input.centerX, centerY: input.centerY, zoom: input.zoom, width: input.width, height: input.height }),
+    canvas_get_link: (input: { canvasId: string; label?: string }) =>
+      post(`/api/canvases/${encodeURIComponent(input.canvasId)}/share-links`, { mode: 'read', label: input.label }),
+    canvas_add_text: (input: {
+      canvasId: string;
+      id?: string;
+      text: string;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      style?: unknown;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `text_${nanoid(8)}`,
+              type: 'text',
+              text: input.text,
+              x: input.x,
+              y: input.y,
+              width: input.width,
+              height: input.height,
+              style: input.style
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_markdown: (input: {
+      canvasId: string;
+      id?: string;
+      markdown: string;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      style?: unknown;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `markdown_${nanoid(8)}`,
+              type: 'markdown',
+              markdown: input.markdown,
+              x: input.x,
+              y: input.y,
+              width: input.width,
+              height: input.height,
+              style: input.style
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_place_asset: (input: {
+      canvasId: string;
+      id?: string;
+      assetRef: unknown;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      fit?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `asset_${nanoid(8)}`,
+              type: 'asset',
+              assetRef: input.assetRef,
+              x: input.x,
+              y: input.y,
+              width: input.width,
+              height: input.height,
+              caption: input.caption,
+              alt: input.alt,
+              fit: input.fit
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_place_glb_viewer: (input: {
+      canvasId: string;
+      id?: string;
+      assetRef: unknown;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      cameraControls?: boolean;
+      autoRotate?: boolean;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `glb_${nanoid(8)}`,
+              type: 'glbViewer',
+              assetRef: input.assetRef,
+              x: input.x,
+              y: input.y,
+              width: input.width ?? 320,
+              height: input.height ?? 240,
+              caption: input.caption,
+              alt: input.alt,
+              cameraControls: input.cameraControls,
+              autoRotate: input.autoRotate
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_place_video: (input: {
+      canvasId: string;
+      id?: string;
+      assetRef: unknown;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      controls?: boolean;
+      autoplay?: boolean;
+      loop?: boolean;
+      muted?: boolean;
+      posterAssetRef?: unknown;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `video_${nanoid(8)}`,
+              type: 'video',
+              assetRef: input.assetRef,
+              x: input.x,
+              y: input.y,
+              width: input.width ?? 480,
+              height: input.height ?? 270,
+              caption: input.caption,
+              alt: input.alt,
+              controls: input.controls,
+              autoplay: input.autoplay,
+              loop: input.loop,
+              muted: input.muted,
+              posterAssetRef: input.posterAssetRef
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_bbox_overlay: (input: {
+      canvasId: string;
+      id?: string;
+      imageAssetRef?: unknown;
+      layoutAssetRef?: unknown;
+      canvasWidth?: number;
+      canvasHeight?: number;
+      boxes?: unknown[];
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      showLabels?: boolean;
+      background?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: cleanObject({
+              id: input.id ?? `bbox_${nanoid(8)}`,
+              type: 'bboxOverlay',
+              imageAssetRef: input.imageAssetRef,
+              layoutAssetRef: input.layoutAssetRef,
+              canvasWidth: input.canvasWidth,
+              canvasHeight: input.canvasHeight,
+              boxes: input.boxes,
+              x: input.x,
+              y: input.y,
+              width: input.width ?? 480,
+              height: input.height ?? 320,
+              caption: input.caption,
+              alt: input.alt,
+              showLabels: input.showLabels,
+              background: input.background
+            })
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_bbox_overlay_from_asset: (input: {
+      canvasId: string;
+      id?: string;
+      layoutAssetRef: unknown;
+      imageAssetRef?: unknown;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      showLabels?: boolean;
+      background?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: cleanObject({
+              id: input.id ?? `bbox_${nanoid(8)}`,
+              type: 'bboxOverlay',
+              layoutAssetRef: input.layoutAssetRef,
+              imageAssetRef: input.imageAssetRef,
+              x: input.x,
+              y: input.y,
+              width: input.width ?? 480,
+              height: input.height ?? 320,
+              caption: input.caption,
+              alt: input.alt,
+              showLabels: input.showLabels,
+              background: input.background
+            })
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_path_overlay: (input: {
+      canvasId: string;
+      id?: string;
+      canvasWidth: number;
+      canvasHeight: number;
+      paths: unknown[];
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      alt?: string;
+      showLabels?: boolean;
+      background?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `path_${nanoid(8)}`,
+              type: 'pathOverlay',
+              canvasWidth: input.canvasWidth,
+              canvasHeight: input.canvasHeight,
+              paths: input.paths,
+              x: input.x,
+              y: input.y,
+              width: input.width ?? 480,
+              height: input.height ?? 320,
+              caption: input.caption,
+              alt: input.alt,
+              showLabels: input.showLabels,
+              background: input.background
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_line: (input: {
+      canvasId: string;
+      id?: string;
+      from: unknown;
+      to: unknown;
+      stroke?: string;
+      strokeWidth?: number;
+      label?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `line_${nanoid(8)}`,
+              type: 'line',
+              x: 0,
+              y: 0,
+              from: input.from,
+              to: input.to,
+              stroke: input.stroke,
+              strokeWidth: input.strokeWidth,
+              label: input.label
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_arrow: (input: {
+      canvasId: string;
+      id?: string;
+      from: unknown;
+      to: unknown;
+      stroke?: string;
+      strokeWidth?: number;
+      label?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `arrow_${nanoid(8)}`,
+              type: 'arrow',
+              x: 0,
+              y: 0,
+              from: input.from,
+              to: input.to,
+              stroke: input.stroke,
+              strokeWidth: input.strokeWidth,
+              label: input.label
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_add_table: (input: {
+      canvasId: string;
+      id?: string;
+      columns: string[];
+      rows: string[][];
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      caption?: string;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [
+          {
+            op: 'upsertElement',
+            element: {
+              id: input.id ?? `table_${nanoid(8)}`,
+              type: 'table',
+              columns: input.columns,
+              rows: input.rows,
+              x: input.x,
+              y: input.y,
+              width: input.width,
+              height: input.height,
+              caption: input.caption
+            }
+          }
+        ],
+        input.mode
+      ),
+    canvas_update_element: (input: {
+      canvasId: string;
+      elementId: string;
+      patch: Record<string, unknown>;
+      mode?: ResponseMode;
+    }) =>
+      postElementsBatch(
+        input.canvasId,
+        [{ op: 'patchElement', elementId: input.elementId, patch: input.patch }],
+        input.mode
+      ),
+    canvas_delete_element: (input: { canvasId: string; elementId: string; mode?: ResponseMode }) =>
+      postElementsBatch(input.canvasId, [{ op: 'deleteElement', elementId: input.elementId }], input.mode),
+    canvas_clear: (input: { canvasId: string; mode?: ResponseMode }) =>
+      postElementsBatch(input.canvasId, [{ op: 'clear' }], input.mode),
+    canvas_get_viewport: (input: { canvasId: string }) =>
+      get(`/api/canvases/${encodeURIComponent(input.canvasId)}/viewport`),
+    canvas_set_viewport: (input: {
+      canvasId: string;
+      centerX?: number;
+      centerY?: number;
+      zoom?: number;
+      width?: number;
+      height?: number;
+    }) =>
+      post(`/api/canvases/${encodeURIComponent(input.canvasId)}/viewport/focus`, {
+        centerX: input.centerX,
+        centerY: input.centerY,
+        zoom: input.zoom,
+        width: input.width,
+        height: input.height
+      }),
     canvas_screenshot: async (input: ScreenshotInput) => {
-      const result = await post(`/api/canvases/${encodeURIComponent(input.canvasId)}/screenshot`, { width: input.width, height: input.height, centerX: input.centerX, centerY: input.centerY, zoom: input.zoom, fullCanvas: input.fullCanvas, overlayNodeIds: input.overlayNodeIds, padding: input.padding });
+      const result = await post(`/api/canvases/${encodeURIComponent(input.canvasId)}/screenshot`, {
+        width: input.width,
+        height: input.height,
+        centerX: input.centerX,
+        centerY: input.centerY,
+        zoom: input.zoom,
+        fullCanvas: input.fullCanvas,
+        overlayNodeIds: input.overlayNodeIds,
+        padding: input.padding
+      });
       return compactScreenshotResult(result, input.includeDataUrl);
     }
   };

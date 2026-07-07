@@ -110,7 +110,10 @@ export function changedElementIdsFromOperations(operations: unknown): string[] {
   return Array.from(new Set(ids));
 }
 
-export function computeOverlapWarnings(canvas: CanvasRecord, changedElementIds: string[]): CanvasElementOverlapWarning[] {
+export function computeOverlapWarnings(
+  canvas: CanvasRecord,
+  changedElementIds: string[]
+): CanvasElementOverlapWarning[] {
   if (changedElementIds.length === 0 || canvas.elements.length < 2) return [];
   const elementsById = new Map(canvas.elements.map((el) => [el.id, el]));
   const warnings: CanvasElementOverlapWarning[] = [];

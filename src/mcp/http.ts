@@ -10,11 +10,13 @@ export async function handleAgentCanvasMcpRequest(
 ) {
   if (request.method !== 'POST') {
     response.writeHead(405, { 'content-type': 'application/json', allow: 'POST' });
-    response.end(JSON.stringify({
-      jsonrpc: '2.0',
-      error: { code: -32000, message: 'Method not allowed' },
-      id: null
-    }));
+    response.end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Method not allowed' },
+        id: null
+      })
+    );
     return;
   }
 

@@ -1,4 +1,10 @@
-import type { AssetDetailsResponse, AssetReference, CanvasRecord, CanvasViewport, CanvasViewportState } from '../contracts';
+import type {
+  AssetDetailsResponse,
+  AssetReference,
+  CanvasRecord,
+  CanvasViewport,
+  CanvasViewportState
+} from '../contracts';
 
 export async function fetchCanvasList(limit = 200): Promise<CanvasRecord[]> {
   const response = await fetch(`/api/canvases?limit=${encodeURIComponent(String(limit))}`);
@@ -25,7 +31,20 @@ export async function fetchCanvasFromLocation(): Promise<{ canvas: CanvasRecord;
   }
   const response = await fetch('/api/canvases?limit=1');
   const body = await response.json();
-  return { canvas: body.canvases?.[0] ?? { id: 'empty', title: 'No canvases yet', createdBy: 'system', createdAt: '', updatedAt: '', width: 1600, height: 1000, elements: [], revision: 0 }, readOnly: true };
+  return {
+    canvas: body.canvases?.[0] ?? {
+      id: 'empty',
+      title: 'No canvases yet',
+      createdBy: 'system',
+      createdAt: '',
+      updatedAt: '',
+      width: 1600,
+      height: 1000,
+      elements: [],
+      revision: 0
+    },
+    readOnly: true
+  };
 }
 
 export async function fetchViewportState(canvasId: string): Promise<CanvasViewportState> {
@@ -50,7 +69,12 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
   });
 }
 
-export async function moveCanvasElement(canvasId: string, elementId: string, x: number, y: number): Promise<CanvasRecord> {
+export async function moveCanvasElement(
+  canvasId: string,
+  elementId: string,
+  x: number,
+  y: number
+): Promise<CanvasRecord> {
   const response = await fetch(`/api/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -77,7 +101,9 @@ export async function fetchAssetDetails(assetRef: AssetReference): Promise<Asset
 }
 
 function assetDetailsPath(assetRef: AssetReference): string {
-  if (assetRef.assetId) return `/api/assets/${encodeURIComponent(assetRef.project)}/${encodeURIComponent(assetRef.assetId)}/details`;
-  if (assetRef.assetKey) return `/api/assets/${encodeURIComponent(assetRef.project)}/by-key/details?assetKey=${encodeURIComponent(assetRef.assetKey)}`;
+  if (assetRef.assetId)
+    return `/api/assets/${encodeURIComponent(assetRef.project)}/${encodeURIComponent(assetRef.assetId)}/details`;
+  if (assetRef.assetKey)
+    return `/api/assets/${encodeURIComponent(assetRef.project)}/by-key/details?assetKey=${encodeURIComponent(assetRef.assetKey)}`;
   throw new Error('asset details require assetId or assetKey');
 }

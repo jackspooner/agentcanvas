@@ -11,7 +11,11 @@ export function MarkdownBlock({ markdown }: { markdown: string }) {
         rehypePlugins={[rehypeSanitize]}
         skipHtml
         components={{
-          a: ({ href, children }) => <a href={href} target="_blank" rel="noreferrer noopener">{children}</a>,
+          a: ({ href, children }) => (
+            <a href={href} target="_blank" rel="noreferrer noopener">
+              {children}
+            </a>
+          ),
           img: () => null
         }}
       >

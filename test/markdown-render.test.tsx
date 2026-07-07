@@ -14,7 +14,9 @@ describe('MarkdownBlock', () => {
   });
 
   it('does not render unsafe raw HTML from markdown', () => {
-    const { container } = render(<MarkdownBlock markdown={'<script>alert(1)</script><img src=x onerror=alert(1) />'} />);
+    const { container } = render(
+      <MarkdownBlock markdown={'<script>alert(1)</script><img src=x onerror=alert(1) />'} />
+    );
     expect(container.querySelector('script')).toBeNull();
     expect(container.querySelector('[onerror]')).toBeNull();
   });
@@ -35,17 +37,19 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'asset_1',
-        type: 'asset',
-        x: 10,
-        y: 10,
-        width: 200,
-        height: 120,
-        assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000001' },
-        resolvedUrl: 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000001/content',
-        caption: 'Missing image'
-      }]
+      elements: [
+        {
+          id: 'asset_1',
+          type: 'asset',
+          x: 10,
+          y: 10,
+          width: 200,
+          height: 120,
+          assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000001' },
+          resolvedUrl: 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000001/content',
+          caption: 'Missing image'
+        }
+      ]
     };
 
     render(<CanvasView canvas={canvas} readOnly />);
@@ -67,52 +71,64 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'asset_1',
-        type: 'asset',
-        x: 10,
-        y: 10,
-        width: 200,
-        height: 120,
-        assetRef: { type: 'asset', project: 'demo', assetId },
-        resolvedUrl: `/api/assets/demo/${assetId}/content`,
-        caption: 'Generated card'
-      }]
+      elements: [
+        {
+          id: 'asset_1',
+          type: 'asset',
+          x: 10,
+          y: 10,
+          width: 200,
+          height: 120,
+          assetRef: { type: 'asset', project: 'demo', assetId },
+          resolvedUrl: `/api/assets/demo/${assetId}/content`,
+          caption: 'Generated card'
+        }
+      ]
     };
     const fetchMock = vi.fn(async (url: string) => {
       expect(url).toBe(`/api/assets/demo/${assetId}/details`);
-      return new Response(JSON.stringify({
-        ok: true,
-        asset: {
-          project: 'demo',
-          assetId,
-          filename: 'image-1.png',
-          contentType: 'image/png',
-          width: 1024,
-          height: 1536,
-          createdAt: '2026-06-13T11:30:52.000Z'
-        },
-        generation: {
-          service: 'RouterImage-2',
-          provider: 'openai',
-          model: 'gpt-image-2',
-          quality: 'low',
-          prompt: 'Draw a premium card.',
-          contextImages: [{ type: 'asset', project: 'demo', assetId: contextId, resolvedUrl: `/api/assets/demo/${contextId}/content` }],
-          controls: { style: 'storybook' },
-          requestId: 'req_1',
-          imageIndex: 1,
-          generatedAt: '2026-06-13T11:30:53.000Z'
-        },
-        cost: {
-          currency: 'USD',
-          amount: 0.006,
-          estimated: true,
-          pricingSource: 'pricing-catalog',
-          pricingVersion: '2026-06-19'
-        },
-        warnings: []
-      }), { status: 200, headers: { 'content-type': 'application/json' } });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          asset: {
+            project: 'demo',
+            assetId,
+            filename: 'image-1.png',
+            contentType: 'image/png',
+            width: 1024,
+            height: 1536,
+            createdAt: '2026-06-13T11:30:52.000Z'
+          },
+          generation: {
+            service: 'RouterImage-2',
+            provider: 'openai',
+            model: 'gpt-image-2',
+            quality: 'low',
+            prompt: 'Draw a premium card.',
+            contextImages: [
+              {
+                type: 'asset',
+                project: 'demo',
+                assetId: contextId,
+                resolvedUrl: `/api/assets/demo/${contextId}/content`
+              }
+            ],
+            controls: { style: 'storybook' },
+            requestId: 'req_1',
+            imageIndex: 1,
+            generatedAt: '2026-06-13T11:30:53.000Z'
+          },
+          cost: {
+            currency: 'USD',
+            amount: 0.006,
+            estimated: true,
+            pricingSource: 'pricing-catalog',
+            pricingVersion: '2026-06-19'
+          },
+          warnings: []
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -144,20 +160,34 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'bbox_1',
-        type: 'bboxOverlay',
-        x: 10,
-        y: 10,
-        width: 512,
-        height: 768,
-        canvasWidth: 1024,
-        canvasHeight: 1536,
-        imageAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000777' },
-        imageResolvedUrl: '/api/assets/demo/00000000-0000-4000-8000-000000000777/content',
-        caption: 'Character bboxes',
-        boxes: [{ id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title', color: '#d81b60', labelAlign: 'center', labelVerticalAlign: 'middle' }]
-      }]
+      elements: [
+        {
+          id: 'bbox_1',
+          type: 'bboxOverlay',
+          x: 10,
+          y: 10,
+          width: 512,
+          height: 768,
+          canvasWidth: 1024,
+          canvasHeight: 1536,
+          imageAssetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000777' },
+          imageResolvedUrl: '/api/assets/demo/00000000-0000-4000-8000-000000000777/content',
+          caption: 'Character bboxes',
+          boxes: [
+            {
+              id: 'title',
+              x: 105,
+              y: 960,
+              width: 814,
+              height: 72,
+              label: 'Title',
+              color: '#d81b60',
+              labelAlign: 'center',
+              labelVerticalAlign: 'middle'
+            }
+          ]
+        }
+      ]
     };
 
     const { container } = render(<CanvasView canvas={canvas} readOnly />);
@@ -181,25 +211,29 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'path_1',
-        type: 'pathOverlay',
-        x: 10,
-        y: 10,
-        width: 512,
-        height: 768,
-        canvasWidth: 2932,
-        canvasHeight: 4096,
-        caption: 'Card name path',
-        paths: [{
-          id: 'name_panel',
-          d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
-          label: 'CARD NAME',
-          color: '#e11d48',
-          fill: '#e11d4822',
-          strokeWidth: 10
-        }]
-      }]
+      elements: [
+        {
+          id: 'path_1',
+          type: 'pathOverlay',
+          x: 10,
+          y: 10,
+          width: 512,
+          height: 768,
+          canvasWidth: 2932,
+          canvasHeight: 4096,
+          caption: 'Card name path',
+          paths: [
+            {
+              id: 'name_panel',
+              d: 'M 260 2700 Q 320 2520 520 2520 L 2412 2520 Q 2612 2520 2672 2700 Z',
+              label: 'CARD NAME',
+              color: '#e11d48',
+              fill: '#e11d4822',
+              strokeWidth: 10
+            }
+          ]
+        }
+      ]
     };
 
     const { container } = render(<CanvasView canvas={canvas} readOnly />);
@@ -221,25 +255,29 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'glb_1',
-        type: 'glbViewer',
-        x: 10,
-        y: 10,
-        width: 320,
-        height: 240,
-        assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
-        resolvedUrl: 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000123/content',
-        caption: 'Robot.glb',
-        cameraControls: true
-      }]
+      elements: [
+        {
+          id: 'glb_1',
+          type: 'glbViewer',
+          x: 10,
+          y: 10,
+          width: 320,
+          height: 240,
+          assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
+          resolvedUrl: 'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000123/content',
+          caption: 'Robot.glb',
+          cameraControls: true
+        }
+      ]
     };
 
     const { container } = render(<CanvasView canvas={canvas} readOnly />);
     const viewer = container.querySelector('model-viewer');
 
     expect(viewer).toBeTruthy();
-    expect(viewer?.getAttribute('src')).toBe('http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000123/content');
+    expect(viewer?.getAttribute('src')).toBe(
+      'http://127.0.0.1:23000/projects/demo/assets/00000000-0000-4000-8000-000000000123/content'
+    );
     expect(viewer?.getAttribute('camera-controls')).toBe('');
     expect(viewer?.getAttribute('interaction-prompt')).toBe('auto');
     expect(viewer?.getAttribute('interaction-prompt-style')).toBe('basic');
@@ -323,18 +361,20 @@ describe('CanvasView asset fallback', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'glb_1',
-        type: 'glbViewer',
-        x: 10,
-        y: 10,
-        width: 320,
-        height: 240,
-        assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
-        resolvedUrl: '/api/assets/demo/00000000-0000-4000-8000-000000000123/content',
-        caption: 'Robot.glb',
-        cameraControls: true
-      }]
+      elements: [
+        {
+          id: 'glb_1',
+          type: 'glbViewer',
+          x: 10,
+          y: 10,
+          width: 320,
+          height: 240,
+          assetRef: { type: 'asset', project: 'demo', assetId: '00000000-0000-4000-8000-000000000123' },
+          resolvedUrl: '/api/assets/demo/00000000-0000-4000-8000-000000000123/content',
+          caption: 'Robot.glb',
+          cameraControls: true
+        }
+      ]
     };
 
     const { container } = render(<CanvasView canvas={canvas} readOnly />);

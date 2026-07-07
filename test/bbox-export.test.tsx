@@ -34,9 +34,12 @@ describe('BBox overlay exports', () => {
 
   it('exports every bbox as a binary mask PNG inside a zip download', async () => {
     const fillRect = vi.fn();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({
-      fillRect
-    } as unknown as CanvasRenderingContext2D));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () =>
+        ({
+          fillRect
+        }) as unknown as CanvasRenderingContext2D
+    );
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function toBlob(callback) {
       callback(new Blob(['mask-png'], { type: 'image/png' }));
     });
@@ -55,21 +58,23 @@ describe('BBox overlay exports', () => {
       width: 800,
       height: 600,
       revision: 1,
-      elements: [{
-        id: 'bbox_1',
-        type: 'bboxOverlay',
-        x: 10,
-        y: 10,
-        width: 512,
-        height: 768,
-        canvasWidth: 1024,
-        canvasHeight: 1536,
-        caption: 'Character bboxes',
-        boxes: [
-          { id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' },
-          { id: 'stats', x: 112, y: 1060, width: 595, height: 48, label: 'Stats' }
-        ]
-      }]
+      elements: [
+        {
+          id: 'bbox_1',
+          type: 'bboxOverlay',
+          x: 10,
+          y: 10,
+          width: 512,
+          height: 768,
+          canvasWidth: 1024,
+          canvasHeight: 1536,
+          caption: 'Character bboxes',
+          boxes: [
+            { id: 'title', x: 105, y: 960, width: 814, height: 72, label: 'Title' },
+            { id: 'stats', x: 112, y: 1060, width: 595, height: 48, label: 'Stats' }
+          ]
+        }
+      ]
     };
 
     render(<CanvasView canvas={canvas} readOnly />);

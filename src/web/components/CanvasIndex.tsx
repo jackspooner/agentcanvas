@@ -27,7 +27,9 @@ export function CanvasIndex({ canvases }: CanvasIndexProps) {
       <header className="canvas-index-header">
         <div>
           <h1>AgentCanvas</h1>
-          <p>{canvases.length} {canvases.length === 1 ? 'canvas' : 'canvases'}</p>
+          <p>
+            {canvases.length} {canvases.length === 1 ? 'canvas' : 'canvases'}
+          </p>
         </div>
       </header>
 

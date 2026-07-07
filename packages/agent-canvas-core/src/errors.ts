@@ -1,4 +1,12 @@
-export type CanvasErrorStage = 'validation' | 'permission' | 'not_found' | 'revision' | 'idempotency' | 'asset_resolution' | 'storage' | 'rendering';
+export type CanvasErrorStage =
+  | 'validation'
+  | 'permission'
+  | 'not_found'
+  | 'revision'
+  | 'idempotency'
+  | 'asset_resolution'
+  | 'storage'
+  | 'rendering';
 
 export interface CanvasErrorPayload {
   ok: false;
@@ -27,7 +35,14 @@ export class CanvasError extends Error {
   }
 
   toPayload(): CanvasErrorPayload {
-    return { ok: false, code: this.code, message: this.message, stage: this.stage, retryable: this.retryable, correlationId: this.correlationId };
+    return {
+      ok: false,
+      code: this.code,
+      message: this.message,
+      stage: this.stage,
+      retryable: this.retryable,
+      correlationId: this.correlationId
+    };
   }
 }
 

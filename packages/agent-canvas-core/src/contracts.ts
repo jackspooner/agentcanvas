@@ -217,7 +217,18 @@ export interface GroupElement extends CanvasElementBase {
   children: string[];
 }
 
-export type CanvasElement = TextElement | MarkdownElement | AssetElement | GlbViewerElement | VideoElement | BBoxOverlayElement | PathOverlayElement | LineElement | TableElement | ShapeElement | GroupElement;
+export type CanvasElement =
+  | TextElement
+  | MarkdownElement
+  | AssetElement
+  | GlbViewerElement
+  | VideoElement
+  | BBoxOverlayElement
+  | PathOverlayElement
+  | LineElement
+  | TableElement
+  | ShapeElement
+  | GroupElement;
 
 export type CanvasElementType = CanvasElement['type'];
 

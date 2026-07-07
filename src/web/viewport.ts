@@ -19,9 +19,14 @@ export function readViewportCookie(canvasId: string): Partial<CanvasViewport> | 
   }
 }
 
-export function writeViewportCookie(canvasId: string, viewport: Pick<CanvasViewport, 'centerX' | 'centerY' | 'zoom'>): void {
+export function writeViewportCookie(
+  canvasId: string,
+  viewport: Pick<CanvasViewport, 'centerX' | 'centerY' | 'zoom'>
+): void {
   if (typeof document === 'undefined') return;
-  const value = encodeURIComponent(JSON.stringify({ centerX: viewport.centerX, centerY: viewport.centerY, zoom: viewport.zoom }));
+  const value = encodeURIComponent(
+    JSON.stringify({ centerX: viewport.centerX, centerY: viewport.centerY, zoom: viewport.zoom })
+  );
   document.cookie = `${viewportCookieName(canvasId)}=${value}; Max-Age=31536000; Path=/; SameSite=Lax`;
 }
 

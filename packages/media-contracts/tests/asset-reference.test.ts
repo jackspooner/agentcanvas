@@ -45,17 +45,24 @@ describe('AssetReference', () => {
   });
 
   it('builds content URLs for UUID and key refs without requiring localhost', () => {
-    expect(resolveAssetContentUrl({
-      type: 'asset',
-      project: 'scratch',
-      assetId: '00000000-0000-4000-8000-000000000000'
-    }, 'http://assets.example.test:23000')).toBe('http://assets.example.test:23000/projects/scratch/assets/00000000-0000-4000-8000-000000000000/content');
+    expect(
+      resolveAssetContentUrl(
+        {
+          type: 'asset',
+          project: 'scratch',
+          assetId: '00000000-0000-4000-8000-000000000000'
+        },
+        'http://assets.example.test:23000'
+      )
+    ).toBe('http://assets.example.test:23000/projects/scratch/assets/00000000-0000-4000-8000-000000000000/content');
 
-    expect(assetContentPath({
-      type: 'asset',
-      project: 'scratch',
-      assetKey: 'one-off/tool/output-v1'
-    })).toBe('/projects/scratch/assets/by-key/one-off/tool/output-v1/content');
+    expect(
+      assetContentPath({
+        type: 'asset',
+        project: 'scratch',
+        assetKey: 'one-off/tool/output-v1'
+      })
+    ).toBe('/projects/scratch/assets/by-key/one-off/tool/output-v1/content');
   });
 
   it('redacts agent-facing binary payloads into compact descriptors', () => {

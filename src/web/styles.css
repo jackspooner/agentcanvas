@@ -1,4 +1,6 @@
-html, body, #root {
+html,
+body,
+#root {
   width: 100%;
   height: 100%;
   margin: 0;
@@ -38,7 +40,7 @@ button {
   gap: 16px;
   padding: 24px clamp(18px, 4vw, 44px);
   border-bottom: 1px solid #e5e7eb;
-  background: rgba(255, 255, 255, .96);
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .canvas-index-header h1 {
@@ -78,7 +80,7 @@ button {
 
 .canvas-index-row:hover {
   border-color: #60a5fa;
-  box-shadow: 0 10px 26px rgba(37, 99, 235, .12);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.12);
 }
 
 .canvas-index-main {
@@ -292,7 +294,7 @@ button {
   border: 1px solid #d1d5db;
   border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, .12);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
   overflow: auto;
   user-select: text;
 }
@@ -303,7 +305,7 @@ button {
 
 .canvas-card.is-movable:hover {
   border-color: #93c5fd;
-  box-shadow: 0 10px 28px rgba(37, 99, 235, .18);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.18);
 }
 
 .node-drag-handle {
@@ -313,14 +315,14 @@ button {
   z-index: 5;
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(37, 99, 235, .32);
+  border: 1px solid rgba(37, 99, 235, 0.32);
   border-radius: 999px;
-  background: rgba(255, 255, 255, .94);
+  background: rgba(255, 255, 255, 0.94);
   color: #2563eb;
   cursor: move;
   font-size: 14px;
   line-height: 1;
-  box-shadow: 0 3px 12px rgba(17, 24, 39, .16);
+  box-shadow: 0 3px 12px rgba(17, 24, 39, 0.16);
   user-select: none;
 }
 
@@ -379,14 +381,14 @@ button {
   position: absolute;
   right: 10px;
   top: 10px;
-  border: 1px solid rgba(17, 24, 39, .18);
+  border: 1px solid rgba(17, 24, 39, 0.18);
   border-radius: 999px;
-  background: rgba(255, 255, 255, .92);
+  background: rgba(255, 255, 255, 0.92);
   color: #111827;
   cursor: pointer;
   font-size: 12px;
   padding: 4px 9px;
-  box-shadow: 0 3px 12px rgba(17, 24, 39, .18);
+  box-shadow: 0 3px 12px rgba(17, 24, 39, 0.18);
 }
 
 .asset-details-trigger:hover {
@@ -452,8 +454,8 @@ button {
   overflow: hidden;
   border-radius: 8px;
   background-image:
-    linear-gradient(rgba(15, 23, 42, .08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, .08) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -506,8 +508,8 @@ button {
   overflow: hidden;
   border-radius: 8px;
   background-image:
-    linear-gradient(rgba(15, 23, 42, .08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, .08) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -563,14 +565,14 @@ button {
 }
 
 .bbox-export-btn {
-  border: 1px solid rgba(17, 24, 39, .18);
+  border: 1px solid rgba(17, 24, 39, 0.18);
   border-radius: 999px;
-  background: rgba(255, 255, 255, .92);
+  background: rgba(255, 255, 255, 0.92);
   color: #111827;
   cursor: pointer;
   font-size: 12px;
   padding: 4px 10px;
-  box-shadow: 0 3px 12px rgba(17, 24, 39, .18);
+  box-shadow: 0 3px 12px rgba(17, 24, 39, 0.18);
   user-select: none;
   white-space: nowrap;
 }
@@ -610,7 +612,7 @@ button {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(17, 24, 39, .42);
+  background: rgba(17, 24, 39, 0.42);
 }
 
 .asset-details-dialog {
@@ -621,7 +623,7 @@ button {
   border-radius: 16px;
   background: #ffffff;
   color: #111827;
-  box-shadow: 0 24px 80px rgba(17, 24, 39, .35);
+  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.35);
   padding: 20px;
   user-select: text;
 }

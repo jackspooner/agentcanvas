@@ -90,7 +90,8 @@ export function assetIdentityKey(ref: AssetReference): string {
 
 export function assetRecordPath(ref: AssetReference): string {
   const checked = normalizeAssetReference(ref);
-  if (checked.assetId) return `/projects/${encodePathSegment(checked.project)}/assets/${encodePathSegment(checked.assetId)}`;
+  if (checked.assetId)
+    return `/projects/${encodePathSegment(checked.project)}/assets/${encodePathSegment(checked.assetId)}`;
   return `/projects/${encodePathSegment(checked.project)}/assets/by-key/${encodeAssetKeyPath(checked.assetKey ?? '')}`;
 }
 

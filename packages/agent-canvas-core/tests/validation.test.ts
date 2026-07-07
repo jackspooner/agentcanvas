@@ -12,7 +12,9 @@ describe('AgentCanvasCore asset refs', () => {
     });
 
     expect(ref.assetBaseUrl).toBe('http://assets.example.test:23000');
-    expect(resolveAssetContentUrl(ref)).toBe('http://assets.example.test:23000/projects/scratch/assets/00000000-0000-4000-8000-000000000000/content');
+    expect(resolveAssetContentUrl(ref)).toBe(
+      'http://assets.example.test:23000/projects/scratch/assets/00000000-0000-4000-8000-000000000000/content'
+    );
   });
 
   it('accepts assetKey-only refs for portable canvas elements', () => {

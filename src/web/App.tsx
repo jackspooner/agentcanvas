@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { CanvasRecord, CanvasViewport } from '../contracts';
-import { fetchCanvasFromLocation, fetchCanvasList, fetchViewportState, moveCanvasElement, saveUserViewport } from './api';
+import {
+  fetchCanvasFromLocation,
+  fetchCanvasList,
+  fetchViewportState,
+  moveCanvasElement,
+  saveUserViewport
+} from './api';
 import { CanvasIndex } from './components/CanvasIndex';
 import { CanvasView } from './components/CanvasView';
 import { coerceViewport, readViewportCookie, writeViewportCookie } from './viewport';
@@ -47,18 +53,23 @@ export function App() {
       if (cancelled) return;
       setState((current) => {
         if (!current || current.mode !== 'canvas') return current;
-        if (current.canvas.id !== loaded.canvas.id) return { mode: 'canvas', ...loaded, initialViewport: current.initialViewport };
-        if (current.canvas.revision === loaded.canvas.revision && current.canvas.updatedAt === loaded.canvas.updatedAt) return current;
+        if (current.canvas.id !== loaded.canvas.id)
+          return { mode: 'canvas', ...loaded, initialViewport: current.initialViewport };
+        if (current.canvas.revision === loaded.canvas.revision && current.canvas.updatedAt === loaded.canvas.updatedAt)
+          return current;
         return { ...current, canvas: loaded.canvas, readOnly: loaded.readOnly };
       });
     }
 
     loadInitial().catch((err) => setError(err instanceof Error ? err.message : String(err)));
-    const timer = window.setInterval(() => {
-      refresh().catch(() => {
-        // Best-effort canvas polling: transient service errors should not interrupt viewing.
-      });
-    }, indexMode ? 5000 : 1500);
+    const timer = window.setInterval(
+      () => {
+        refresh().catch(() => {
+          // Best-effort canvas polling: transient service errors should not interrupt viewing.
+        });
+      },
+      indexMode ? 5000 : 1500
+    );
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -78,7 +89,11 @@ export function App() {
       loadViewport={() => fetchViewportState(canvasState.canvas.id)}
       onElementMove={async (elementId, x, y) => {
         const updatedCanvas = await moveCanvasElement(canvasState.canvas.id, elementId, x, y);
-        setState((current) => current?.mode === 'canvas' && current.canvas.id === updatedCanvas.id ? { ...current, canvas: updatedCanvas, readOnly: canvasState.readOnly } : current);
+        setState((current) =>
+          current?.mode === 'canvas' && current.canvas.id === updatedCanvas.id
+            ? { ...current, canvas: updatedCanvas, readOnly: canvasState.readOnly }
+            : current
+        );
       }}
       onViewportChange={(viewport) => {
         writeViewportCookie(canvasState.canvas.id, viewport);

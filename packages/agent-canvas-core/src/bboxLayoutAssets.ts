@@ -66,18 +66,34 @@ export function normalizeBBoxOverlayBox(value: unknown): BBoxOverlayBox {
     y,
     width,
     height,
-    label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : fail('bbox label must be string'),
-    color: typeof value.color === 'string' || value.color == null ? value.color as string | null | undefined : fail('bbox color must be string'),
-    fill: typeof value.fill === 'string' || value.fill == null ? value.fill as string | null | undefined : fail('bbox fill must be string'),
+    label:
+      typeof value.label === 'string' || value.label == null
+        ? (value.label as string | null | undefined)
+        : fail('bbox label must be string'),
+    color:
+      typeof value.color === 'string' || value.color == null
+        ? (value.color as string | null | undefined)
+        : fail('bbox color must be string'),
+    fill:
+      typeof value.fill === 'string' || value.fill == null
+        ? (value.fill as string | null | undefined)
+        : fail('bbox fill must be string'),
     strokeWidth: optionalNumber(value.strokeWidth, 'bbox.strokeWidth'),
     labelAlign: optionalEnum(value.labelAlign, ['left', 'center', 'right'] as const, 'bbox.labelAlign'),
-    labelVerticalAlign: optionalEnum(value.labelVerticalAlign, ['top', 'middle', 'bottom'] as const, 'bbox.labelVerticalAlign'),
+    labelVerticalAlign: optionalEnum(
+      value.labelVerticalAlign,
+      ['top', 'middle', 'bottom'] as const,
+      'bbox.labelVerticalAlign'
+    ),
     labelPadding: optionalNumber(value.labelPadding, 'bbox.labelPadding'),
     metadata: isObject(value.metadata) ? value.metadata : undefined
   };
 }
 
-export function normalizeBBoxLayoutAssetDocument(value: unknown, options: NormalizeBBoxLayoutOptions = {}): BBoxLayoutAssetDocument {
+export function normalizeBBoxLayoutAssetDocument(
+  value: unknown,
+  options: NormalizeBBoxLayoutOptions = {}
+): BBoxLayoutAssetDocument {
   if (!isObject(value)) fail('bbox layout asset content must be an object');
   const schema = value.schema ?? BBOX_LAYOUT_ASSET_SCHEMA;
   if (schema !== BBOX_LAYOUT_ASSET_SCHEMA) fail(`bbox layout asset schema must be ${BBOX_LAYOUT_ASSET_SCHEMA}`);
@@ -90,15 +106,30 @@ export function normalizeBBoxLayoutAssetDocument(value: unknown, options: Normal
     canvasWidth,
     canvasHeight,
     boxes: value.boxes.map(normalizeBBoxOverlayBox),
-    imageAssetRef: value.imageAssetRef == null
-      ? value.imageAssetRef as null | undefined
-      : options.validateAssetRef
-        ? options.validateAssetRef(value.imageAssetRef)
-        : value.imageAssetRef as AssetReference,
-    caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : fail('bbox layout caption must be string'),
-    alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : fail('bbox layout alt must be string'),
-    showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? undefined : fail('bbox layout showLabels must be boolean'),
-    background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : fail('bbox layout background must be string'),
+    imageAssetRef:
+      value.imageAssetRef == null
+        ? (value.imageAssetRef as null | undefined)
+        : options.validateAssetRef
+          ? options.validateAssetRef(value.imageAssetRef)
+          : (value.imageAssetRef as AssetReference),
+    caption:
+      typeof value.caption === 'string' || value.caption == null
+        ? (value.caption as string | null | undefined)
+        : fail('bbox layout caption must be string'),
+    alt:
+      typeof value.alt === 'string' || value.alt == null
+        ? (value.alt as string | null | undefined)
+        : fail('bbox layout alt must be string'),
+    showLabels:
+      typeof value.showLabels === 'boolean'
+        ? value.showLabels
+        : value.showLabels == null
+          ? undefined
+          : fail('bbox layout showLabels must be boolean'),
+    background:
+      typeof value.background === 'string' || value.background == null
+        ? (value.background as string | null | undefined)
+        : fail('bbox layout background must be string'),
     metadata: isObject(value.metadata) ? value.metadata : undefined
   };
 }

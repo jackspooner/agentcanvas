@@ -26,11 +26,15 @@ describe('SQLite canvas store', () => {
   it('rejects stale expected revisions', () => {
     const store = makeStore();
     const canvas = store.createCanvas({ title: 'Stale' });
-    store.applyOperations(canvas.id, { operations: [{ op: 'upsertElement', element: { id: 't1', type: 'text', x: 0, y: 0, text: 'hello' } }] });
-    expect(() => store.applyOperations(canvas.id, {
-      expectedRevision: 1,
-      operations: [{ op: 'upsertElement', element: { id: 't2', type: 'text', x: 0, y: 0, text: 'later' } }]
-    })).toThrow(/revision/i);
+    store.applyOperations(canvas.id, {
+      operations: [{ op: 'upsertElement', element: { id: 't1', type: 'text', x: 0, y: 0, text: 'hello' } }]
+    });
+    expect(() =>
+      store.applyOperations(canvas.id, {
+        expectedRevision: 1,
+        operations: [{ op: 'upsertElement', element: { id: 't2', type: 'text', x: 0, y: 0, text: 'later' } }]
+      })
+    ).toThrow(/revision/i);
   });
 
   it('creates and resolves read-only share links', () => {
@@ -48,7 +52,14 @@ describe('SQLite canvas store', () => {
     const canvas = store.createCanvas({ title: 'Viewport' });
 
     const initial = store.getViewportState(canvas.id);
-    expect(initial.userViewport).toMatchObject({ centerX: 0, centerY: 0, zoom: 1, width: 1920, height: 900, source: 'default' });
+    expect(initial.userViewport).toMatchObject({
+      centerX: 0,
+      centerY: 0,
+      zoom: 1,
+      width: 1920,
+      height: 900,
+      source: 'default'
+    });
     expect(initial.agentViewport).toBeNull();
 
     const userViewport = store.recordViewport(canvas.id, {
@@ -72,7 +83,21 @@ describe('SQLite canvas store', () => {
     expect(agentViewport.source).toBe('agent');
 
     const updated = store.getViewportState(canvas.id);
-    expect(updated.userViewport).toMatchObject({ centerX: 120, centerY: -80, zoom: 1.5, width: 1440, height: 820, source: 'user' });
-    expect(updated.agentViewport).toMatchObject({ centerX: 900, centerY: 400, zoom: 0.75, width: 1920, height: 900, source: 'agent' });
+    expect(updated.userViewport).toMatchObject({
+      centerX: 120,
+      centerY: -80,
+      zoom: 1.5,
+      width: 1440,
+      height: 820,
+      source: 'user'
+    });
+    expect(updated.agentViewport).toMatchObject({
+      centerX: 900,
+      centerY: 400,
+      zoom: 0.75,
+      width: 1920,
+      height: 900,
+      source: 'agent'
+    });
   });
 });

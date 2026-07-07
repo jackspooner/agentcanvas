@@ -5,7 +5,18 @@ import {
 } from '@agentcanvas/media-contracts';
 import { CanvasError } from './errors.js';
 import { normalizeBBoxOverlayBox } from './bboxLayoutAssets.js';
-import type { AssetReference, BBoxOverlayBox, CanvasElement, CanvasOperation, CanvasViewport, CanvasViewportInput, ConnectorEndpoint, PathOverlayPath, TableElement, VideoElement } from './contracts.js';
+import type {
+  AssetReference,
+  BBoxOverlayBox,
+  CanvasElement,
+  CanvasOperation,
+  CanvasViewport,
+  CanvasViewportInput,
+  ConnectorEndpoint,
+  PathOverlayPath,
+  TableElement,
+  VideoElement
+} from './contracts.js';
 
 export const LIMITS = {
   maxCanvasWidth: 20_000,
@@ -66,7 +77,11 @@ export function validateAssetRef(value: unknown): AssetReference {
   try {
     return normalizeSharedAssetReference(value);
   } catch (error) {
-    validation(error instanceof Error ? error.message : 'asset element requires an Assets-2 asset ref object, not a local path or URL');
+    validation(
+      error instanceof Error
+        ? error.message
+        : 'asset element requires an Assets-2 asset ref object, not a local path or URL'
+    );
   }
 }
 
@@ -91,14 +106,24 @@ function bboxBox(value: unknown): BBoxOverlayBox {
 function pathOverlayPath(value: unknown): PathOverlayPath {
   if (!isObject(value)) validation('pathOverlay paths must be objects');
   const id = validateSafeId(value.id, 'path.id');
-  if (typeof value.d !== 'string' || value.d.trim().length === 0) validation(`path.${id}.d must be a non-empty SVG path string`);
+  if (typeof value.d !== 'string' || value.d.trim().length === 0)
+    validation(`path.${id}.d must be a non-empty SVG path string`);
   if (value.d.length > LIMITS.maxPathLength) validation(`path.${id}.d is too long`);
   return {
     id,
     d: value.d,
-    label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('path label must be string'),
-    color: typeof value.color === 'string' || value.color == null ? value.color as string | null | undefined : validation('path color must be string'),
-    fill: typeof value.fill === 'string' || value.fill == null ? value.fill as string | null | undefined : validation('path fill must be string'),
+    label:
+      typeof value.label === 'string' || value.label == null
+        ? (value.label as string | null | undefined)
+        : validation('path label must be string'),
+    color:
+      typeof value.color === 'string' || value.color == null
+        ? (value.color as string | null | undefined)
+        : validation('path color must be string'),
+    fill:
+      typeof value.fill === 'string' || value.fill == null
+        ? (value.fill as string | null | undefined)
+        : validation('path fill must be string'),
     strokeWidth: optionalNumber(value.strokeWidth, 'path.strokeWidth'),
     metadata: isObject(value.metadata) ? value.metadata : undefined
   };
@@ -107,12 +132,14 @@ function pathOverlayPath(value: unknown): PathOverlayPath {
 function endpoint(value: unknown): ConnectorEndpoint {
   if (!isObject(value)) validation('connector endpoint must be an object');
   const out: ConnectorEndpoint = {};
-  if ('elementId' in value) out.elementId = value.elementId == null ? null : validateSafeId(value.elementId, 'endpoint.elementId');
+  if ('elementId' in value)
+    out.elementId = value.elementId == null ? null : validateSafeId(value.elementId, 'endpoint.elementId');
   if ('x' in value) out.x = optionalNumber(value.x, 'endpoint.x');
   if ('y' in value) out.y = optionalNumber(value.y, 'endpoint.y');
   if ('anchor' in value) {
     if (value.anchor == null) out.anchor = null;
-    else if (['center', 'top', 'right', 'bottom', 'left'].includes(String(value.anchor))) out.anchor = value.anchor as ConnectorEndpoint['anchor'];
+    else if (['center', 'top', 'right', 'bottom', 'left'].includes(String(value.anchor)))
+      out.anchor = value.anchor as ConnectorEndpoint['anchor'];
     else validation('endpoint.anchor is invalid');
   }
   if (!out.elementId && (out.x == null || out.y == null)) validation('connector endpoint needs elementId or x/y');
@@ -129,8 +156,17 @@ function base(input: Record<string, unknown>) {
     zIndex: optionalNumber(input.zIndex, 'element.zIndex'),
     rotation: optionalNumber(input.rotation, 'element.rotation'),
     opacity: optionalNumber(input.opacity, 'element.opacity'),
-    locked: typeof input.locked === 'boolean' ? input.locked : input.locked == null ? input.locked as null | undefined : validation('element.locked must be boolean'),
-    style: isObject(input.style) ? input.style : input.style == null ? input.style as null | undefined : validation('element.style must be object'),
+    locked:
+      typeof input.locked === 'boolean'
+        ? input.locked
+        : input.locked == null
+          ? (input.locked as null | undefined)
+          : validation('element.locked must be boolean'),
+    style: isObject(input.style)
+      ? input.style
+      : input.style == null
+        ? (input.style as null | undefined)
+        : validation('element.style must be object'),
     metadata: isObject(input.metadata) ? input.metadata : undefined
   };
 }
@@ -155,9 +191,19 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         ...b,
         type: 'asset',
         assetRef: validateAssetRef(value.assetRef),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('asset caption must be string'),
-        fit: ['contain', 'cover', 'stretch', 'original'].includes(String(value.fit)) ? value.fit as 'contain' | 'cover' | 'stretch' | 'original' : value.fit == null ? value.fit as null | undefined : validation('asset fit is invalid'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('asset alt must be string')
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as string | null | undefined)
+            : validation('asset caption must be string'),
+        fit: ['contain', 'cover', 'stretch', 'original'].includes(String(value.fit))
+          ? (value.fit as 'contain' | 'cover' | 'stretch' | 'original')
+          : value.fit == null
+            ? (value.fit as null | undefined)
+            : validation('asset fit is invalid'),
+        alt:
+          typeof value.alt === 'string' || value.alt == null
+            ? (value.alt as string | null | undefined)
+            : validation('asset alt must be string')
       };
     }
     case 'glbViewer': {
@@ -167,10 +213,26 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         width: b.width ?? 320,
         height: b.height ?? 240,
         assetRef: validateAssetRef(value.assetRef),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('GLB viewer caption must be string'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('GLB viewer alt must be string'),
-        cameraControls: typeof value.cameraControls === 'boolean' ? value.cameraControls : value.cameraControls == null ? true : validation('GLB viewer cameraControls must be boolean'),
-        autoRotate: typeof value.autoRotate === 'boolean' ? value.autoRotate : value.autoRotate == null ? false : validation('GLB viewer autoRotate must be boolean')
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as string | null | undefined)
+            : validation('GLB viewer caption must be string'),
+        alt:
+          typeof value.alt === 'string' || value.alt == null
+            ? (value.alt as string | null | undefined)
+            : validation('GLB viewer alt must be string'),
+        cameraControls:
+          typeof value.cameraControls === 'boolean'
+            ? value.cameraControls
+            : value.cameraControls == null
+              ? true
+              : validation('GLB viewer cameraControls must be boolean'),
+        autoRotate:
+          typeof value.autoRotate === 'boolean'
+            ? value.autoRotate
+            : value.autoRotate == null
+              ? false
+              : validation('GLB viewer autoRotate must be boolean')
       };
     }
     case 'video': {
@@ -180,35 +242,85 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         width: b.width ?? 480,
         height: b.height ?? 270,
         assetRef: validateAssetRef(value.assetRef),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('video caption must be string'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('video alt must be string'),
-        controls: typeof value.controls === 'boolean' ? value.controls : value.controls == null ? true : validation('video controls must be boolean'),
-        autoplay: typeof value.autoplay === 'boolean' ? value.autoplay : value.autoplay == null ? false : validation('video autoplay must be boolean'),
-        loop: typeof value.loop === 'boolean' ? value.loop : value.loop == null ? false : validation('video loop must be boolean'),
-        muted: typeof value.muted === 'boolean' ? value.muted : value.muted == null ? true : validation('video muted must be boolean'),
-        posterAssetRef: value.posterAssetRef == null ? value.posterAssetRef as VideoElement['posterAssetRef'] : validateAssetRef(value.posterAssetRef)
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as string | null | undefined)
+            : validation('video caption must be string'),
+        alt:
+          typeof value.alt === 'string' || value.alt == null
+            ? (value.alt as string | null | undefined)
+            : validation('video alt must be string'),
+        controls:
+          typeof value.controls === 'boolean'
+            ? value.controls
+            : value.controls == null
+              ? true
+              : validation('video controls must be boolean'),
+        autoplay:
+          typeof value.autoplay === 'boolean'
+            ? value.autoplay
+            : value.autoplay == null
+              ? false
+              : validation('video autoplay must be boolean'),
+        loop:
+          typeof value.loop === 'boolean'
+            ? value.loop
+            : value.loop == null
+              ? false
+              : validation('video loop must be boolean'),
+        muted:
+          typeof value.muted === 'boolean'
+            ? value.muted
+            : value.muted == null
+              ? true
+              : validation('video muted must be boolean'),
+        posterAssetRef:
+          value.posterAssetRef == null
+            ? (value.posterAssetRef as VideoElement['posterAssetRef'])
+            : validateAssetRef(value.posterAssetRef)
       };
     }
     case 'bboxOverlay': {
-      const layoutAssetRef = value.layoutAssetRef == null ? value.layoutAssetRef as null | undefined : validateAssetRef(value.layoutAssetRef);
+      const layoutAssetRef =
+        value.layoutAssetRef == null
+          ? (value.layoutAssetRef as null | undefined)
+          : validateAssetRef(value.layoutAssetRef);
       const baseOverlay = {
         ...b,
         type: 'bboxOverlay' as const,
         width: b.width ?? 320,
         height: b.height ?? 240,
         layoutAssetRef,
-        imageAssetRef: value.imageAssetRef == null ? value.imageAssetRef as null | undefined : validateAssetRef(value.imageAssetRef),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('bboxOverlay caption must be string'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('bboxOverlay alt must be string'),
-        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('bboxOverlay showLabels must be boolean'),
-        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('bboxOverlay background must be string')
+        imageAssetRef:
+          value.imageAssetRef == null
+            ? (value.imageAssetRef as null | undefined)
+            : validateAssetRef(value.imageAssetRef),
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as string | null | undefined)
+            : validation('bboxOverlay caption must be string'),
+        alt:
+          typeof value.alt === 'string' || value.alt == null
+            ? (value.alt as string | null | undefined)
+            : validation('bboxOverlay alt must be string'),
+        showLabels:
+          typeof value.showLabels === 'boolean'
+            ? value.showLabels
+            : value.showLabels == null
+              ? true
+              : validation('bboxOverlay showLabels must be boolean'),
+        background:
+          typeof value.background === 'string' || value.background == null
+            ? (value.background as string | null | undefined)
+            : validation('bboxOverlay background must be string')
       };
       if (layoutAssetRef) {
         return baseOverlay;
       }
       const canvasWidth = finiteNumber(value.canvasWidth, 'bboxOverlay.canvasWidth');
       const canvasHeight = finiteNumber(value.canvasHeight, 'bboxOverlay.canvasHeight');
-      if (canvasWidth <= 0 || canvasHeight <= 0) validation('bboxOverlay canvasWidth and canvasHeight must be positive');
+      if (canvasWidth <= 0 || canvasHeight <= 0)
+        validation('bboxOverlay canvasWidth and canvasHeight must be positive');
       if (!Array.isArray(value.boxes)) validation('bboxOverlay requires boxes array');
       if (value.boxes.length > LIMITS.maxBBoxes) validation('bboxOverlay has too many boxes');
       return {
@@ -221,7 +333,8 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
     case 'pathOverlay': {
       const canvasWidth = finiteNumber(value.canvasWidth, 'pathOverlay.canvasWidth');
       const canvasHeight = finiteNumber(value.canvasHeight, 'pathOverlay.canvasHeight');
-      if (canvasWidth <= 0 || canvasHeight <= 0) validation('pathOverlay canvasWidth and canvasHeight must be positive');
+      if (canvasWidth <= 0 || canvasHeight <= 0)
+        validation('pathOverlay canvasWidth and canvasHeight must be positive');
       if (!Array.isArray(value.paths)) validation('pathOverlay requires paths array');
       if (value.paths.length > LIMITS.maxOverlayPaths) validation('pathOverlay has too many paths');
       return {
@@ -232,10 +345,24 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         canvasWidth,
         canvasHeight,
         paths: value.paths.map(pathOverlayPath),
-        caption: typeof value.caption === 'string' || value.caption == null ? value.caption as string | null | undefined : validation('pathOverlay caption must be string'),
-        alt: typeof value.alt === 'string' || value.alt == null ? value.alt as string | null | undefined : validation('pathOverlay alt must be string'),
-        showLabels: typeof value.showLabels === 'boolean' ? value.showLabels : value.showLabels == null ? true : validation('pathOverlay showLabels must be boolean'),
-        background: typeof value.background === 'string' || value.background == null ? value.background as string | null | undefined : validation('pathOverlay background must be string')
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as string | null | undefined)
+            : validation('pathOverlay caption must be string'),
+        alt:
+          typeof value.alt === 'string' || value.alt == null
+            ? (value.alt as string | null | undefined)
+            : validation('pathOverlay alt must be string'),
+        showLabels:
+          typeof value.showLabels === 'boolean'
+            ? value.showLabels
+            : value.showLabels == null
+              ? true
+              : validation('pathOverlay showLabels must be boolean'),
+        background:
+          typeof value.background === 'string' || value.background == null
+            ? (value.background as string | null | undefined)
+            : validation('pathOverlay background must be string')
       };
     }
     case 'line':
@@ -245,25 +372,56 @@ export function normalizeCanvasElement(value: unknown): CanvasElement {
         type: value.type,
         from: endpoint(value.from),
         to: endpoint(value.to),
-        label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('connector label must be string'),
-        stroke: typeof value.stroke === 'string' || value.stroke == null ? value.stroke as string | null | undefined : validation('connector stroke must be string'),
+        label:
+          typeof value.label === 'string' || value.label == null
+            ? (value.label as string | null | undefined)
+            : validation('connector label must be string'),
+        stroke:
+          typeof value.stroke === 'string' || value.stroke == null
+            ? (value.stroke as string | null | undefined)
+            : validation('connector stroke must be string'),
         strokeWidth: optionalNumber(value.strokeWidth, 'strokeWidth')
       };
     }
     case 'table': {
-      if (!Array.isArray(value.columns) || !value.columns.every((v) => typeof v === 'string')) validation('table columns must be strings');
-      if (!Array.isArray(value.rows) || !value.rows.every((row) => Array.isArray(row) && row.every((v) => typeof v === 'string'))) validation('table rows must be string arrays');
+      if (!Array.isArray(value.columns) || !value.columns.every((v) => typeof v === 'string'))
+        validation('table columns must be strings');
+      if (
+        !Array.isArray(value.rows) ||
+        !value.rows.every((row) => Array.isArray(row) && row.every((v) => typeof v === 'string'))
+      )
+        validation('table rows must be string arrays');
       if (value.columns.length > LIMITS.maxTableColumns) validation('too many table columns');
       if (value.rows.length > LIMITS.maxTableRows) validation('too many table rows');
-      for (const cell of value.rows.flat()) if (cell.length > LIMITS.maxTableCellLength) validation('table cell is too long');
-      return { ...b, type: 'table', columns: value.columns, rows: value.rows, caption: typeof value.caption === 'string' || value.caption == null ? value.caption as TableElement['caption'] : validation('table caption must be string') };
+      for (const cell of value.rows.flat())
+        if (cell.length > LIMITS.maxTableCellLength) validation('table cell is too long');
+      return {
+        ...b,
+        type: 'table',
+        columns: value.columns,
+        rows: value.rows,
+        caption:
+          typeof value.caption === 'string' || value.caption == null
+            ? (value.caption as TableElement['caption'])
+            : validation('table caption must be string')
+      };
     }
     case 'shape': {
-      if (!['rect', 'ellipse', 'diamond'].includes(String(value.shape))) validation('shape must be rect, ellipse, or diamond');
-      return { ...b, type: 'shape', shape: value.shape as 'rect' | 'ellipse' | 'diamond', label: typeof value.label === 'string' || value.label == null ? value.label as string | null | undefined : validation('shape label must be string') };
+      if (!['rect', 'ellipse', 'diamond'].includes(String(value.shape)))
+        validation('shape must be rect, ellipse, or diamond');
+      return {
+        ...b,
+        type: 'shape',
+        shape: value.shape as 'rect' | 'ellipse' | 'diamond',
+        label:
+          typeof value.label === 'string' || value.label == null
+            ? (value.label as string | null | undefined)
+            : validation('shape label must be string')
+      };
     }
     case 'group': {
-      if (!Array.isArray(value.children) || !value.children.every((v) => typeof v === 'string' && SAFE_ID.test(v))) validation('group children must be safe element ids');
+      if (!Array.isArray(value.children) || !value.children.every((v) => typeof v === 'string' && SAFE_ID.test(v)))
+        validation('group children must be safe element ids');
       return { ...b, type: 'group', children: value.children };
     }
     default:
@@ -276,10 +434,15 @@ export function normalizeOperations(operations: unknown): CanvasOperation[] {
   return operations.map((op) => {
     if (!isObject(op) || typeof op.op !== 'string') validation('operation requires op');
     if (op.op === 'upsertElement') return { op: 'upsertElement', element: normalizeCanvasElement(op.element) };
-    if (op.op === 'patchElement') return { op: 'patchElement', elementId: validateSafeId(op.elementId, 'elementId'), patch: isObject(op.patch) ? op.patch : validation('patch must be object') };
+    if (op.op === 'patchElement')
+      return {
+        op: 'patchElement',
+        elementId: validateSafeId(op.elementId, 'elementId'),
+        patch: isObject(op.patch) ? op.patch : validation('patch must be object')
+      };
     if (op.op === 'deleteElement') return { op: 'deleteElement', elementId: validateSafeId(op.elementId, 'elementId') };
     if (op.op === 'clear') return { op: 'clear' };
-    validation(`unsupported operation: ${op.op}`);
+    return validation(`unsupported operation: ${op.op}`);
   });
 }
 
@@ -299,13 +462,17 @@ export function defaultViewport(): CanvasViewport {
   };
 }
 
-export function normalizeViewportInput(input: CanvasViewportInput | Record<string, unknown>, sourceFallback: 'user' | 'agent' = 'user'): Omit<CanvasViewport, 'updatedAt'> {
+export function normalizeViewportInput(
+  input: CanvasViewportInput | Record<string, unknown>,
+  sourceFallback: 'user' | 'agent' = 'user'
+): Omit<CanvasViewport, 'updatedAt'> {
   if (!isObject(input)) validation('viewport payload must be an object');
   const source = input.source === 'agent' || input.source === 'user' ? input.source : sourceFallback;
   const centerX = finiteNumber(input.centerX, 'viewport.centerX', 0);
   const centerY = finiteNumber(input.centerY, 'viewport.centerY', 0);
   const zoom = finiteNumber(input.zoom, 'viewport.zoom', 1);
-  if (zoom < LIMITS.minZoom || zoom > LIMITS.maxZoom) validation(`viewport.zoom must be between ${LIMITS.minZoom} and ${LIMITS.maxZoom}`);
+  if (zoom < LIMITS.minZoom || zoom > LIMITS.maxZoom)
+    validation(`viewport.zoom must be between ${LIMITS.minZoom} and ${LIMITS.maxZoom}`);
   const width = finiteNumber(input.width, 'viewport.width', LIMITS.defaultViewportWidth);
   const height = finiteNumber(input.height, 'viewport.height', LIMITS.defaultViewportHeight);
   if (width <= 0 || height <= 0) validation('viewport width and height must be positive');

@@ -13,6 +13,7 @@ export function loadConfig(overrides: Partial<AgentCanvasConfig> = {}): AgentCan
   const host = process.env.AGENT_CANVAS_HOST ?? overrides.host ?? '127.0.0.1';
   const publicBaseUrl = process.env.AGENT_CANVAS_PUBLIC_BASE_URL ?? overrides.publicBaseUrl ?? `http://${host}:${port}`;
   const assetsBaseUrl = process.env.ASSETS_BASE_URL ?? overrides.assetsBaseUrl ?? 'http://127.0.0.1:23000';
-  const databasePath = process.env.AGENT_CANVAS_DB ?? overrides.databasePath ?? path.resolve('data', 'agent-canvas.sqlite');
+  const databasePath =
+    process.env.AGENT_CANVAS_DB ?? overrides.databasePath ?? path.resolve('data', 'agent-canvas.sqlite');
   return { host, port, publicBaseUrl, assetsBaseUrl, databasePath };
 }

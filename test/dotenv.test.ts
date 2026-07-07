@@ -25,14 +25,17 @@ describe('AgentCanvas dotenv bootstrap', () => {
 
   it('loads a local .env file before configuration is read', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-canvas-dotenv-'));
-    fs.writeFileSync(path.join(dir, '.env'), [
-      'AGENT_CANVAS_HOST=0.0.0.0',
-      'AGENT_CANVAS_PORT=29123',
-      'AGENT_CANVAS_PUBLIC_BASE_URL=http://example.test:29123',
-      'AGENT_CANVAS_DB=./custom-agent-canvas.sqlite',
-      'ASSETS_BASE_URL=http://assets.example.test',
-      ''
-    ].join('\n'));
+    fs.writeFileSync(
+      path.join(dir, '.env'),
+      [
+        'AGENT_CANVAS_HOST=0.0.0.0',
+        'AGENT_CANVAS_PORT=29123',
+        'AGENT_CANVAS_PUBLIC_BASE_URL=http://example.test:29123',
+        'AGENT_CANVAS_DB=./custom-agent-canvas.sqlite',
+        'ASSETS_BASE_URL=http://assets.example.test',
+        ''
+      ].join('\n')
+    );
 
     delete process.env.AGENT_CANVAS_HOST;
     delete process.env.AGENT_CANVAS_PORT;
