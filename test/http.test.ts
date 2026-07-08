@@ -566,7 +566,7 @@ describe('AgentCanvas HTTP API', () => {
               generatedAt: '2026-06-13T11:30:53.000Z',
               settings: { quality: 'low', size: { width: 1024, height: 1536 }, controls: { style: 'storybook' } },
               prompt: 'Draw a card.',
-              jsonPrompt: { text: 'Draw a card.', localPath: 'C:/private-user/secret.png', apiKey: 'must-not-leak' },
+              jsonPrompt: { text: 'Draw a card.', localPath: 'C:/private/secret.png', apiKey: 'must-not-leak' },
               contextImages: [{ type: 'asset', project: 'demo', assetId: contextId }],
               providerRequest: { model: 'gpt-image-2', quality: 'low', apiKey: 'must-not-leak' }
             }
@@ -618,7 +618,7 @@ describe('AgentCanvas HTTP API', () => {
       warnings: []
     });
     expect(JSON.stringify(body)).not.toContain('must-not-leak');
-    expect(JSON.stringify(body)).not.toContain('C:/private-user');
+    expect(JSON.stringify(body)).not.toContain('C:/private');
     expect(body.asset.metadata).toBeUndefined();
   });
 

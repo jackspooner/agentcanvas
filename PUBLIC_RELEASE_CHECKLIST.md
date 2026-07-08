@@ -6,7 +6,7 @@ AgentCanvas should be public as an agent-operable browser canvas and MCP surface
 
 - [x] Add a root `.env.example` covering server, public URL, database, and Assets-2 settings.
 - [x] Add dotenv loading to the server/MCP entrypoints or document process-manager-only environment injection.
-- [x] Move internal AgentCanvas packages into npm workspaces so a fresh clone does not require `.cutlery` or `C:/path/to/workspace` package paths.
+- [x] Move internal AgentCanvas packages into npm workspaces so a fresh clone does not require local Workspace2 package paths.
 - [x] Keep this as a public GitHub clone-and-run app, not an npm package; retain `"private": true` and document that policy.
 - [x] Add root `LICENSE`.
 - [x] Replace `"latest"` dependency ranges with pinned semver ranges.
