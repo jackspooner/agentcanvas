@@ -1,33 +1,20 @@
 # AgentCanvas
 
-Local agent-operable web canvas and MCP server. Agents can create canvases, place text/Markdown/assets/single-GLB 3D viewers/connectors/tables/path overlays, and return read-only browser links to the user.
+AgentCanvas is a local web canvas and MCP server for agent-created visual workspaces. Agents can create canvases, place text, Markdown, assets, videos, single-GLB viewers, connectors, tables, and overlays, then share the result through a read-only browser link.
 
-## Boundaries
+## What it provides
 
-- HTTP service: `http://127.0.0.1:23003`
-- Canvas chooser: `http://127.0.0.1:23003/`
-- Host binding: `127.0.0.1`
-- Persistence: SQLite via Node `node:sqlite`
-- MCP: dedicated `AgentCanvasMcp` over resident streamable HTTP at `http://127.0.0.1:23003/mcp`, with stdio compatibility preserved
-- Reusable contracts/validation/geometry/bbox helpers: `packages/agent-canvas-core`
-- Shared asset-ref contract: `packages/media-contracts`
-- Assets: `Assets-2` asset refs only
-- Legacy `asset_registry`, `asset-registry`, and `asset-registry-2` paths are disabled/out of scope
-- Canvas UI: white infinite-feeling surface centered around world coordinate `0,0`
-- Viewport model: agents and users work in world coordinates; default visible browser assumption is `1920x900`
+- A browser canvas with editable and read-only views.
+- Streamable HTTP and stdio MCP transports for agent clients.
+- SQLite persistence through Node's built-in `node:sqlite` module.
+- Text, Markdown, tables, connectors, path and bbox overlays, videos, assets, and single-GLB viewers.
+- Reusable canvas contracts, validation, geometry, and bbox helpers in `packages/agent-canvas-core`.
+- Portable asset-reference contracts in `packages/media-contracts`.
+- Optional durable asset placement through [Assets-2](https://github.com/jackspooner/Assets-2).
 
-## Distribution
+## Quick start
 
-AgentCanvas is published as a public GitHub clone-and-run app, not as an npm
-package. The root package keeps `"private": true` so `npm publish` cannot
-accidentally publish the local service. Use `npm install`, `npm test`,
-`npm run build`, and `npm run dev` from the checkout.
-
-License: MIT.
-
-## Commands
-
-Prerequisites:
+Requirements:
 
 - Node.js 24 or newer. AgentCanvas uses Node's built-in `node:sqlite`.
 - npm 11 or newer.
@@ -39,6 +26,10 @@ npm test
 npm run build
 npm run dev
 ```
+
+Open `http://127.0.0.1:23003/` to create or open a canvas. The repository is
+intended to be cloned and run directly; `"private": true` prevents accidental
+npm publication. AgentCanvas is licensed under the MIT License.
 
 Health checks:
 
@@ -142,18 +133,20 @@ Direct command without npm shell output:
 node node_modules/tsx/dist/cli.mjs src/mcp/index.ts
 ```
 
-Example Hermes registration:
+Example stdio client configuration:
 
-```bash
-hermes mcp add agent-canvas \
-  --command node \
-  --args /path/to/AgentCanvas/node_modules/tsx/dist/cli.mjs /path/to/AgentCanvas/src/mcp/index.ts
-```
-
-Then verify:
-
-```bash
-hermes mcp test agent-canvas
+```json
+{
+  "mcpServers": {
+    "agent-canvas": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/AgentCanvas/node_modules/tsx/dist/cli.mjs",
+        "/absolute/path/to/AgentCanvas/src/mcp/index.ts"
+      ]
+    }
+  }
+}
 ```
 
 ## MCP tools
@@ -186,7 +179,7 @@ Large binaries/base64 are not returned through MCP by default. `canvas_screensho
 
 ## BBox layout assets
 
-`bboxOverlay` nodes can now be owned by a durable `Assets-2` JSON asset instead of storing `canvasWidth`, `canvasHeight`, and `boxes` inline inside the canvas record. This is the preferred ownership model for reusable card/layout templates.
+`bboxOverlay` nodes may be backed by a durable `Assets-2` JSON asset instead of storing `canvasWidth`, `canvasHeight`, and `boxes` inline inside the canvas record. Asset-backed overlays are useful for reusable card and layout templates.
 
 Asset-backed overlays use a JSON asset shaped like:
 
@@ -288,11 +281,11 @@ Example element:
 }
 ```
 
-This is for opening one GLB per node. Multi-model scenes/worlds belong in AgentWorld/3D world tooling rather than in a flat canvas node.
+Each node opens one GLB. Use a dedicated 3D scene editor when a workflow needs a composed multi-model world rather than a flat canvas node.
 
 ## Share links
 
-V1 share links are read-only bearer-token links:
+Share links are read-only bearer-token links:
 
 ```text
 http://127.0.0.1:23003/c/<shareToken>
