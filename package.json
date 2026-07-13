@@ -55,7 +55,7 @@
     "check:release": "node scripts/check-public-release.mjs && npm run check:plugin-licenses",
     "test": "npm run build:packages && npm run check:packages && npm run test:packages && npm run test:external-plugin && vitest run",
     "test:external-plugin": "npm --prefix test/external-plugin-fixture run check && npm --prefix test/external-plugin-fixture test && npm --prefix test/external-plugin-fixture run pack:plugin && npm --prefix test/external-plugin-fixture run agentcanvas:verify",
-    "test:e2e": "playwright test --config test/e2e/playwright.config.ts",
+    "test:e2e": "npm run build:packages && playwright test --config test/e2e/playwright.config.ts",
     "test:app": "vitest run",
     "test:watch": "vitest"
   },

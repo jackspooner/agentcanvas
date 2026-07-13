@@ -52,6 +52,10 @@ if (
 ) {
   failures.push('plugins:build must compile public packages before first-party plugins and catalog assembly.');
 }
+const browserTestCommand = rootManifest.scripts?.['test:e2e'];
+if (typeof browserTestCommand !== 'string' || !browserTestCommand.startsWith('npm run build:packages && ')) {
+  failures.push('test:e2e must build public packages before the source-based browser fixture starts.');
+}
 
 const readme = read('README.md');
 if (!readme.includes('https://github.com/jackspooner/Assets-2')) {
