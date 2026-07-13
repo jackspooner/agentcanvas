@@ -32,6 +32,7 @@
   ],
   "scripts": {
     "build:packages": "npm run build --workspace @agentcanvas/plugin-sdk && npm run build --workspace @agentcanvas/plugin-testkit && npm run build --workspace @agentcanvas/core && npm run build --workspace create-agentcanvas-plugin",
+    "build:plugins": "npm run build --workspace @agentcanvas/plugin-assets2 && npm run build --workspace @agentcanvas/plugin-glb-viewer && npm run build --workspace @agentcanvas/plugin-image-overlays && npm run build --workspace @agentcanvas/plugin-markdown && npm run build --workspace @agentcanvas/plugin-primitives && npm run build --workspace @agentcanvas/plugin-table && npm run build --workspace @agentcanvas/plugin-video",
     "test:packages": "npm run test --workspaces --if-present",
     "check:packages": "npm run check --workspaces --if-present",
     "dev": "npm run build:packages && tsx src/server.ts",
@@ -41,7 +42,7 @@
     "lint": "biome lint --diagnostic-level=error .",
     "mcp": "npm run build:packages && tsx src/mcp-v2/stdio.ts",
     "migrate": "tsx src/cli/main.ts migrate",
-    "plugins:build": "npm run build --workspaces --if-present && tsx src/cli/plugins-main.ts catalog",
+    "plugins:build": "npm run build:packages && npm run build:plugins && tsx src/cli/plugins-main.ts catalog",
     "plugins:list": "tsx src/cli/plugins-main.ts list",
     "plugins:materialize": "tsx src/cli/plugins-main.ts materialize",
     "plugins:install": "tsx src/cli/plugins-main.ts install",

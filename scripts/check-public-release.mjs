@@ -44,6 +44,15 @@ for (const required of [
   requireFile(required);
 }
 
+const rootManifest = readJson('package.json');
+const pluginBuildCommand = rootManifest.scripts?.['plugins:build'];
+if (
+  typeof pluginBuildCommand !== 'string' ||
+  !/^npm run build:packages && npm run build:plugins && /.test(pluginBuildCommand)
+) {
+  failures.push('plugins:build must compile public packages before first-party plugins and catalog assembly.');
+}
+
 const readme = read('README.md');
 if (!readme.includes('https://github.com/jackspooner/Assets-2')) {
   failures.push('README must link to the public Assets-2 installation source.');
