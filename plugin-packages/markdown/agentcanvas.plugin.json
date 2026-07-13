@@ -1,0 +1,25 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.markdown",
+  "version": "0.2.0",
+  "displayName": "AgentCanvas Markdown",
+  "description": "Safe GFM-style Markdown documents for AgentCanvas.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {}
+  },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own"],
+  "contributes": {
+    "elements": [{ "name": "document", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["add-document"],
+    "procedures": [],
+    "migrations": ["legacy-markdown-v1"]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "__PLUGIN_ID__",
+  "version": "0.1.0",
+  "displayName": "__DISPLAY_NAME__",
+  "description": "A framework-neutral Hello Card element example.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {}
+  },
+  "provides": {
+    "capabilities": {}
+  },
+  "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
+  "contributes": {
+    "elements": [
+      {
+        "name": "hello-card",
+        "schemaVersion": 1,
+        "browser": true,
+        "snapshot": "supported"
+      }
+    ],
+    "tools": ["add-hello-card"],
+    "procedures": ["describe-card"],
+    "migrations": ["legacy-hello-card-v1"]
+  },
+  "configuration": {
+    "schema": "schemas/config.schema.json",
+    "file": "plugin.config.json",
+    "environment": []
+  }
+}

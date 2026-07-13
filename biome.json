@@ -13,12 +13,17 @@
       "test/**/*.ts",
       "test/**/*.tsx",
       "packages/**/*.ts",
+      "packages/**/*.mts",
+      "plugin-packages/**/*.ts",
+      "plugin-packages/**/*.mts",
+      "plugin-packages/**/*.json",
       "*.ts",
       "*.html",
       "*.json",
       "service/**/*.json",
       "!package-lock.json",
-      "!packages/**/dist"
+      "!packages/**/dist",
+      "!plugin-packages/**/dist"
     ]
   },
   "formatter": {

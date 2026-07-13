@@ -1,0 +1,7 @@
+{
+  "baseUrl": "http://127.0.0.1:23000",
+  "fetchTimeoutMs": 10000,
+  "metadataMaxBytes": 1048576,
+  "previewMaxBytes": 8388608,
+  "contentMaxBytes": 268435456
+}

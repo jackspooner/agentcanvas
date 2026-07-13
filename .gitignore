@@ -1,5 +1,9 @@
 node_modules/
 dist/
+plugins/*
+!plugins/README.md
+plugins-disabled/
+tmp/
 data/
 coverage/
 .vite/

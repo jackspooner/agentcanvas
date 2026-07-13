@@ -1,40 +1,28 @@
 import { describe, expect, it } from 'vitest';
+import { ensureElementCap, normalizeCanvasBounds, normalizeViewportInput } from '../src/index.js';
 
-import { normalizeCanvasElement, resolveAssetContentUrl, validateAssetRef } from '../src/index.js';
-
-describe('AgentCanvasCore asset refs', () => {
-  it('accepts assetId refs with non-localhost base URLs', () => {
-    const ref = validateAssetRef({
-      type: 'asset',
-      project: 'scratch',
-      assetId: '00000000-0000-4000-8000-000000000000',
-      assetBaseUrl: 'http://assets.example.test:23000'
+describe('AgentCanvas document kernel validation', () => {
+  it('normalizes canvas bounds without knowing element types', () => {
+    expect(normalizeCanvasBounds(undefined)).toEqual({ mode: 'unlimited' });
+    expect(normalizeCanvasBounds({ mode: 'fixed', width: 1200.4, height: 800.2 })).toEqual({
+      mode: 'fixed',
+      width: 1200,
+      height: 800
     });
-
-    expect(ref.assetBaseUrl).toBe('http://assets.example.test:23000');
-    expect(resolveAssetContentUrl(ref)).toBe(
-      'http://assets.example.test:23000/projects/scratch/assets/00000000-0000-4000-8000-000000000000/content'
-    );
   });
 
-  it('accepts assetKey-only refs for portable canvas elements', () => {
-    const element = normalizeCanvasElement({
-      id: 'asset_1',
-      type: 'asset',
-      x: 0,
-      y: 0,
-      assetRef: {
-        type: 'asset',
-        project: 'scratch',
-        assetKey: 'one-off/tool/output-v1'
-      }
+  it('retains the bounded viewport contract', () => {
+    expect(normalizeViewportInput({ centerX: -10, centerY: 20, zoom: 2 })).toMatchObject({
+      centerX: -10,
+      centerY: 20,
+      zoom: 2,
+      source: 'user'
     });
-
-    expect(element.type).toBe('asset');
-    if (element.type === 'asset') expect(element.assetRef.assetKey).toBe('one-off/tool/output-v1');
+    expect(() => normalizeViewportInput({ zoom: 100 })).toThrow(/zoom/);
   });
 
-  it('rejects refs without assetId or assetKey', () => {
-    expect(() => validateAssetRef({ type: 'asset', project: 'scratch' })).toThrow(/assetId or assetKey/);
+  it('applies only the generic document element-count limit', () => {
+    expect(() => ensureElementCap([])).not.toThrow();
+    expect(() => ensureElementCap(Array.from({ length: 2001 }) as never)).toThrow(/2000/);
   });
 });

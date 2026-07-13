@@ -1,0 +1,23 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "external.signal-card",
+  "version": "1.0.0",
+  "displayName": "External Signal Card",
+  "description": "External-tree fixture proving the public plugin API is sufficient.",
+  "license": "MIT",
+  "entrypoints": { "server": "dist/server.mjs", "browser": "dist/browser/entry.mjs" },
+  "requires": { "hostApi": "^1.0.0", "plugins": {}, "capabilities": {} },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
+  "contributes": {
+    "elements": [{ "name": "signal-card", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["add-signal-card"],
+    "procedures": ["summarize-signal"],
+    "migrations": ["legacy-signal-card-v1"]
+  },
+  "configuration": {
+    "schema": "schemas/config.schema.json",
+    "file": "plugin.config.json",
+    "environment": []
+  }
+}

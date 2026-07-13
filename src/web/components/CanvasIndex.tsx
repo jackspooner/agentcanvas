@@ -1,8 +1,13 @@
 import React from 'react';
-import type { CanvasRecord } from '../../contracts';
+import type { AgentCanvasConfiguration } from '../../configuration';
+import type { CanvasBounds } from '../../contracts';
+import type { CanvasDocument } from '../v2-types';
+import { CanvasBoundsControl } from './CanvasBoundsControl';
 
 interface CanvasIndexProps {
-  canvases: CanvasRecord[];
+  canvases: CanvasDocument[];
+  configuration: AgentCanvasConfiguration;
+  onDefaultCanvasSizeChange: (size: CanvasBounds) => Promise<void> | void;
 }
 
 function formatDate(value: string): string {
@@ -12,16 +17,20 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
-function canvasMeta(canvas: CanvasRecord): string {
+function canvasMeta(canvas: CanvasDocument): string {
   const parts = [
     `${canvas.elements.length} ${canvas.elements.length === 1 ? 'element' : 'elements'}`,
-    `revision ${canvas.revision}`
+    `revision ${canvas.revision}`,
+    canvas.bounds.mode === 'unlimited' ? 'unlimited' : `${canvas.bounds.width} × ${canvas.bounds.height}`
   ];
   if (canvas.project) parts.push(canvas.project);
   return parts.join(' · ');
 }
 
-export function CanvasIndex({ canvases }: CanvasIndexProps) {
+export function CanvasIndex({ canvases, configuration, onDefaultCanvasSizeChange }: CanvasIndexProps) {
+  const defaultSize = configuration.defaultCanvasSize;
+  const defaultSizeLabel =
+    defaultSize.mode === 'unlimited' ? 'Default: Unlimited' : `Default: ${defaultSize.width} × ${defaultSize.height}`;
   return (
     <main className="canvas-index-shell">
       <header className="canvas-index-header">
@@ -31,6 +40,15 @@ export function CanvasIndex({ canvases }: CanvasIndexProps) {
             {canvases.length} {canvases.length === 1 ? 'canvas' : 'canvases'}
           </p>
         </div>
+        <CanvasBoundsControl
+          bounds={defaultSize}
+          readOnly={false}
+          onChange={onDefaultCanvasSizeChange}
+          summaryLabel={defaultSizeLabel}
+          selectLabel="Default canvas size"
+          helpText="Used when a new canvas does not provide its own size."
+          applyLabel="Save default"
+        />
       </header>
 
       {canvases.length === 0 ? (

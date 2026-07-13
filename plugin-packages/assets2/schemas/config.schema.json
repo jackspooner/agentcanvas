@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseUrl", "fetchTimeoutMs", "metadataMaxBytes", "previewMaxBytes", "contentMaxBytes"],
+  "properties": {
+    "baseUrl": { "type": "string", "pattern": "^https?://" },
+    "fetchTimeoutMs": { "type": "integer", "minimum": 100, "maximum": 30000 },
+    "metadataMaxBytes": { "type": "integer", "minimum": 1024, "maximum": 4194304 },
+    "previewMaxBytes": { "type": "integer", "minimum": 1024, "maximum": 67108864 },
+    "contentMaxBytes": { "type": "integer", "minimum": 1024, "maximum": 536870912 }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.table",
+  "version": "0.2.0",
+  "displayName": "AgentCanvas tables",
+  "description": "Captioned grid tables for AgentCanvas.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {}
+  },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own"],
+  "contributes": {
+    "elements": [{ "name": "table", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["add-table"],
+    "procedures": [],
+    "migrations": ["legacy-table-v1"]
+  }
+}

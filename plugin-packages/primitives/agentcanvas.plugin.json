@@ -1,0 +1,32 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.primitives",
+  "version": "0.2.0",
+  "displayName": "AgentCanvas primitives",
+  "description": "Text, shape, line, and arrow elements.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {}
+  },
+  "provides": {
+    "capabilities": {}
+  },
+  "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
+  "contributes": {
+    "elements": [
+      { "name": "text", "schemaVersion": 1, "browser": true, "snapshot": "supported" },
+      { "name": "shape", "schemaVersion": 1, "browser": true, "snapshot": "supported" },
+      { "name": "line", "schemaVersion": 1, "browser": true, "snapshot": "supported" },
+      { "name": "arrow", "schemaVersion": 1, "browser": true, "snapshot": "supported" }
+    ],
+    "tools": ["add-text", "add-shape", "add-line", "add-arrow"],
+    "procedures": [],
+    "migrations": ["legacy-primitives-v1"]
+  }
+}

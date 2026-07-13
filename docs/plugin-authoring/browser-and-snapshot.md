@@ -1,0 +1,23 @@
+# Browser and snapshot ABI
+
+## Browser renderers
+
+Browser plugins are framework-neutral. They must not import the host React runtime or private UI modules. Register a `BrowserElementRenderer` whose type is the canonical `<plugin-id>/<local-name>`.
+
+The host owns the outer frame, transforms, selection, drag handle, locking, opacity, z-order, read-only behavior, and error boundary. It mounts the renderer into a ShadowRoot and calls `update` without unnecessary remounts. The renderer owns only its content and must release media, event listeners, handles, and asynchronous work in `dispose`.
+
+Use the `RendererContext` abort signal, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
+
+Browser bundles execute same-origin code. Shadow DOM isolates styling and lifecycle, not security.
+
+## Snapshot renderers
+
+Snapshot renderers return bounded scene IR. They do not return SVG, HTML, CSS, external URLs, or data URLs.
+
+Supported nodes are `group`, `rect`, `ellipse`, `line`, `path`, `text`, and `imageHandle`. The host validates numbers, colors, paths, text, transforms, node/depth limits, and opaque resource handles before serialization. Use `imageHandle` only with a handle supplied through the snapshot-resource capability.
+
+Choose `space: "frame"` for content transformed by the element envelope or `space: "world"` for connectors and other world geometry. Choose an `underlay`, `content`, or `overlay` layer. Renderer failure should yield a structured diagnostic; a malformed element must not prevent unrelated elements from appearing unless it exceeds a hard safety limit.
+
+Snapshot typography is a deterministic projection, not DOM pixel parity. Share pure geometry helpers between browser and snapshot implementations when anchors, paths, or extents must match.
+
+Continue with [Testing and distribution](testing-and-distribution.md). The detailed host behavior is documented in [Browser runtime](../plugin-browser-runtime.md) and [Snapshot runtime](../plugin-snapshot-runtime.md).

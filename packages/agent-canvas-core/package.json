@@ -1,17 +1,15 @@
 {
   "name": "@agentcanvas/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Reusable AgentCanvas contracts, validation, geometry, and layout helpers.",
+  "description": "AgentCanvas canvas/document kernel contracts.",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
     "./validation": { "types": "./dist/validation.d.ts", "import": "./dist/validation.js" },
-    "./geometry": { "types": "./dist/geometry.d.ts", "import": "./dist/geometry.js" },
-    "./bboxLayoutAssets": { "types": "./dist/bboxLayoutAssets.d.ts", "import": "./dist/bboxLayoutAssets.js" },
     "./errors": { "types": "./dist/errors.d.ts", "import": "./dist/errors.js" }
   },
   "files": ["dist", "README.md"],
@@ -22,7 +20,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentcanvas/media-contracts": "0.1.0"
+    "@agentcanvas/plugin-sdk": "0.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

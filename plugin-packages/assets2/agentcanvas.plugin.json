@@ -1,0 +1,42 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.assets2",
+  "version": "0.2.0",
+  "displayName": "AgentCanvas Assets-2",
+  "description": "Required Assets-2 capability, image asset element, details, and resource delivery.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {
+      "agentcanvas.snapshot-resources": "^1.0.0"
+    }
+  },
+  "provides": {
+    "capabilities": {
+      "agentcanvas.assets": "1.0.0"
+    }
+  },
+  "permissions": ["canvas.read", "canvas.mutate-own", "assets.read", "diagnostics.emit"],
+  "contributes": {
+    "elements": [{ "name": "asset", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["place", "get-details"],
+    "procedures": ["details"],
+    "migrations": ["legacy-asset-v1"]
+  },
+  "configuration": {
+    "schema": "schemas/config.schema.json",
+    "file": "plugin.config.json",
+    "environment": [
+      "ASSETS_BASE_URL",
+      "AGENT_CANVAS_ASSET_FETCH_TIMEOUT_MS",
+      "AGENT_CANVAS_ASSET_METADATA_MAX_BYTES",
+      "AGENT_CANVAS_ASSET_PREVIEW_MAX_BYTES",
+      "AGENT_CANVAS_ASSET_PROXY_MAX_BYTES"
+    ]
+  }
+}

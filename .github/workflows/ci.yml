@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentcanvas-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality and package verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up npm 11
+        run: npm install --global npm@11
+
+      - name: Show tool versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build public packages for the external fixture
+        run: npm run build:packages
+
+      - name: Install packed SDK and testkit into the external fixture
+        shell: bash
+        run: |
+          mkdir -p tmp/ci-packages
+          npm pack --workspace @agentcanvas/plugin-sdk --pack-destination tmp/ci-packages
+          npm pack --workspace @agentcanvas/plugin-testkit --pack-destination tmp/ci-packages
+          sdk_tarball="$(find "$GITHUB_WORKSPACE/tmp/ci-packages" -maxdepth 1 -name 'agentcanvas-plugin-sdk-*.tgz' -print -quit)"
+          testkit_tarball="$(find "$GITHUB_WORKSPACE/tmp/ci-packages" -maxdepth 1 -name 'agentcanvas-plugin-testkit-*.tgz' -print -quit)"
+          test -n "$sdk_tarball"
+          test -n "$testkit_tarball"
+          npm install \
+            --prefix test/external-plugin-fixture \
+            --no-save \
+            --no-package-lock \
+            "$sdk_tarball" \
+            "$testkit_tarball"
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Build and materialize standard plugins
+        run: |
+          npm run plugins:build
+          npm run plugins:materialize -- --defaults
+
+      - name: Verify plugins
+        run: npm run plugins:verify
+
+      - name: Verify public release contents
+        run: npm run check:release
+
+      - name: Verify generated OpenAPI
+        run: npm run check:openapi
+
+      - name: Verify documentation
+        run: npm run check:docs
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Audit all dependencies for high severity findings
+        run: npm audit --audit-level=high
+
+      - name: Verify public package contents
+        run: |
+          npm publish --dry-run --workspace @agentcanvas/plugin-sdk
+          npm publish --dry-run --workspace @agentcanvas/plugin-testkit
+          npm publish --dry-run --workspace create-agentcanvas-plugin
+
+      - name: Check patch whitespace
+        run: git diff --check
+
+  browser:
+    name: Chromium end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up npm 11
+        run: npm install --global npm@11
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: npm run test:e2e
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

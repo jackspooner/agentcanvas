@@ -1,0 +1,51 @@
+# AgentCanvas browser plugin runtime
+
+## Delivery
+
+The server hashes every file in the declared browser entry's directory tree and returns a same-origin build-hash URL. Module requests require the active plugin ID and current hash, reject traversal and links, and serve only contained files with exact known MIME mappings, immutable cache, `nosniff`, and same-origin resource policy.
+
+The browser validates that the URL is unadorned, same-origin, and matches catalog identity/hash before dynamic import. Browser bundles must include their dependencies and use contained relative chunks/assets.
+
+## Renderer contract
+
+```ts
+interface BrowserElementRenderer {
+  type: `${string}/${string}`;
+  schemaVersions: readonly number[];
+  placement: "node" | "world-underlay" | "world-overlay";
+  mount(root: ShadowRoot, context: RendererContext): {
+    update(next: RendererContext): void | Promise<void>;
+    dispose(): void | Promise<void>;
+  };
+}
+```
+
+The browser activation host only exposes `registerRenderer`.
+
+## Host responsibilities
+
+- create the outer frame and open ShadowRoot;
+- own frame position, size, rotation, opacity, z-index, selection, movement, locking, and read-only state;
+- provide CSS theme tokens, read-only geometry, an overlay service, diagnostics, and abort signals;
+- mount once per element ID/type/renderer and update on context changes;
+- abort prior work, serialize updates, and dispose once;
+- catch mount/update/dispose failures and render a diagnostic card;
+- preserve an external drag handle for editable unlocked node renderers;
+- use `event.composedPath()` for interactive-region detection.
+
+Native controls and elements marked `data-agentcanvas-interactive` do not initiate pan/selection. World renderers are pointer-transparent and receive geometry rather than DOM access.
+
+## Plugin responsibilities
+
+- render content only inside the supplied ShadowRoot;
+- honor `readOnly`, `signal`, and current `schemaVersion`;
+- mark custom interactive regions;
+- close host overlays and release media/object URLs/listeners during update or dispose;
+- avoid reading host-private DOM or React state;
+- report safe diagnostics without secrets or paths.
+
+## Isolation and failure behavior
+
+Shadow DOM provides style and lifecycle isolation, not security. If browser activation fails, the plugin receives `browser_plugin_activation_failed` and its elements use kernel diagnostic cards; other plugins remain active.
+
+Current limitation: the host aborts and serializes updates, but a renderer that ignores its abort signal can still complete stale work before the queued update runs. Plugins must implement abort-aware async work.

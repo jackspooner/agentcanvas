@@ -1,0 +1,25 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.video",
+  "version": "0.2.0",
+  "displayName": "AgentCanvas video",
+  "description": "Assets-2-backed video elements with deterministic browser cleanup and snapshots.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": { "agentcanvas.assets": "^1.0.0" }
+  },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own", "assets.read", "diagnostics.emit"],
+  "contributes": {
+    "elements": [{ "name": "video", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["place"],
+    "procedures": [],
+    "migrations": ["legacy-video-v1"]
+  }
+}

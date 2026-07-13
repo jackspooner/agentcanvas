@@ -1,61 +1,120 @@
-import type {
-  AssetDetailsResponse,
-  AssetReference,
-  CanvasRecord,
-  CanvasViewport,
-  CanvasViewportState
-} from '../contracts';
+import type { AgentCanvasConfiguration } from '../configuration';
+import type { CanvasBounds, CanvasViewport, CanvasViewportState } from '../contracts';
+import type { CanvasDocument, CanvasProjection } from './v2-types';
 
-export async function fetchCanvasList(limit = 200): Promise<CanvasRecord[]> {
-  const response = await fetch(`/api/canvases?limit=${encodeURIComponent(String(limit))}`);
-  if (!response.ok) throw new Error(`failed to load canvases: ${response.status}`);
-  const body = await response.json();
-  return Array.isArray(body.canvases) ? body.canvases : [];
+async function jsonResponse(response: Response, label: string): Promise<Record<string, unknown>> {
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(detail || `${label}: ${response.status}`);
+  }
+  return response.json() as Promise<Record<string, unknown>>;
 }
 
-export async function fetchCanvasFromLocation(): Promise<{ canvas: CanvasRecord; readOnly: boolean }> {
-  const path = window.location.pathname;
-  if (path.startsWith('/c/')) {
-    const token = path.split('/').pop();
-    const response = await fetch(`/api/share/${token}`);
-    if (!response.ok) throw new Error(`failed to load share canvas: ${response.status}`);
-    const body = await response.json();
-    return { canvas: body.canvas, readOnly: true };
+export async function fetchCanvasList(limit = 200): Promise<CanvasDocument[]> {
+  const body = await jsonResponse(
+    await fetch(`/api/v1/canvases?limit=${encodeURIComponent(String(limit))}`),
+    'failed to load canvases'
+  );
+  return Array.isArray(body.canvases) ? (body.canvases as CanvasDocument[]) : [];
+}
+
+export async function fetchAgentCanvasConfiguration(): Promise<AgentCanvasConfiguration> {
+  const body = await jsonResponse(await fetch('/api/v1/configuration'), 'failed to load AgentCanvas configuration');
+  return body.configuration as AgentCanvasConfiguration;
+}
+
+export async function updateAgentCanvasConfiguration(
+  defaultCanvasSize: CanvasBounds
+): Promise<AgentCanvasConfiguration> {
+  const body = await jsonResponse(
+    await fetch('/api/v1/configuration', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ defaultCanvasSize, actor: 'web-ui' })
+    }),
+    'failed to update AgentCanvas configuration'
+  );
+  return body.configuration as AgentCanvasConfiguration;
+}
+
+export async function fetchCanvasFromLocation(): Promise<CanvasProjection & { readOnly: boolean }> {
+  const current = window.location.pathname;
+  if (current.startsWith('/c/')) {
+    const token = current.split('/').pop();
+    const body = await jsonResponse(
+      await fetch(`/api/v1/share/${encodeURIComponent(token ?? '')}`),
+      'failed to load share canvas'
+    );
+    return {
+      canvas: body.canvas as CanvasDocument,
+      elementRuntime: (body.elementRuntime ?? {}) as CanvasProjection['elementRuntime'],
+      diagnostics: (body.diagnostics ?? []) as CanvasProjection['diagnostics'],
+      readOnly: true
+    };
   }
-  const match = path.match(/^\/canvases\/([^/]+)/);
+  const match = current.match(/^\/canvases\/([^/]+)/);
   if (match) {
-    const response = await fetch(`/api/canvases/${match[1]}`);
-    if (!response.ok) throw new Error(`failed to load canvas: ${response.status}`);
-    const body = await response.json();
-    return { canvas: body.canvas, readOnly: false };
+    const body = await jsonResponse(
+      await fetch(`/api/v1/canvases/${encodeURIComponent(match[1])}`),
+      'failed to load canvas'
+    );
+    return {
+      canvas: body.canvas as CanvasDocument,
+      elementRuntime: (body.elementRuntime ?? {}) as CanvasProjection['elementRuntime'],
+      diagnostics: (body.diagnostics ?? []) as CanvasProjection['diagnostics'],
+      readOnly: false
+    };
   }
-  const response = await fetch('/api/canvases?limit=1');
-  const body = await response.json();
+  const canvases = await fetchCanvasList(1);
   return {
-    canvas: body.canvases?.[0] ?? {
-      id: 'empty',
-      title: 'No canvases yet',
-      createdBy: 'system',
-      createdAt: '',
-      updatedAt: '',
-      width: 1600,
-      height: 1000,
-      elements: [],
-      revision: 0
-    },
+    canvas:
+      canvases[0] ??
+      ({
+        id: 'empty',
+        title: 'No canvases yet',
+        createdBy: 'system',
+        createdAt: '',
+        updatedAt: '',
+        bounds: { mode: 'unlimited' },
+        elements: [],
+        revision: 0,
+        documentVersion: 2
+      } satisfies CanvasDocument),
+    elementRuntime: {},
+    diagnostics: [],
     readOnly: true
   };
 }
 
+export async function updateCanvasBounds(
+  canvasId: string,
+  bounds: CanvasBounds,
+  expectedRevision?: number
+): Promise<CanvasDocument> {
+  const body = await jsonResponse(
+    await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ bounds, expectedRevision, actor: 'web-ui' })
+    }),
+    'failed to update canvas bounds'
+  );
+  return body.canvas as CanvasDocument;
+}
+
 export async function fetchViewportState(canvasId: string): Promise<CanvasViewportState> {
-  const response = await fetch(`/api/canvases/${encodeURIComponent(canvasId)}/viewport`);
-  if (!response.ok) throw new Error(`failed to load viewport: ${response.status}`);
-  const body = await response.json();
-  return { userViewport: body.userViewport, agentViewport: body.agentViewport ?? null };
+  const body = await jsonResponse(
+    await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/viewport`),
+    'failed to load viewport'
+  );
+  return {
+    userViewport: body.userViewport as CanvasViewport,
+    agentViewport: (body.agentViewport as CanvasViewport) ?? null
+  };
 }
 
 export async function saveUserViewport(canvasId: string, viewport: CanvasViewport): Promise<void> {
-  await fetch(`/api/canvases/${encodeURIComponent(canvasId)}/viewport`, {
+  const response = await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/viewport`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -67,6 +126,7 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
       height: viewport.height
     })
   });
+  if (!response.ok) throw new Error(`failed to save viewport: ${response.status}`);
 }
 
 export async function moveCanvasElement(
@@ -74,36 +134,17 @@ export async function moveCanvasElement(
   elementId: string,
   x: number,
   y: number
-): Promise<CanvasRecord> {
-  const response = await fetch(`/api/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      actor: 'web-ui',
-      operations: [{ op: 'patchElement', elementId, patch: { x, y } }]
-    })
-  });
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(text || `failed to move element: ${response.status}`);
-  }
-  const body = await response.json();
-  return body.canvas as CanvasRecord;
-}
-
-export async function fetchAssetDetails(assetRef: AssetReference): Promise<AssetDetailsResponse> {
-  const response = await fetch(assetDetailsPath(assetRef));
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(text || `failed to load asset details: ${response.status}`);
-  }
-  return response.json() as Promise<AssetDetailsResponse>;
-}
-
-function assetDetailsPath(assetRef: AssetReference): string {
-  if (assetRef.assetId)
-    return `/api/assets/${encodeURIComponent(assetRef.project)}/${encodeURIComponent(assetRef.assetId)}/details`;
-  if (assetRef.assetKey)
-    return `/api/assets/${encodeURIComponent(assetRef.project)}/by-key/details?assetKey=${encodeURIComponent(assetRef.assetKey)}`;
-  throw new Error('asset details require assetId or assetKey');
+): Promise<CanvasDocument> {
+  const body = await jsonResponse(
+    await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        actor: 'web-ui',
+        operations: [{ op: 'patchElementFrame', elementId, frame: { x, y } }]
+      })
+    }),
+    'failed to move element'
+  );
+  return body.canvas as CanvasDocument;
 }

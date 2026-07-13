@@ -1,14 +1,7 @@
-# AgentCanvas Core
+# @agentcanvas/core
 
-Reusable AgentCanvas contracts, validation, geometry, and bbox-layout helpers.
+`@agentcanvas/core` is the portable AgentCanvas document kernel. It contains generic canvas, bounds, viewport, sharing, operation, validation-limit, and error contracts.
 
-The runtime service remains in the AgentCanvas repo root. This package owns
-portable model logic that can be reused by services, MCP tools, clients, and
-renderers.
+It deliberately does not own normal element types, plugin manifests, media references, geometry implementations, browser renderers, snapshot renderers, HTTP/MCP servers, SQLite access, or Assets-2 integration. Public generic element/plugin contracts live in `@agentcanvas/plugin-sdk`; element-specific behavior belongs to the owning plugin.
 
-## Contract Notes
-
-- Asset refs come from `@agentcanvas/media-contracts`.
-- Canvas elements may use `assetId` or `assetKey`.
-- `assetBaseUrl` is a runtime hint and may point at any configured HTTP(S)
-  Assets-2 service URL.
+The v0.2 element model is an open canonical envelope keyed by `<plugin-id>/<local-type>`. Consumers must use the frozen runtime registry to validate plugin-owned `data` and `style`; there is no closed element union or `group` type.

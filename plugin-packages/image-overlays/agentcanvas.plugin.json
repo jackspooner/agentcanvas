@@ -1,0 +1,31 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.image-overlays",
+  "version": "0.2.0",
+  "displayName": "Image overlays",
+  "description": "Bounding-box and SVG-path overlay elements with deterministic opaque-resource exports.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {
+      "agentcanvas.assets": "^1.0.0",
+      "agentcanvas.snapshot-resources": "^1.0.0"
+    }
+  },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own", "assets.read", "diagnostics.emit"],
+  "contributes": {
+    "elements": [
+      { "name": "bbox", "schemaVersion": 1, "browser": true, "snapshot": "supported" },
+      { "name": "path", "schemaVersion": 1, "browser": true, "snapshot": "supported" }
+    ],
+    "tools": ["add-bbox", "add-path", "export-png", "export-mask-zip"],
+    "procedures": ["export-png", "export-mask-zip"],
+    "migrations": ["legacy-image-overlays-v1"]
+  }
+}

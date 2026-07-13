@@ -1,0 +1,65 @@
+import type {
+  ContributionDeclarations,
+  ContributionRegistrations,
+  TestkitIssue,
+  TestkitValidationResult
+} from './types.js';
+
+type ContributionKind = keyof ContributionRegistrations;
+
+function declaredNames(declarations: ContributionDeclarations, kind: ContributionKind): readonly string[] {
+  return kind === 'elements' ? declarations.elements.map((element) => element.name) : declarations[kind];
+}
+
+export function validateContributionRegistrations(
+  declarations: ContributionDeclarations,
+  registrations: ContributionRegistrations
+): TestkitValidationResult {
+  const issues: TestkitIssue[] = [];
+  for (const kind of ['elements', 'tools', 'procedures', 'migrations'] as const) {
+    const declared = declaredNames(declarations, kind);
+    const registered = registrations[kind];
+    const declaredSet = new Set(declared);
+    const registeredSet = new Set(registered);
+
+    for (const name of declaredSet) {
+      if (!registeredSet.has(name)) {
+        issues.push({
+          path: `/contributes/${kind}/${name}`,
+          code: 'missing_registration',
+          message: `Manifest declares ${kind} contribution ${name}, but activation did not register it.`
+        });
+      }
+    }
+    for (const name of registeredSet) {
+      if (!declaredSet.has(name)) {
+        issues.push({
+          path: `/registrations/${kind}/${name}`,
+          code: 'undeclared_registration',
+          message: `Activation registered undeclared ${kind} contribution ${name}.`
+        });
+      }
+    }
+    registered.forEach((name, index) => {
+      if (registered.indexOf(name) !== index) {
+        issues.push({
+          path: `/registrations/${kind}/${index}`,
+          code: 'duplicate_registration',
+          message: `Activation registered ${kind} contribution ${name} more than once.`
+        });
+      }
+    });
+  }
+  return { ok: issues.length === 0, issues };
+}
+
+export function assertContributionRegistrations(
+  declarations: ContributionDeclarations,
+  registrations: ContributionRegistrations
+): void {
+  const result = validateContributionRegistrations(declarations, registrations);
+  if (!result.ok) {
+    const detail = result.issues.map((issue) => `${issue.path} [${issue.code}] ${issue.message}`).join('\n');
+    throw new Error(`AgentCanvas plugin registrations do not match the manifest:\n${detail}`);
+  }
+}

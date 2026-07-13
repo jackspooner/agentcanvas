@@ -1,0 +1,29 @@
+{
+  "name": "@agentcanvas/plugin-glb-viewer",
+  "version": "0.2.0",
+  "description": "First-party single-GLB viewer plugin for AgentCanvas.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "files": [
+    "agentcanvas.plugin.json",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json && vite build",
+    "check": "tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@agentcanvas/plugin-sdk": "0.2.0",
+    "@google/model-viewer": "^4.3.1"
+  },
+  "devDependencies": {
+    "@agentcanvas/plugin-testkit": "0.2.0",
+    "vite": "^8.1.3"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

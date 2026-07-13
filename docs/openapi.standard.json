@@ -1,0 +1,4160 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "const": false
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "code",
+          "message",
+          "stage",
+          "retryable",
+          "correlationId"
+        ],
+        "type": "object"
+      },
+      "CanvasElement": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "height": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "locked": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "opacity": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rotation": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "style": {
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "width": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "zIndex": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "schemaVersion",
+          "x",
+          "y",
+          "data"
+        ],
+        "type": "object"
+      },
+      "Element_agentcanvas_assets2_asset": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "alt": {
+                    "maxLength": 2000,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "assetRef": {
+                    "additionalProperties": false,
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "assetId": {}
+                        },
+                        "required": [
+                          "assetId"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "assetKey": {}
+                        },
+                        "required": [
+                          "assetKey"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "assetBaseUrl": {
+                        "pattern": "^https?://[^\\s]+$",
+                        "type": "string"
+                      },
+                      "assetId": {
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                        "type": "string"
+                      },
+                      "assetKey": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}(?:/[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127})*$",
+                        "type": "string"
+                      },
+                      "project": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
+                        "type": "string"
+                      },
+                      "type": {
+                        "const": "asset"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "project"
+                    ],
+                    "type": "object"
+                  },
+                  "caption": {
+                    "maxLength": 2000,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "fit": {
+                    "enum": [
+                      "contain",
+                      "cover",
+                      "stretch",
+                      "original",
+                      null
+                    ],
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "assetRef"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "borderColor": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "borderRadius": {
+                        "maximum": 10000,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "borderWidth": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "color": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "fill": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "fontFamily": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "fontSize": {
+                        "maximum": 1000,
+                        "minimum": 1,
+                        "type": "number"
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      },
+                      "stroke": {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      "strokeWidth": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.assets2/asset"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_markdown_document": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "markdown": {
+                    "maxLength": 20000,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "markdown"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "border": {
+                        "pattern": "^\\d+(?:\\.\\d+)?px\\s+(?:solid|dashed|dotted)\\s+#[0-9a-fA-F]{3,8}$",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "padding": {
+                        "maximum": 1000,
+                        "minimum": 0,
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.markdown/document"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_primitives_arrow": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "anchor": {
+                        "enum": [
+                          "center",
+                          "top",
+                          "right",
+                          "bottom",
+                          "left",
+                          null
+                        ]
+                      },
+                      "elementId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "x": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "y": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "stroke": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "strokeWidth": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "to": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "anchor": {
+                        "enum": [
+                          "center",
+                          "top",
+                          "right",
+                          "bottom",
+                          "left",
+                          null
+                        ]
+                      },
+                      "elementId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "x": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "y": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.primitives/arrow"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_primitives_line": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "anchor": {
+                        "enum": [
+                          "center",
+                          "top",
+                          "right",
+                          "bottom",
+                          "left",
+                          null
+                        ]
+                      },
+                      "elementId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "x": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "y": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "stroke": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "strokeWidth": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "to": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "anchor": {
+                        "enum": [
+                          "center",
+                          "top",
+                          "right",
+                          "bottom",
+                          "left",
+                          null
+                        ]
+                      },
+                      "elementId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "x": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "y": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.primitives/line"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_primitives_shape": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "shape": {
+                    "enum": [
+                      "rect",
+                      "ellipse",
+                      "diamond"
+                    ]
+                  }
+                },
+                "required": [
+                  "shape"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.primitives/shape"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_primitives_text": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "text": {
+                    "maxLength": 20000,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fill": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "fontWeight": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "stroke": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "strokeWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.primitives/text"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "Element_agentcanvas_table_table": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "caption": {
+                    "maxLength": 2000,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "columns": {
+                    "items": {
+                      "maxLength": 2000,
+                      "type": "string"
+                    },
+                    "maxItems": 50,
+                    "type": "array"
+                  },
+                  "rows": {
+                    "items": {
+                      "items": {
+                        "maxLength": 2000,
+                        "type": "string"
+                      },
+                      "maxItems": 50,
+                      "type": "array"
+                    },
+                    "maxItems": 500,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "columns",
+                  "rows"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "additionalProperties": false,
+                    "properties": {
+                      "background": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "borderRadius": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "borderWidth": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "captionColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "color": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontFamily": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "fontSize": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "headerBackground": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "headerColor": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "agentcanvas.table/table"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "JsonObject": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "PluginDiagnostic": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "elementId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "pluginId": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "PluginStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "browserEntryUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "buildHash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "capabilities": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "providerPluginId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "range": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "relationship": {
+                  "enum": [
+                    "required",
+                    "provided"
+                  ],
+                  "type": "string"
+                },
+                "status": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                },
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "relationship",
+                "version",
+                "range",
+                "providerPluginId",
+                "status"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "contributions": {
+            "additionalProperties": false,
+            "properties": {
+              "elements": {
+                "type": "array"
+              },
+              "migrations": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "procedures": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "tools": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "elements",
+              "tools",
+              "procedures",
+              "migrations"
+            ],
+            "type": "object"
+          },
+          "dependencies": {
+            "type": "object"
+          },
+          "description": {
+            "type": "string"
+          },
+          "diagnostics": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "elementId": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "severity": {
+                  "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "message",
+                "retryable"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "elements": {
+            "type": "array"
+          },
+          "hostApi": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "displayName",
+          "description",
+          "license",
+          "hostApi",
+          "permissions",
+          "buildHash",
+          "browserEntryUrl",
+          "elements",
+          "contributions",
+          "dependencies",
+          "capabilities",
+          "diagnostics"
+        ],
+        "type": "object"
+      },
+      "PluginStatusCatalog": {
+        "additionalProperties": false,
+        "properties": {
+          "diagnostics": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "elementId": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                },
+                "retryable": {
+                  "type": "boolean"
+                },
+                "severity": {
+                  "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "message",
+                "retryable"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "plugins": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "browserEntryUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "buildHash": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "capabilities": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "providerPluginId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "range": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "relationship": {
+                        "enum": [
+                          "required",
+                          "provided"
+                        ],
+                        "type": "string"
+                      },
+                      "status": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "ok": {
+                            "type": "boolean"
+                          },
+                          "retryable": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "ok"
+                        ],
+                        "type": "object"
+                      },
+                      "version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "relationship",
+                      "version",
+                      "range",
+                      "providerPluginId",
+                      "status"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "contributions": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "elements": {
+                      "type": "array"
+                    },
+                    "migrations": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "procedures": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "tools": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "elements",
+                    "tools",
+                    "procedures",
+                    "migrations"
+                  ],
+                  "type": "object"
+                },
+                "dependencies": {
+                  "type": "object"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "diagnostics": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "code": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "elementId": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "pluginId": {
+                        "type": "string"
+                      },
+                      "retryable": {
+                        "type": "boolean"
+                      },
+                      "severity": {
+                        "enum": [
+                          "info",
+                          "warning",
+                          "error"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "severity",
+                      "message",
+                      "retryable"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "elements": {
+                  "type": "array"
+                },
+                "hostApi": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "license": {
+                  "type": "string"
+                },
+                "permissions": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "version",
+                "displayName",
+                "description",
+                "license",
+                "hostApi",
+                "permissions",
+                "buildHash",
+                "browserEntryUrl",
+                "elements",
+                "contributions",
+                "dependencies",
+                "capabilities",
+                "diagnostics"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "plugins",
+          "diagnostics"
+        ],
+        "type": "object"
+      },
+      "ResourceDetails": {
+        "additionalProperties": false,
+        "properties": {
+          "byteLength": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "handle": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mimeType": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "url": {
+            "pattern": "^/api/v1/resources/[^/]+/content$",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "handle",
+          "url",
+          "mimeType",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "ResourceHandle": {
+        "additionalProperties": false,
+        "properties": {
+          "byteLength": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "handle": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mimeType": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "url": {
+            "pattern": "^/api/v1/resources/[^/]+/content$",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "handle",
+          "url",
+          "mimeType"
+        ],
+        "type": "object"
+      },
+      "WritableCanvasElement": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_assets2_asset"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_markdown_document"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_primitives_text"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_primitives_shape"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_primitives_line"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_primitives_arrow"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_table_table"
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "description": "Standard AgentCanvas v0.2 distribution contract. Runtime OpenAPI reflects the exact active plugin set.",
+    "title": "AgentCanvas API",
+    "version": "0.2.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/canvases": {
+      "get": {
+        "operationId": "canvasList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canvas list"
+          }
+        },
+        "summary": "List canvases",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      },
+      "post": {
+        "operationId": "canvasCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "background": {
+                    "type": "object"
+                  },
+                  "bounds": {
+                    "$ref": "#/components/schemas/CanvasBounds"
+                  },
+                  "conversationId": {
+                    "type": "string"
+                  },
+                  "createdBy": {
+                    "enum": [
+                      "agent",
+                      "user",
+                      "system"
+                    ],
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  },
+                  "project": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created canvas"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Create a canvas",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Creates one canvas."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}": {
+      "get": {
+        "operationId": "canvasGet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "canvas": {
+                      "$ref": "#/components/schemas/CanvasRecord"
+                    },
+                    "diagnostics": {
+                      "items": {
+                        "$ref": "#/components/schemas/PluginDiagnostic"
+                      },
+                      "type": "array"
+                    },
+                    "elementRuntime": {
+                      "additionalProperties": {
+                        "type": "object"
+                      },
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "canvas",
+                    "elementRuntime",
+                    "diagnostics"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Canvas projection"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          }
+        },
+        "summary": "Get a canonical canvas plus runtime projection",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      },
+      "patch": {
+        "operationId": "canvasUpdateBounds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "actor": {
+                    "type": "string"
+                  },
+                  "bounds": {
+                    "$ref": "#/components/schemas/CanvasBounds"
+                  },
+                  "expectedRevision": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "bounds"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated canvas"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Update canvas bounds",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": [
+            "Updates bounds and increments the canvas revision."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/elements:batch": {
+      "post": {
+        "operationId": "canvasMutateElements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "actor": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "idempotencyKey": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "operations": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "element": {
+                              "$ref": "#/components/schemas/WritableCanvasElement"
+                            },
+                            "op": {
+                              "const": "upsertElement"
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "element"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "properties": {
+                            "data": {
+                              "type": "object"
+                            },
+                            "elementId": {
+                              "type": "string"
+                            },
+                            "frame": {
+                              "type": "object"
+                            },
+                            "metadata": {
+                              "type": "object"
+                            },
+                            "op": {
+                              "enum": [
+                                "patchElementFrame",
+                                "replaceElementData",
+                                "replaceElementMetadata",
+                                "deleteElement"
+                              ]
+                            },
+                            "style": {
+                              "type": [
+                                "object",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "elementId"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "op": {
+                              "const": "clear"
+                            }
+                          },
+                          "required": [
+                            "op"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "operations"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "canvas": {
+                      "$ref": "#/components/schemas/CanvasRecord"
+                    },
+                    "diagnostics": {
+                      "items": {
+                        "$ref": "#/components/schemas/PluginDiagnostic"
+                      },
+                      "type": "array"
+                    },
+                    "elementRuntime": {
+                      "additionalProperties": {
+                        "type": "object"
+                      },
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "canvas",
+                    "elementRuntime",
+                    "diagnostics"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Updated canvas projection"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Apply explicit element operations",
+        "tags": [
+          "Elements"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": [
+            "Mutates element envelopes and increments the canvas revision."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/share-links": {
+      "get": {
+        "operationId": "canvasListShareLinks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Share links"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          }
+        },
+        "summary": "List share links",
+        "tags": [
+          "Sharing"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      },
+      "post": {
+        "operationId": "canvasCreateShareLink",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expiresAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created share link"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Create a read-only share link",
+        "tags": [
+          "Sharing"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Creates a revocable read-only share token."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/share-links/{shareLinkId}": {
+      "delete": {
+        "operationId": "canvasRevokeShareLink",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "shareLinkId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked share link"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Revoke a share link",
+        "tags": [
+          "Sharing"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Revokes the selected share link."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/snapshot": {
+      "post": {
+        "operationId": "canvasSnapshot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "diagnostics": {
+                      "items": {
+                        "$ref": "#/components/schemas/PluginDiagnostic"
+                      },
+                      "type": "array"
+                    },
+                    "snapshot": {
+                      "$ref": "#/components/schemas/ResourceHandle"
+                    }
+                  },
+                  "required": [
+                    "snapshot",
+                    "diagnostics"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Snapshot resource handle and diagnostics"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Render a safe SVG snapshot into an opaque resource",
+        "tags": [
+          "Snapshots"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": [
+            "Creates an expiring in-memory resource handle."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/title": {
+      "patch": {
+        "operationId": "canvasRename",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "actor": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "title": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Renamed canvas"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Rename a canvas",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": [
+            "Renames the canvas and increments its revision."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/viewport": {
+      "get": {
+        "operationId": "canvasGetViewport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viewport state"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          }
+        },
+        "summary": "Get user and agent viewport state",
+        "tags": [
+          "Viewport"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      },
+      "post": {
+        "operationId": "canvasSaveUserViewport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "centerX": {
+                    "type": "number"
+                  },
+                  "centerY": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "width": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "zoom": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "centerX",
+                  "centerY",
+                  "zoom",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved user viewport"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Save the user viewport",
+        "tags": [
+          "Viewport"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Updates user viewport state."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/viewport/focus": {
+      "post": {
+        "operationId": "canvasFocusAgentViewport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "centerX": {
+                    "type": "number"
+                  },
+                  "centerY": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "width": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "zoom": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "centerX",
+                  "centerY",
+                  "zoom",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Saved agent viewport"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Publish an agent viewport focus",
+        "tags": [
+          "Viewport"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Updates agent viewport state."
+          ]
+        }
+      }
+    },
+    "/api/v1/configuration": {
+      "get": {
+        "operationId": "canvasGetConfiguration",
+        "responses": {
+          "200": {
+            "description": "Current configuration"
+          }
+        },
+        "summary": "Get AgentCanvas document defaults",
+        "tags": [
+          "Configuration"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      },
+      "patch": {
+        "operationId": "canvasUpdateConfiguration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "actor": {
+                    "type": "string"
+                  },
+                  "defaultCanvasSize": {
+                    "$ref": "#/components/schemas/CanvasBounds"
+                  }
+                },
+                "required": [
+                  "defaultCanvasSize"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated configuration"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Replace AgentCanvas document defaults",
+        "tags": [
+          "Configuration"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "No retry is normally required.",
+          "sideEffects": [
+            "Changes defaults for canvases created later."
+          ]
+        }
+      }
+    },
+    "/api/v1/plugin-modules/{pluginId}/{buildHash}/{modulePath}": {
+      "get": {
+        "operationId": "canvasGetPluginModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pluginId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "buildHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "modulePath",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Immutable ESM module bytes"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          }
+        },
+        "summary": "Load an immutable same-origin browser plugin module",
+        "tags": [
+          "Plugins"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      }
+    },
+    "/api/v1/plugins": {
+      "get": {
+        "operationId": "canvasListPlugins",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginStatusCatalog"
+                }
+              }
+            },
+            "description": "Sanitized active plugin catalog"
+          }
+        },
+        "summary": "List active AgentCanvas plugins",
+        "tags": [
+          "Plugins"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "sideEffects": [],
+          "useWhen": [
+            "Discover installed element types, tools, procedures, browser modules, and safe capability state."
+          ]
+        }
+      }
+    },
+    "/api/v1/plugins/{pluginId}": {
+      "get": {
+        "operationId": "canvasGetPlugin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pluginId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginStatus"
+                }
+              }
+            },
+            "description": "Sanitized plugin status"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Plugin is not active"
+          }
+        },
+        "summary": "Get one active plugin",
+        "tags": [
+          "Plugins"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "sideEffects": [],
+          "useWhen": [
+            "Inspect one active plugin after discovery."
+          ]
+        }
+      }
+    },
+    "/api/v1/plugins/agentcanvas.assets2/procedures/details": {
+      "post": {
+        "operationId": "plugin_agentcanvas_assets2__details",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "assetRef": {
+                    "additionalProperties": false,
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "assetId": {}
+                        },
+                        "required": [
+                          "assetId"
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "assetKey": {}
+                        },
+                        "required": [
+                          "assetKey"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "assetBaseUrl": {
+                        "pattern": "^https?://[^\\s]+$",
+                        "type": "string"
+                      },
+                      "assetId": {
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                        "type": "string"
+                      },
+                      "assetKey": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}(?:/[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127})*$",
+                        "type": "string"
+                      },
+                      "project": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
+                        "type": "string"
+                      },
+                      "type": {
+                        "const": "asset"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "project"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "assetRef"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "details": {
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "details"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Validated plugin procedure result"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Procedure input failed validation"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Plugin or procedure is unavailable"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Procedure timed out"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Procedure execution failed"
+          }
+        },
+        "summary": "Read the safe browser details projection for an Assets-2 asset.",
+        "tags": [
+          "Plugin procedures"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Affected canvas and plugin diagnostics after successful mutation."
+            ]
+          },
+          "sideEffects": [
+            "Runs trusted plugin code and may mutate canvases according to the plugin permissions."
+          ],
+          "useWhen": [
+            "Invoke the agentcanvas.assets2/details plugin workflow."
+          ]
+        }
+      }
+    },
+    "/api/v1/resources/{handle}/content": {
+      "get": {
+        "operationId": "canvasGetResourceContent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Bounded resource bytes"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource handle was not found"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource exceeds the delivery limit"
+          }
+        },
+        "summary": "Resolve bounded content for an opaque resource handle",
+        "tags": [
+          "Resources"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "doNotUseWhen": [
+            "Agent-readable metadata or a compact resource URL is sufficient."
+          ],
+          "sideEffects": [],
+          "useWhen": [
+            "A consumer explicitly needs bytes after inspecting resource details."
+          ]
+        }
+      }
+    },
+    "/api/v1/resources/{handle}/details": {
+      "get": {
+        "operationId": "canvasGetResourceDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceDetails"
+                }
+              }
+            },
+            "description": "Resource metadata"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource handle was not found"
+          }
+        },
+        "summary": "Get safe metadata for an opaque resource handle",
+        "tags": [
+          "Resources"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "sideEffects": [],
+          "useWhen": [
+            "Inspect MIME type, size, dimensions, or checksum without retrieving binary content."
+          ]
+        }
+      }
+    },
+    "/api/v1/share/{token}": {
+      "get": {
+        "operationId": "canvasResolveShare",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read-only canvas projection"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          }
+        },
+        "summary": "Resolve a read-only share token",
+        "tags": [
+          "Sharing"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "canvasHealth",
+        "responses": {
+          "200": {
+            "description": "Service and required dependencies are ready"
+          },
+          "503": {
+            "description": "A required dependency is unavailable"
+          }
+        },
+        "summary": "Check AgentCanvas and required Assets-2 readiness",
+        "tags": [
+          "Service"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": []
+        }
+      }
+    },
+    "/whoami": {
+      "get": {
+        "operationId": "canvasWhoami",
+        "responses": {
+          "200": {
+            "description": "Safe service identity"
+          }
+        },
+        "summary": "Inspect safe service, plugin, MCP, and Assets-2 identity",
+        "tags": [
+          "Service"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Read-only.",
+          "retry": "No retry is normally required.",
+          "sideEffects": []
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Plugins"
+    },
+    {
+      "name": "Plugin procedures"
+    },
+    {
+      "name": "Resources"
+    }
+  ]
+}
