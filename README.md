@@ -197,6 +197,8 @@ AGENT_CANVAS_PUBLIC_BASE_URL=http://127.0.0.1:23003
 AGENT_CANVAS_ALLOW_REMOTE=false
 AGENT_CANVAS_DB=./data/agent-canvas.sqlite
 AGENT_CANVAS_DEFAULT_SIZE=unlimited
+AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS=30000
+AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS=500
 ```
 
 The stdio MCP bridge uses `AGENT_CANVAS_BASE_URL` when set and otherwise connects to `AGENT_CANVAS_PUBLIC_BASE_URL`:
@@ -219,7 +221,9 @@ Plugin secrets belong only in environment variables declared by that plugin mani
 
 AgentCanvas refuses a non-loopback bind unless `AGENT_CANVAS_ALLOW_REMOTE=true`. This is only for an intentional trusted network and does not add authentication. Host and Origin allowlists are configured with `AGENT_CANVAS_ALLOWED_HOSTS` and `AGENT_CANVAS_ALLOWED_ORIGINS`.
 
-Run AgentCanvas under a dedicated least-privilege operating-system account that can read the installation/plugin directories and write only the configured database, data, and log locations. Do not run it as an administrator, root, or `LocalSystem`. Because plugins execute trusted Node.js and same-origin browser code, the service account's filesystem and network permissions are the effective security boundary.
+At startup, AgentCanvas retries only required-capability failures marked `retryable` until `AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS` expires, pausing for `AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS` between probes. Missing capabilities, incompatible versions, and non-retryable identity failures still fail immediately.
+
+Run AgentCanvas under a dedicated least-privilege operating-system account that can read the installation/plugin directories and write only the configured database, data, and log locations. Do not run it as an administrator, root, or `LocalSystem`. The supplied Windows templates use passwordless per-service virtual accounts. Because plugins execute trusted Node.js and same-origin browser code, the service account's filesystem and network permissions are the effective security boundary.
 
 ## Repository layout
 

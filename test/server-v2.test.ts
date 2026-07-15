@@ -37,8 +37,14 @@ function fixturePlugins(): string {
   );
   fs.writeFileSync(
     path.join(pluginRoot, 'dist', 'server.mjs'),
-    `export default { activate(host) {
-      host.provideCapability({ name: 'agentcanvas.assets', version: '1.0.0', value: {}, readiness: async () => ({ ok: true }) });
+    `let readinessChecks = 0;
+    export default { activate(host) {
+      host.provideCapability({ name: 'agentcanvas.assets', version: '1.0.0', value: {}, readiness: async () => {
+        readinessChecks += 1;
+        return readinessChecks < 3
+          ? { ok: false, code: 'assets_unavailable', retryable: true }
+          : { ok: true };
+      } });
       host.registerElementType({
         name: 'card', schemaVersion: 1, browser: true, snapshot: 'supported',
         dataSchema: { type: 'object', additionalProperties: false, required: ['title'], properties: { title: { type: 'string' } } },
@@ -72,7 +78,11 @@ describe('v0.2 assembled runtime', () => {
     const runtime = await createV2Runtime({
       pluginsRoot: fixturePlugins(),
       databasePath: ':memory:',
-      config: { publicBaseUrl: 'http://127.0.0.1:23003' }
+      config: {
+        publicBaseUrl: 'http://127.0.0.1:23003',
+        startupReadinessTimeoutMs: 100,
+        startupReadinessRetryIntervalMs: 1
+      }
     });
     const app = createV2App(runtime);
     expect((await app.request('/health')).status).toBe(200);
@@ -150,7 +160,17 @@ describe('v0.2 assembled runtime', () => {
     await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
     const listedTools = await client.listTools();
     expect(listedTools.tools.map((tool) => tool.name)).toEqual(mcp.tools.map((tool) => tool.name));
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_rename');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_upsert_element');
+    const renameCall = await client.callTool({
+      name: 'canvas_rename',
+      arguments: { canvasId, title: 'Renamed by agent', expectedRevision: 2 }
+    });
+    expect(renameCall.structuredContent).toMatchObject({
+      id: canvasId,
+      title: 'Renamed by agent',
+      revision: 3
+    });
     const pluginCall = await client.callTool({ name: 'canvas_list_plugins', arguments: {} });
     expect(pluginCall.structuredContent).toMatchObject({ plugins: [{ id: 'fixture.cards' }] });
     await Promise.all([client.close(), mcp.server.close()]);

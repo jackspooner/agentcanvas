@@ -149,6 +149,7 @@ The kernel registers:
 - `canvas_create`
 - `canvas_list`
 - `canvas_get`
+- `canvas_rename`
 - `canvas_upsert_element`
 - `canvas_patch_element_frame`
 - `canvas_replace_element_data`

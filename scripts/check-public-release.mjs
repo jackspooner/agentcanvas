@@ -83,10 +83,25 @@ if (!/(?:restart|reload)[^\n]{0,80}MCP|MCP[^\n]{0,80}(?:restart|reload)/i.test(m
   failures.push('MCP documentation must tell upgrade users to restart or reload their client tool catalog.');
 }
 
-const service = readJson('service/Workspace2AgentCanvas.servy.json');
-if (service.RunAsLocalSystem === true) {
-  failures.push('The public Servy template must not run trusted plugins as LocalSystem.');
+for (const servicePath of ['service/AgentCanvas.servy.json', 'service/Workspace2AgentCanvas.servy.json']) {
+  const service = readJson(servicePath);
+  if (service.RunAsLocalSystem !== false) {
+    failures.push(`${servicePath} must explicitly disable LocalSystem.`);
+  }
+  if (service.UserAccount !== `NT SERVICE\\${service.Name}`) {
+    failures.push(`${servicePath} must use its dedicated passwordless Windows virtual service account.`);
+  }
+  if (Object.hasOwn(service, 'Password')) {
+    failures.push(`${servicePath} must not contain a service-account password.`);
+  }
+  if (typeof service.EnvironmentVariables !== 'string' || Object.hasOwn(service, 'Environment')) {
+    failures.push(`${servicePath} must use Servy's importable EnvironmentVariables field.`);
+  }
+  if (service.EnableConsoleUI !== false || service.RecoveryAction !== 1) {
+    failures.push(`${servicePath} must use Servy's importable console and recovery fields.`);
+  }
 }
+requireFile('service/configure-virtual-service-account.ps1');
 
 const repositoryUrls = new Set([
   'https://github.com/jackspooner/AgentCanvas.git',

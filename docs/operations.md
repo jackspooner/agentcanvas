@@ -107,6 +107,8 @@ curl http://127.0.0.1:23003/api/v1/plugins
 
 `/health` is readiness-oriented and returns HTTP 503 when the required Assets-2 provider is unhealthy. `/whoami` safely reports host version, plugin API version, active IDs, MCP endpoint, and Assets-2 identity/capabilities.
 
+Before listening, the host retries only provider failures marked retryable for the bounded interval configured by `AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS` and `AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS`. This lets an automatic service dependency finish becoming HTTP-ready without masking missing capabilities, incompatible versions, or identity errors.
+
 ## Database operations
 
 AgentCanvas never opportunistically changes an older production schema during startup. Use the offline CLI for host or installed-plugin migrations:

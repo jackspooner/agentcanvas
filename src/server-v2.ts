@@ -554,7 +554,10 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
   const store = new V2SqliteCanvasStore(new PluginElementValidator(plugins.registry), config.databasePath, config);
   plugins.bindDatabase(store.db);
   assertPluginSchemasReady(store.db, plugins.registry, config.databasePath, plugins.pluginsRoot);
-  await assertRequiredPluginCapabilities(plugins.registry);
+  await assertRequiredPluginCapabilities(plugins.registry, {
+    timeoutMs: config.startupReadinessTimeoutMs,
+    retryIntervalMs: config.startupReadinessRetryIntervalMs
+  });
   const browserCatalog = await createBrowserPluginCatalog(plugins.registry);
   const openapi = createRegistryOpenApiDocument(plugins.registry, {
     title: 'AgentCanvas API',

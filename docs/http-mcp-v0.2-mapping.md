@@ -46,11 +46,12 @@ Type or schema-version changes require migration or delete plus upsert.
 | `canvas_create` | `canvas_create` |
 | `canvas_list` | `canvas_list` |
 | `canvas_get` | `canvas_get` |
+| rename | `canvas_rename` |
 | generic add/update | `canvas_upsert_element`, `canvas_patch_element_frame`, `canvas_replace_element_data`, `canvas_replace_element_metadata` |
 | `canvas_delete_element` | `canvas_delete_element` |
 | `canvas_clear` | `canvas_clear` |
 | none | `canvas_list_plugins`, `canvas_get_plugin` |
-| rename/configuration/bounds/share/viewport/screenshot tools | no current v0.2 MCP core equivalent; use the corresponding HTTP route where implemented |
+| configuration/bounds/share/viewport/screenshot tools | no current v0.2 MCP core equivalent; use the corresponding HTTP route where implemented |
 
 ## MCP feature tools
 

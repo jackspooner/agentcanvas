@@ -34,6 +34,8 @@ describe('AgentCanvas dotenv bootstrap', () => {
         'AGENT_CANVAS_PUBLIC_BASE_URL=http://example.test:29123',
         'AGENT_CANVAS_DB=./custom-agent-canvas.sqlite',
         'AGENT_CANVAS_DEFAULT_SIZE=1440x900',
+        'AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS=45000',
+        'AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS=750',
         'ASSETS_BASE_URL=http://assets.example.test',
         ''
       ].join('\n')
@@ -45,6 +47,8 @@ describe('AgentCanvas dotenv bootstrap', () => {
     delete process.env.AGENT_CANVAS_PUBLIC_BASE_URL;
     delete process.env.AGENT_CANVAS_DB;
     delete process.env.AGENT_CANVAS_DEFAULT_SIZE;
+    delete process.env.AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS;
+    delete process.env.AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS;
     delete process.env.ASSETS_BASE_URL;
     process.chdir(dir);
 
@@ -56,6 +60,8 @@ describe('AgentCanvas dotenv bootstrap', () => {
       publicBaseUrl: 'http://example.test:29123',
       databasePath: './custom-agent-canvas.sqlite',
       defaultCanvasSize: { mode: 'fixed', width: 1440, height: 900 },
+      startupReadinessTimeoutMs: 45000,
+      startupReadinessRetryIntervalMs: 750,
       security: {
         allowRemote: true,
         allowedHosts: ['example.test:29123', '0.0.0.0:29123'],
@@ -74,5 +80,16 @@ describe('AgentCanvas dotenv bootstrap', () => {
   it('rejects malformed default canvas sizes', () => {
     process.env.AGENT_CANVAS_DEFAULT_SIZE = 'wide';
     expect(() => loadConfig()).toThrow(/unlimited or WIDTHxHEIGHT/i);
+  });
+
+  it('uses bounded startup readiness settings', () => {
+    delete process.env.AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS;
+    delete process.env.AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS;
+    expect(loadConfig()).toMatchObject({
+      startupReadinessTimeoutMs: 30_000,
+      startupReadinessRetryIntervalMs: 500
+    });
+    process.env.AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS = '300001';
+    expect(() => loadConfig()).toThrow(/AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS/);
   });
 });

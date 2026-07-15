@@ -153,6 +153,17 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       annotations: { readOnlyHint: true }
     },
     mutationTool(
+      'canvas_rename',
+      'Rename a canvas',
+      {
+        canvasId: CANVAS_ID,
+        title: { type: 'string', minLength: 1 },
+        expectedRevision: { type: 'integer', minimum: 1 }
+      },
+      ['canvasId', 'title'],
+      canvas
+    ),
+    mutationTool(
       'canvas_upsert_element',
       'Upsert a complete current-version element',
       {
@@ -274,6 +285,14 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
   if (name === 'canvas_get') return json(store.getCanvas(canvasId));
+  if (name === 'canvas_rename') {
+    return json(
+      store.renameCanvas(canvasId, {
+        title: input.title as string,
+        expectedRevision
+      })
+    );
+  }
   if (name === 'canvas_upsert_element') {
     return json(
       store.applyOperations(canvasId, {

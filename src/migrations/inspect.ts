@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { inspectDatabaseVersion } from '../store/version';
 import { analyzeLegacyElement } from './legacy';
 import type {
   DatabaseVersionState,
@@ -80,6 +81,8 @@ export function inspectMigrationDatabase(
   const db = new DatabaseSync(absolutePath, { readOnly: true });
   try {
     const versions = versionState(db);
+    const databaseVersion = inspectDatabaseVersion(db);
+    const sourceVersion = databaseVersion.kind === 'v1' ? 1 : databaseVersion.kind === 'v2' ? 2 : null;
     const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(
       (row) => Object.values(row)[0] ?? 'unknown'
     );
@@ -134,29 +137,36 @@ export function inspectMigrationDatabase(
           elements += parsed.length;
           const seenIds = new Set<string>();
           for (const element of parsed) {
-            const analysis = analyzeLegacyElement(row.id, element);
-            issues.push(...analysis.issues);
-            runtimeFieldsToStrip.push(...analysis.runtimeFields);
-            groupBlockers.push(...analysis.groupBlockers);
-            if (analysis.mapping) {
-              const current = typeCounts.get(analysis.mapping.legacyType);
-              if (current) current.count += 1;
-              else typeCounts.set(analysis.mapping.legacyType, { ...analysis.mapping });
+            const analysis = sourceVersion === 1 ? analyzeLegacyElement(row.id, element) : null;
+            if (analysis) {
+              issues.push(...analysis.issues);
+              runtimeFieldsToStrip.push(...analysis.runtimeFields);
+              groupBlockers.push(...analysis.groupBlockers);
+              if (analysis.mapping) {
+                const current = typeCounts.get(analysis.mapping.legacyType);
+                if (current) current.count += 1;
+                else typeCounts.set(analysis.mapping.legacyType, { ...analysis.mapping });
+              }
+              if (analysis.pluginId) requiredImporters.add(analysis.pluginId);
             }
-            if (analysis.pluginId) requiredImporters.add(analysis.pluginId);
-            if (analysis.elementId) {
-              if (seenIds.has(analysis.elementId)) {
+            const elementId =
+              analysis?.elementId ??
+              (element && typeof element === 'object' && typeof (element as { id?: unknown }).id === 'string'
+                ? (element as { id: string }).id
+                : undefined);
+            if (elementId) {
+              if (seenIds.has(elementId)) {
                 issues.push({
                   code: 'duplicate_element_id',
                   severity: 'blocker',
-                  message: `duplicate element id in canvas: ${analysis.elementId}`,
+                  message: `duplicate element id in canvas: ${elementId}`,
                   canvasId: row.id,
-                  elementId: analysis.elementId
+                  elementId
                 });
               }
-              seenIds.add(analysis.elementId);
+              seenIds.add(elementId);
             }
-            if (options.validateLegacyElement) {
+            if (sourceVersion === 1 && options.validateLegacyElement) {
               try {
                 options.validateLegacyElement(element);
               } catch (error) {
@@ -165,7 +175,7 @@ export function inspectMigrationDatabase(
                   severity: 'blocker',
                   message: error instanceof Error ? error.message : 'legacy validator rejected element',
                   canvasId: row.id,
-                  ...(analysis.elementId ? { elementId: analysis.elementId } : {})
+                  ...(elementId ? { elementId } : {})
                 });
               }
             }
@@ -184,6 +194,16 @@ export function inspectMigrationDatabase(
         message: `contradictory document versions: ${versions.documentVersions.join(', ') || '<none>'}`
       });
     }
+    if (databaseVersion.kind === 'contradictory' || databaseVersion.kind === 'newer') {
+      issues.push({
+        code: 'invalid_document_version',
+        severity: 'blocker',
+        message:
+          databaseVersion.kind === 'contradictory'
+            ? databaseVersion.message
+            : `database version ${databaseVersion.physicalVersion}/${databaseVersion.documentVersion} is newer than AgentCanvas supports`
+      });
+    }
     if (!integrity.every((value) => value === 'ok')) {
       issues.push({
         code: 'database_unreadable',
@@ -199,7 +219,6 @@ export function inspectMigrationDatabase(
       });
     }
 
-    const sourceVersion = versions.documentVersions.length === 1 ? (versions.documentVersions[0] as 1 | 2) : null;
     return {
       databasePath: absolutePath,
       intendedBackupPath: options.intendedBackupPath ?? intendedMigrationBackupPath(absolutePath, options.now),

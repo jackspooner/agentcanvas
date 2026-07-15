@@ -4,6 +4,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { inspectMigrationDatabase } from '../src/migrations/inspect';
+import { initializeEmptyV2Database } from '../src/store/version';
 
 const temporaryDirectories: string[] = [];
 
@@ -72,5 +73,46 @@ describe('migration inspection', () => {
       new Set(['group_element_present', 'unknown_legacy_type', 'duplicate_element_id', 'unexpected_legacy_field'])
     );
     expect(report.groupBlockers).toEqual([{ canvasId: 'canvas_a', elementId: 'same' }]);
+  });
+
+  it('recognizes an existing v2 database without applying legacy element analysis', () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'agentcanvas-v2-inspection-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'canvas.sqlite');
+    const db = new DatabaseSync(databasePath);
+    initializeEmptyV2Database(db, '0.2.0', '2026-07-15T12:00:00.000Z');
+    db.prepare(
+      `INSERT INTO canvases
+       (id, title, created_by, created_at, updated_at, width, height, elements_json, revision, document_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      'canvas_v2',
+      'Existing v2 canvas',
+      'agent',
+      '2026-07-15T12:00:00.000Z',
+      '2026-07-15T12:00:00.000Z',
+      1920,
+      1080,
+      JSON.stringify([
+        {
+          id: 'text_1',
+          type: 'agentcanvas.primitives/text',
+          schemaVersion: 1,
+          x: 10,
+          y: 20,
+          data: { text: 'Already migrated' }
+        }
+      ]),
+      1,
+      2
+    );
+    db.close();
+
+    const report = inspectMigrationDatabase(databasePath);
+    expect(report).toMatchObject({ sourceVersion: 2, targetVersion: 2, canApply: false });
+    expect(report.counts.elements).toBe(1);
+    expect(report.issues).toEqual([]);
+    expect(report.typeMappings).toEqual([]);
+    expect(report.requiredPluginImporters).toEqual([]);
   });
 });
