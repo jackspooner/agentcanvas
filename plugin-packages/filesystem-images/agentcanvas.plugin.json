@@ -1,0 +1,32 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.filesystem-images",
+  "version": "0.1.0",
+  "displayName": "Filesystem images",
+  "description": "Optional image nodes backed by files below administrator-allowlisted local roots.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.0.0",
+    "plugins": {},
+    "capabilities": {
+      "agentcanvas.snapshot-resources": "^1.0.0"
+    }
+  },
+  "provides": { "capabilities": {} },
+  "permissions": ["canvas.read", "canvas.mutate-own", "filesystem.read", "diagnostics.emit"],
+  "contributes": {
+    "elements": [{ "name": "image", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "tools": ["place", "list-roots"],
+    "procedures": [],
+    "migrations": []
+  },
+  "configuration": {
+    "schema": "schemas/config.schema.json",
+    "file": "plugin.config.json",
+    "environment": []
+  }
+}

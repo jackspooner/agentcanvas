@@ -1,5 +1,5 @@
 import type { AgentCanvasConfiguration } from '../configuration';
-import type { CanvasBounds, CanvasViewport, CanvasViewportState } from '../contracts';
+import type { CanvasBounds, CanvasOperation, CanvasViewport, CanvasViewportState } from '../contracts';
 import type { CanvasDocument, CanvasProjection } from './v2-types';
 
 async function jsonResponse(response: Response, label: string): Promise<Record<string, unknown>> {
@@ -129,11 +129,10 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
   if (!response.ok) throw new Error(`failed to save viewport: ${response.status}`);
 }
 
-export async function moveCanvasElement(
+export async function applyCanvasOperations(
   canvasId: string,
-  elementId: string,
-  x: number,
-  y: number
+  operations: readonly CanvasOperation[],
+  expectedRevision?: number
 ): Promise<CanvasDocument> {
   const body = await jsonResponse(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
@@ -141,10 +140,11 @@ export async function moveCanvasElement(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         actor: 'web-ui',
-        operations: [{ op: 'patchElementFrame', elementId, frame: { x, y } }]
+        expectedRevision,
+        operations
       })
     }),
-    'failed to move element'
+    'failed to update canvas elements'
   );
   return body.canvas as CanvasDocument;
 }

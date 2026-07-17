@@ -1,0 +1,59 @@
+{
+  "name": "@agentcanvas/editor",
+  "version": "0.3.0-alpha.1",
+  "description": "Polished controlled canvas editor for AgentCanvas documents.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackspooner/AgentCanvas.git",
+    "directory": "packages/editor"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./style.css"
+  },
+  "files": [
+    "dist",
+    "style.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./style.css"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.11.2",
+    "lucide-react": "^1.24.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

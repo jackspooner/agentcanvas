@@ -9,7 +9,7 @@
 - MCP contracts: `src/mcp-v2/server.ts` plus active plugin tool descriptors.
 - Runtime OpenAPI: `src/api-v2/` and `GET /openapi.json`.
 
-Runtime `/openapi.json` is authoritative for the active registry. The checked-in standard document is generated from the four default plugins and enforced by `npm run check:openapi`.
+Runtime `/openapi.json` is authoritative for the active registry. The checked-in standard document is generated from the three default extensions and enforced by `npm run check:openapi`.
 
 ## Canonical element envelope
 

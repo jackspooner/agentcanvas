@@ -2,6 +2,14 @@
 
 ## Plugin architecture
 
+- The public product term is extension. Keep `plugin`, `plugins/`, and
+  `agentcanvas.plugin/v1` where they are compatibility/runtime identifiers;
+  new public authoring surfaces should use extension terminology.
+- `@agentcanvas/editor` is the only package allowed to import React Flow.
+  Document, HTTP, MCP, root web, and extension APIs must stay on canonical
+  AgentCanvas contracts.
+- Core toolbar, keyboard, menu, and extension actions must use the shared
+  editor command service.
 - Runtime activation is determined only by non-hidden immediate child folders under `plugins/`. Do not add `agentcanvas.config.mjs`, an enabled-plugin list, recursive discovery, remote loading, or hot reload.
 - First-party source belongs in `plugin-packages/`; built distributions belong in `dist/plugin-catalog/`; `plugins/` is generated active runtime state.
 - Normal element behavior must use `@agentcanvas/plugin-sdk`. Do not add element type switches to kernel validation, HTTP, MCP, browser, or snapshot code.

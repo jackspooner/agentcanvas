@@ -1,21 +1,23 @@
-# Build your first plugin
+# Build your first extension
 
-This tutorial creates, customizes, packages, installs, and verifies an AgentCanvas plugin without importing private host modules.
+This tutorial creates, customizes, packages, installs, and verifies an
+AgentCanvas extension without importing private host modules or React Flow.
 
 ## 1. Scaffold the project
 
 From the AgentCanvas checkout:
 
 ```bash
-npm run build --workspace create-agentcanvas-plugin
-npm exec --workspace create-agentcanvas-plugin -- create-agentcanvas-plugin signal-card
+npm run build --workspace create-agentcanvas-extension
+npm exec --workspace create-agentcanvas-extension -- create-agentcanvas-extension signal-card
 cd signal-card
 npm install
 ```
 
 The scaffold name accepts lowercase letters, numbers, and hyphens. It creates a standalone package; it does not need to live under AgentCanvas.
 
-Once `create-agentcanvas-plugin` is published, use `npx create-agentcanvas-plugin signal-card` instead.
+Once `create-agentcanvas-extension` is published, use
+`npx create-agentcanvas-extension signal-card` instead.
 
 ## 2. Understand the generated layout
 
@@ -24,6 +26,7 @@ signal-card/
   agentcanvas.plugin.json
   plugin.config.json
   schemas/config.schema.json
+  src/extension.mts
   src/schemas.ts
   src/server.mts
   src/browser/entry.mts
@@ -34,7 +37,10 @@ signal-card/
   README.md
 ```
 
-The distribution contract is the manifest plus only its declared prebuilt files. Source files and the host repository are not runtime dependencies.
+`src/extension.mts` is the authoring source for identity and contribution
+declarations. `npm run generate:manifest` writes the static
+`agentcanvas.plugin.json` distribution contract. Source files and the host
+repository are not runtime dependencies.
 
 ## 3. Choose identity and contribution names
 
@@ -62,7 +68,7 @@ The scaffold initially contributes local element `hello-card`. The remaining exa
 Edit `src/schemas.ts` and use the same JSON Schema objects for runtime registration and tests:
 
 ```ts
-import type { JsonSchema } from '@agentcanvas/plugin-sdk';
+import type { JsonSchema } from '@agentcanvas/extension-sdk';
 
 export const cardDataSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -85,7 +91,7 @@ Keep frame properties such as `x`, `y`, `width`, `height`, `rotation`, `opacity`
 In `src/server.mts`, register exactly what the manifest declares:
 
 ```ts
-import type { AgentCanvasServerPlugin } from '@agentcanvas/plugin-sdk';
+import type { AgentCanvasServerPlugin } from '@agentcanvas/extension-sdk';
 import { cardDataSchema } from './schemas.js';
 
 const plugin: AgentCanvasServerPlugin = {
@@ -150,7 +156,7 @@ Declare `canvas.mutate-own` in the manifest. The scoped host allows this plugin 
 In `src/browser/entry.mts`, register the canonical type:
 
 ```ts
-import type { AgentCanvasBrowserPlugin } from '@agentcanvas/plugin-sdk';
+import type { AgentCanvasBrowserPlugin } from '@agentcanvas/extension-sdk';
 
 const browserPlugin: AgentCanvasBrowserPlugin = {
   activate(host) {
@@ -203,18 +209,45 @@ For a token or credential, declare only the environment variable name:
 
 Plugin code reads the deployment environment. Never put the value in the manifest, config, diagnostics, status output, examples, or tests. See [Configuration and secrets](configuration.md).
 
-## 9. Test and package
+## 9. Add a browser command
+
+Declare a local command in `src/extension.mts`, then register the same name
+from the browser entry:
+
+```ts
+host.registerCommand?.({
+  name: 'reset-card',
+  title: 'Reset card',
+  isEnabled: (context) => !context.readOnly && context.selection.length > 0,
+  async execute(context) {
+    const card = context.selection.find((element) => element.type === 'acme.signal-card/card');
+    if (!card) return;
+    await context.transact('Reset card', [
+      {
+        op: 'replaceElementData',
+        elementId: card.id,
+        data: { title: card.data.title, status: 'healthy' }
+      }
+    ]);
+  }
+});
+```
+
+Commands use the same service as toolbar and keyboard actions. They may mutate
+only their extension's elements and never receive a React Flow instance.
+
+## 10. Test and package
 
 ```bash
 npm run check
 npm test
-npm run pack:plugin
+npm run pack:extension
 npm run agentcanvas:verify
 ```
 
 The installable directory is `plugin-dist/acme.signal-card`. It should contain the manifest, config/schema files when declared, prebuilt server and browser modules, and documentation/license—never source-tree or private AgentCanvas imports.
 
-## 10. Install and verify in AgentCanvas
+## 11. Install and verify in AgentCanvas
 
 Stop AgentCanvas, then from the host repository:
 
@@ -231,7 +264,7 @@ Restart and check:
 4. The tool creates an element that renders in the browser and snapshot.
 5. Browser console and plugin diagnostics are clean.
 
-## 11. Prove missing-plugin behavior
+## 12. Prove missing-extension behavior
 
 Create a test canvas element, stop AgentCanvas, and disable the plugin:
 

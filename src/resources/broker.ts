@@ -126,26 +126,29 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
     const resource = this.live(handle);
     if (!resource) return null;
     const payload = await resource.registration.load(signal);
-    if (!(payload.bytes instanceof Uint8Array)) throw new Error('resource loader must return Uint8Array bytes');
-    if (payload.bytes.byteLength > this.maxBytes) throw new Error(`resource exceeds ${this.maxBytes} byte limit`);
+    if (!ArrayBuffer.isView(payload.bytes) || payload.bytes.BYTES_PER_ELEMENT !== 1) {
+      throw new Error('resource loader must return Uint8Array bytes');
+    }
+    const bytes = Uint8Array.from(payload.bytes);
+    if (bytes.byteLength > this.maxBytes) throw new Error(`resource exceeds ${this.maxBytes} byte limit`);
     const mimeType = checkMimeType(payload.mimeType);
     if (mimeType !== resource.details.mimeType) throw new Error('resource loader MIME type differs from registration');
-    if (resource.details.byteLength !== undefined && resource.details.byteLength !== payload.bytes.byteLength) {
+    if (resource.details.byteLength !== undefined && resource.details.byteLength !== bytes.byteLength) {
       throw new Error('resource loader byte length differs from registration');
     }
-    const digest = sha256(payload.bytes);
+    const digest = sha256(bytes);
     if (resource.details.sha256 && resource.details.sha256 !== digest) {
       throw new Error('resource loader SHA-256 differs from registration');
     }
     resource.details = {
       ...resource.details,
-      byteLength: payload.bytes.byteLength,
+      byteLength: bytes.byteLength,
       sha256: digest,
       ...(payload.width !== undefined ? { width: payload.width } : {}),
       ...(payload.height !== undefined ? { height: payload.height } : {})
     };
     return {
-      bytes: payload.bytes,
+      bytes,
       mimeType,
       ...(payload.width !== undefined ? { width: payload.width } : {}),
       ...(payload.height !== undefined ? { height: payload.height } : {})

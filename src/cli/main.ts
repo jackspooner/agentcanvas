@@ -17,6 +17,7 @@ import {
 } from '../plugin-runtime/index.js';
 import { runMigrationCli } from './migrate.js';
 import { runPluginCli } from './plugins.js';
+import { runExtensionCli } from './extensions.js';
 import { inspectDatabaseVersion } from '../store/version.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
@@ -67,6 +68,10 @@ async function run(): Promise<number> {
   const args = process.argv.slice(2);
   if (args[0] === 'plugins') {
     await runPluginCli(args.slice(1));
+    return 0;
+  }
+  if (args[0] === 'extension') {
+    await runExtensionCli(args.slice(1));
     return 0;
   }
   return runMigrationCli(args, undefined, {

@@ -44,7 +44,7 @@ Current startup performs these phases:
 10. Build the browser catalog and runtime OpenAPI.
 11. Begin listening.
 
-The host supplies `agentcanvas.snapshot-resources@1.0.0` before plugin activation. The Assets-2 plugin supplies the required Assets capability.
+The host supplies `agentcanvas.snapshot-resources@1.0.0` before plugin activation. Optional providers such as Assets-2 supply additional capabilities only to extensions that declare them.
 
 ### Installed-plugin schema readiness
 

@@ -4,7 +4,7 @@ import type {
   JsonObject,
   LegacyElementImportResult,
   SnapshotContribution
-} from '@agentcanvas/plugin-sdk';
+} from '@agentcanvas/extension-sdk';
 import {
   addHelloCardInputSchema,
   addHelloCardOutputSchema,

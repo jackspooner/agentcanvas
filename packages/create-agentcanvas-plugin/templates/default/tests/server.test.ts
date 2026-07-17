@@ -7,7 +7,7 @@ import type {
   PluginProcedureDescriptor,
   PluginToolDescriptor,
   ServerPluginHost
-} from '@agentcanvas/plugin-sdk';
+} from '@agentcanvas/extension-sdk';
 import { assertContributionRegistrations, assertPluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it } from 'vitest';
 import plugin, { importLegacy, renderSnapshot } from '../src/server.mjs';

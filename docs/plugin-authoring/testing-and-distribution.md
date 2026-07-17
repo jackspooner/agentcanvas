@@ -1,12 +1,17 @@
 # Testing and distribution
 
-A plugin is complete when its source tests pass and its packaged distribution works without private AgentCanvas imports or a host rebuild.
+An extension is complete when its source tests pass and its packaged
+distribution works without private AgentCanvas imports, React Flow imports, or
+a host rebuild.
 
 ## Test layers
 
 ### Manifest and registration
 
-Use `@agentcanvas/plugin-testkit` to check manifest structure and exact contribution registration. The live host remains the canonical owner of strict Ajv, semver, containment, and full activation validation.
+Use `@agentcanvas/extension-testkit` to check the typed definition, generated
+manifest structure, and exact contribution registration. The live host remains
+the canonical owner of strict Ajv, semver, containment, and full activation
+validation.
 
 Test:
 
@@ -31,6 +36,8 @@ Use a real ShadowRoot or browser harness to verify:
 - release of object URLs, media sources, listeners, overlays, and other resources;
 - `data-agentcanvas-interactive` behavior;
 - read-only mode;
+- browser command registration, enablement, scoped transactions, and abort;
+- activation disposable cleanup;
 - renderer failure isolation and Shadow DOM styling isolation.
 
 ### Snapshot safety
@@ -52,11 +59,12 @@ The generated scaffold provides:
 ```bash
 npm run check
 npm test
-npm run pack:plugin
+npm run pack:extension
 npm run agentcanvas:verify
 ```
 
-`pack:plugin` produces `plugin-dist/<plugin-id>`.
+`pack:extension` produces `plugin-dist/<plugin-id>`. The older
+`pack:plugin` script remains an alias in the compatibility scaffold.
 
 A distribution normally contains:
 
@@ -87,7 +95,15 @@ Inspect the file list. Verify every relative browser import resolves inside the 
 
 ## Host conformance
 
-Against a disposable AgentCanvas database/runtime:
+Use the isolated development host during authoring:
+
+```bash
+npm exec -- agentcanvas extension dev . --port 23083
+```
+
+It uses a temporary extension installation and database and reloads browser
+pages after a successful rebuild. For final conformance against a disposable
+AgentCanvas database/runtime:
 
 1. Install the distribution while stopped.
 2. Restart without rebuilding the host.
@@ -105,9 +121,9 @@ Do not use the live database as the first integration target.
 Before claiming third-party compatibility, pack the SDK and testkit and install those tarballs into a project outside the AgentCanvas source/workspace tree:
 
 ```bash
-npm pack --workspace @agentcanvas/plugin-sdk --pack-destination <tarball-dir>
-npm pack --workspace @agentcanvas/plugin-testkit --pack-destination <tarball-dir>
-npm install <tarball-dir>/agentcanvas-plugin-sdk-*.tgz <tarball-dir>/agentcanvas-plugin-testkit-*.tgz
+npm pack --workspace @agentcanvas/extension-sdk --pack-destination <tarball-dir>
+npm pack --workspace @agentcanvas/extension-testkit --pack-destination <tarball-dir>
+npm install <tarball-dir>/agentcanvas-extension-sdk-*.tgz <tarball-dir>/agentcanvas-extension-testkit-*.tgz
 ```
 
 Build and package using only those public packages. The repository automates this proof with `npm run test:external-plugin` and the fixture documented in [External plugin proof](external-plugin-proof.md).

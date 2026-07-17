@@ -192,7 +192,7 @@ export function validatePluginManifestStructure(input: unknown): TestkitValidati
   if (!isRecord(input.contributes)) {
     issues.push({ path: '/contributes', code: 'required_object', message: 'contributes must be an object.' });
   } else {
-    ownKeys(input.contributes, ['elements', 'tools', 'procedures', 'migrations'], '/contributes', issues);
+    ownKeys(input.contributes, ['elements', 'commands', 'tools', 'procedures', 'migrations'], '/contributes', issues);
     if (!Array.isArray(input.contributes.elements)) {
       issues.push({ path: '/contributes/elements', code: 'required_array', message: 'elements must be an array.' });
     } else {
@@ -227,6 +227,21 @@ export function validatePluginManifestStructure(input: unknown): TestkitValidati
           });
         }
       });
+    }
+    if (input.contributes.commands !== undefined) {
+      validateNameArray(input.contributes.commands, '/contributes/commands', issues);
+      if (
+        Array.isArray(input.contributes.commands) &&
+        input.contributes.commands.length > 0 &&
+        isRecord(input.entrypoints) &&
+        input.entrypoints.browser === undefined
+      ) {
+        issues.push({
+          path: '/entrypoints/browser',
+          code: 'browser_entry_required',
+          message: 'Browser commands require a browser entrypoint.'
+        });
+      }
     }
     validateNameArray(input.contributes.tools, '/contributes/tools', issues);
     validateNameArray(input.contributes.procedures, '/contributes/procedures', issues);

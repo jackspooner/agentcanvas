@@ -6,7 +6,7 @@ import {
   assertDistributionArtifacts,
   assertPluginManifestStructure,
   getManifestReferencedPaths
-} from '@agentcanvas/plugin-testkit';
+} from '@agentcanvas/extension-testkit';
 
 const root = resolve(import.meta.dirname, '..');
 const sourceManifest = JSON.parse(await readFile(join(root, 'agentcanvas.plugin.json'), 'utf8'));
@@ -51,6 +51,14 @@ await serverModule.default.activate({
   diagnostics: { emit() {} }
 });
 assertContributionRegistrations(manifest.contributes, registrations);
+
+const browserModule = await import(pathToFileURL(join(distribution, manifest.entrypoints.browser)).href);
+const commands = [];
+await browserModule.default.activate({
+  registerRenderer() {},
+  registerCommand(value) { commands.push(value.name); }
+});
+assertContributionRegistrations(manifest.contributes, { ...registrations, commands });
 
 async function sourceFiles(directory) {
   const result = [];

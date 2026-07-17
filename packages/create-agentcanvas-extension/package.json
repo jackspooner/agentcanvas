@@ -1,0 +1,47 @@
+{
+  "name": "create-agentcanvas-extension",
+  "version": "0.3.0-alpha.1",
+  "description": "Scaffold standalone AgentCanvas extensions with the public SDK and testkit.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackspooner/AgentCanvas.git",
+    "directory": "packages/create-agentcanvas-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/jackspooner/AgentCanvas/issues"
+  },
+  "homepage": "https://github.com/jackspooner/AgentCanvas#readme",
+  "keywords": ["agentcanvas", "canvas", "extension", "scaffolding", "generator"],
+  "type": "module",
+  "bin": {
+    "create-agentcanvas-extension": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "create-agentcanvas-plugin": "0.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

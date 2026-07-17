@@ -1,11 +1,21 @@
-import type { BrowserPluginHost, CanvasElement, RendererContext } from '@agentcanvas/plugin-sdk';
+import type {
+  BrowserCommandDescriptor,
+  BrowserPluginHost,
+  CanvasElement,
+  RendererContext
+} from '@agentcanvas/extension-sdk';
 import { describe, expect, it } from 'vitest';
 import plugin from '../src/browser/entry.mjs';
 
 describe('__DISPLAY_NAME__ browser renderer', () => {
   it('mounts, updates, and disposes without importing host UI code', async () => {
     const renderers: Parameters<BrowserPluginHost['registerRenderer']>[0][] = [];
-    await plugin.activate({ registerRenderer: (renderer) => renderers.push(renderer) });
+    const commands: BrowserCommandDescriptor[] = [];
+    await plugin.activate({
+      registerRenderer: (renderer) => renderers.push(renderer),
+      registerCommand: (command) => commands.push(command)
+    });
+    expect(commands.map((command) => command.name)).toEqual(['show-selection-count']);
     const element: CanvasElement = {
       id: 'card-1',
       type: '__PLUGIN_ID__/hello-card',

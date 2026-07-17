@@ -6,12 +6,7 @@ import { discoverPluginDirectory, discoverPlugins, orderPlugins } from '../plugi
 import { AGENTCANVAS_HOST_API_VERSION } from '../version.js';
 
 const HOST_CAPABILITIES = { 'agentcanvas.snapshot-resources': '1.0.0' } as const;
-const DEFAULT_PLUGIN_IDS = [
-  'agentcanvas.primitives',
-  'agentcanvas.markdown',
-  'agentcanvas.table',
-  'agentcanvas.assets2'
-] as const;
+const DEFAULT_PLUGIN_IDS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
 
 export async function assertAgentCanvasStopped(
   fetcher: typeof fetch = globalThis.fetch,

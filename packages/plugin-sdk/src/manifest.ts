@@ -2,7 +2,12 @@ export const AGENTCANVAS_PLUGIN_API_VERSION = 'agentcanvas.plugin/v1' as const;
 
 export type PluginSnapshotSupport = 'supported' | 'unsupported';
 
-export type BuiltinPluginPermission = 'canvas.read' | 'canvas.mutate-own' | 'assets.read' | 'diagnostics.emit';
+export type BuiltinPluginPermission =
+  | 'canvas.read'
+  | 'canvas.mutate-own'
+  | 'assets.read'
+  | 'filesystem.read'
+  | 'diagnostics.emit';
 
 export type PluginPermission = BuiltinPluginPermission | (string & {});
 
@@ -30,6 +35,7 @@ export interface PluginElementContribution {
 
 export interface PluginContributions {
   elements: readonly PluginElementContribution[];
+  commands?: readonly string[];
   tools: readonly string[];
   procedures: readonly string[];
   migrations: readonly string[];

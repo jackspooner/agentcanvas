@@ -14,7 +14,7 @@ The host resource broker supports:
 
 The broker allows a controlled MIME set and defaults to a 512 MiB host hard ceiling, one-hour TTL, and 24-hour maximum TTL. Provider/plugin limits are normally lower. Content loader MIME, declared byte length, and SHA-256 are rechecked.
 
-### Required plugin capability: `agentcanvas.assets@1.0.0`
+### Optional plugin capability: `agentcanvas.assets@1.0.0`
 
 `agentcanvas.assets2` provides:
 
@@ -24,7 +24,7 @@ The broker allows a controlled MIME set and defaults to a 512 MiB host hard ceil
 - bounded JSON asset-content resolution;
 - provider health, exact identity, and capability status.
 
-The standard host requires `agentcanvas.assets@^1.0.0`. Readiness must confirm `asset-service`, `asset_crud`, and `asset_refs`.
+Only extensions that declare `agentcanvas.assets@^1.0.0` require this provider. Its readiness confirms `asset-service`, `asset_crud`, and `asset_refs`; provider failure does not make AgentCanvas core unhealthy.
 
 `boundedJson` resolves and parses the asset's JSON content endpoint, not the Assets-2 metadata record. It accepts `application/json` and `+json` MIME types and uses the configured preview-byte limit.
 
@@ -37,6 +37,7 @@ First-party manifests currently use:
 | `canvas.read` | Read canvases through scoped invocation context |
 | `canvas.mutate-own` | Mutate plugin-owned element data or create owned elements |
 | `assets.read` | Consume the Assets capability |
+| `filesystem.read` | Read files through an extension's explicitly configured policy |
 | `diagnostics.emit` | Emit safe scoped diagnostics |
 
 The manifest schema accepts other non-empty permission strings for forward compatibility.

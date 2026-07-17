@@ -5,10 +5,11 @@ import type {
   TestkitValidationResult
 } from './types.js';
 
-type ContributionKind = keyof ContributionRegistrations;
+type ContributionKind = 'elements' | 'commands' | 'tools' | 'procedures' | 'migrations';
 
 function declaredNames(declarations: ContributionDeclarations, kind: ContributionKind): readonly string[] {
-  return kind === 'elements' ? declarations.elements.map((element) => element.name) : declarations[kind];
+  if (kind === 'elements') return declarations.elements.map((element) => element.name);
+  return declarations[kind] ?? [];
 }
 
 export function validateContributionRegistrations(
@@ -16,9 +17,10 @@ export function validateContributionRegistrations(
   registrations: ContributionRegistrations
 ): TestkitValidationResult {
   const issues: TestkitIssue[] = [];
-  for (const kind of ['elements', 'tools', 'procedures', 'migrations'] as const) {
+  for (const kind of ['elements', 'commands', 'tools', 'procedures', 'migrations'] as const) {
+    if (kind === 'commands' && registrations.commands === undefined) continue;
     const declared = declaredNames(declarations, kind);
-    const registered = registrations[kind];
+    const registered = registrations[kind] ?? [];
     const declaredSet = new Set(declared);
     const registeredSet = new Set(registered);
 

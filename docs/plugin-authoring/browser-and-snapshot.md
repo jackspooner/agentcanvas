@@ -10,6 +10,22 @@ Use the `RendererContext` abort signal, theme tokens, read-only geometry service
 
 Browser bundles execute same-origin code. Shadow DOM isolates styling and lifecycle, not security.
 
+## Browser commands
+
+Declare local command names in the generated manifest and register matching
+`BrowserCommandDescriptor` objects during browser activation. Commands receive
+selected element snapshots, read-only state, viewport state, `reveal`, the
+shared command dispatcher, extension-owned transactions, overlays,
+diagnostics, and an abort signal.
+
+Command implementations must not import React Flow or reach into host DOM.
+Transactions may mutate only elements owned by the registering extension and
+join the host's canonical revision-aware undo/redo history.
+
+Browser activation may return `{ dispose() }`. Use it to remove global event
+listeners or subscriptions created during activation. Per-element renderer
+cleanup remains owned by each mounted renderer.
+
 ## Snapshot renderers
 
 Snapshot renderers return bounded scene IR. They do not return SVG, HTML, CSS, external URLs, or data URLs.

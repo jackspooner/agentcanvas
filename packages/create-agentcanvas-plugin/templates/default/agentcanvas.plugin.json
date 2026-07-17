@@ -27,6 +27,7 @@
         "snapshot": "supported"
       }
     ],
+    "commands": ["show-selection-count"],
     "tools": ["add-hello-card"],
     "procedures": ["describe-card"],
     "migrations": ["legacy-hello-card-v1"]

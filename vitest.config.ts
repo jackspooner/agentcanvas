@@ -7,6 +7,7 @@ export default defineConfig({
     include: ['test/**/*.test.{ts,tsx}'],
     exclude: ['test/e2e/**', 'test/external-plugin-fixture/**'],
     environment: 'jsdom',
+    setupFiles: ['test/setup.ts'],
     globals: true,
     restoreMocks: true
   }

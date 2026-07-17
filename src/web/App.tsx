@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import type { AgentCanvasConfiguration } from '../configuration';
 import {
+  applyCanvasOperations,
   fetchAgentCanvasConfiguration,
   fetchCanvasFromLocation,
   fetchCanvasList,
   fetchViewportState,
-  moveCanvasElement,
   saveUserViewport,
   updateAgentCanvasConfiguration,
   updateCanvasBounds
@@ -32,7 +32,18 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
+    let activeRegistry: LoadedBrowserRegistry | null = null;
     const indexMode = isCanvasIndexPath(window.location.pathname);
+
+    function installRegistry(registry: LoadedBrowserRegistry): boolean {
+      if (cancelled) {
+        void registry.dispose();
+        return false;
+      }
+      activeRegistry = registry;
+      setBrowserRegistry(registry);
+      return true;
+    }
 
     async function loadInitial() {
       setError(null);
@@ -43,8 +54,7 @@ export function App() {
           fetchAgentCanvasConfiguration(),
           registryPromise
         ]);
-        if (!cancelled) {
-          setBrowserRegistry(registry);
+        if (installRegistry(registry)) {
           setState({ mode: 'index', canvases, configuration });
         }
         return;
@@ -60,8 +70,7 @@ export function App() {
         }
         viewport = coerceViewport(readViewportCookie(loaded.canvas.id) ?? serverState?.userViewport);
       }
-      if (!cancelled) {
-        setBrowserRegistry(registry);
+      if (installRegistry(registry)) {
         setState({ mode: 'canvas', ...loaded, initialViewport: viewport });
       }
     }
@@ -95,6 +104,7 @@ export function App() {
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      void activeRegistry?.dispose();
     };
   }, []);
 
@@ -141,11 +151,12 @@ export function App() {
           current?.mode === 'canvas' && current.canvas.id === canvas.id ? { ...current, canvas } : current
         );
       }}
-      onElementMove={async (elementId, x, y) => {
-        const canvas = await moveCanvasElement(state.canvas.id, elementId, x, y);
+      onCanvasOperations={async (operations, expectedRevision) => {
+        const canvas = await applyCanvasOperations(state.canvas.id, operations, expectedRevision);
         setState((current) =>
           current?.mode === 'canvas' && current.canvas.id === canvas.id ? { ...current, canvas } : current
         );
+        return canvas;
       }}
       onViewportChange={(viewport) => {
         writeViewportCookie(state.canvas.id, viewport);

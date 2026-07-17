@@ -7,12 +7,7 @@ import { loadOfflinePluginRegistry } from '../plugin-runtime/offline.js';
 import { coreOpenApiPaths } from '../server-v2.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
-const STANDARD_PLUGINS = [
-  'agentcanvas.primitives',
-  'agentcanvas.markdown',
-  'agentcanvas.table',
-  'agentcanvas.assets2'
-] as const;
+const STANDARD_PLUGINS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
 
 function root(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -38,8 +33,7 @@ export async function standardOpenApiDocument(installationRoot = root()): Promis
   return createRegistryOpenApiDocument(registry, {
     title: 'AgentCanvas API',
     version: AGENTCANVAS_VERSION,
-    description:
-      'Standard AgentCanvas v0.2 distribution contract. Runtime OpenAPI reflects the exact active plugin set.',
+    description: 'Standard AgentCanvas distribution contract. Runtime OpenAPI reflects the exact active extension set.',
     corePaths: coreOpenApiPaths()
   });
 }

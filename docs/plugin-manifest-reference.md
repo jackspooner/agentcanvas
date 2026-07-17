@@ -19,7 +19,7 @@ Every distribution root contains `agentcanvas.plugin.json`. The runtime validate
 | `requires.capabilities` | capability name → semantic-version range |
 | `provides.capabilities` | capability name → exact semantic version |
 | `permissions` | unique non-empty strings |
-| `contributes` | arrays for elements, tools, procedures, and migrations |
+| `contributes` | arrays for elements, commands, tools, procedures, and migrations |
 | `configuration` | optional schema/file/environment declaration |
 
 Local contribution names match `^[a-z][a-z0-9-]*$` and are at most 64 characters in SDK helpers. Element declarations include positive integer `schemaVersion`, `browser`, and `snapshot: "supported" | "unsupported"`.
@@ -44,7 +44,14 @@ If `configuration` is present, both the schema and config file are required. The
 
 ## Registration parity
 
-Activation must register exactly the declared local elements, tools, procedures, migrations, and provided capabilities. Extra or missing registrations fail startup. Browser activation must register exactly the catalog's browser element types and support the declared current schema version.
+Server activation must register exactly the declared local elements, tools,
+procedures, migrations, and provided capabilities. Browser activation must
+register exactly the catalog's browser element types and commands and support
+the declared current element schema version. Extra or missing registrations
+fail activation.
+
+Commands require a browser entrypoint. Their global IDs are
+`<plugin-id>.<local-command-name>`.
 
 ## Trust
 

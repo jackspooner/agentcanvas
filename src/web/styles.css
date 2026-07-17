@@ -1,3 +1,5 @@
+@import "@agentcanvas/editor/style.css";
+
 html,
 body,
 #root {
@@ -183,17 +185,36 @@ button {
   flex: 0 0 auto;
 }
 
-.topbar-title,
-.zoom-controls {
+.topbar-title {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.topbar-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
 }
 
 .topbar-title span,
 .viewport-status {
   color: #4b5563;
   font-size: 13px;
+}
+
+.viewport-status {
+  white-space: nowrap;
 }
 
 .badge {
@@ -294,32 +315,27 @@ button {
   white-space: nowrap;
 }
 
-.zoom-controls button {
-  min-width: 34px;
-  height: 30px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
-  cursor: pointer;
-}
-
-.zoom-controls button:hover {
-  background: #f9fafb;
-}
-
 .canvas-viewport {
   position: relative;
   flex: 1;
   overflow: hidden;
-  background: #ffffff;
-  cursor: grab;
+  background: #f8fafc;
   touch-action: none;
   user-select: none;
 }
 
-.canvas-viewport.is-dragging {
-  cursor: grabbing;
+.plugin-renderer-surface {
+  width: 100%;
+  height: 100%;
+}
+
+.plugin-world-element {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .viewport-origin {
@@ -865,6 +881,44 @@ button {
 }
 
 @media (max-width: 760px) {
+  .topbar {
+    height: auto;
+    min-height: 82px;
+    align-items: stretch;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+  }
+
+  .topbar-title,
+  .topbar-controls {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .topbar-title > *,
+  .topbar-controls > * {
+    flex: 0 0 auto;
+  }
+
+  .topbar-title strong {
+    max-width: 180px;
+  }
+
+  .topbar-controls {
+    justify-content: flex-start;
+    padding: 2px 0;
+  }
+
+  .topbar-controls .agentcanvas-editor-viewport-toolbar {
+    order: -1;
+  }
+
+  .topbar-controls .viewport-status {
+    display: none;
+  }
+
   .canvas-index-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;

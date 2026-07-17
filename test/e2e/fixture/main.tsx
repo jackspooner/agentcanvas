@@ -2,6 +2,7 @@ import type { CanvasElement, JsonObject } from '@agentcanvas/plugin-sdk';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderModelSnapshot } from '../../../plugin-packages/glb-viewer/src/snapshot';
+import type { CanvasOperation } from '../../../src/contracts';
 import { CanvasView } from '../../../src/web/components/CanvasView';
 import {
   fetchBrowserPluginCatalog,
@@ -108,6 +109,18 @@ const optionalElements: CanvasElement[] = [
   element('fail-1', 'fixture.fail/card', 490, 100, 190, 110, { label: 'This renderer fails' })
 ];
 
+const performanceElements: CanvasElement[] = Array.from({ length: 500 }, (_, index) =>
+  element(
+    `performance-${index}`,
+    'agentcanvas.primitives/text',
+    (index % 25) * 180,
+    Math.floor(index / 25) * 110,
+    150,
+    80,
+    { text: `Element ${index + 1}` }
+  )
+);
+
 function requireFixtureElement(id: string): CanvasElement {
   const fixtureElement = optionalElements.find((candidate) => candidate.id === id);
   if (!fixtureElement) throw new Error(`The ${id} browser fixture element is missing`);
@@ -136,10 +149,12 @@ function initialCanvas(): CanvasDocument {
       ? defaultElements
       : mode === 'optional'
         ? optionalElements
-        : [...defaultElements, ...optionalElements];
+        : mode === 'performance'
+          ? performanceElements
+          : [...defaultElements, ...optionalElements];
   return {
     id: 'browser-e2e',
-    title: 'AgentCanvas v0.2 browser fixture',
+    title: 'AgentCanvas v0.3 alpha browser fixture',
     description: 'Disposable browser runtime for registry-driven renderer coverage.',
     createdBy: 'system',
     createdAt: now,
@@ -171,16 +186,23 @@ function App() {
 
   useEffect(() => {
     let active = true;
+    let activeRegistry: LoadedBrowserRegistry | null = null;
     void fetchBrowserPluginCatalog()
       .then((catalog) => loadBrowserPluginRegistry({ catalog }))
       .then((loaded) => {
-        if (active) setRegistry(loaded);
+        if (active) {
+          activeRegistry = loaded;
+          setRegistry(loaded);
+        } else {
+          void loaded.dispose();
+        }
       })
       .catch((error) => {
         if (active) setLoadError(error instanceof Error ? error.message : String(error));
       });
     return () => {
       active = false;
+      void activeRegistry?.dispose();
     };
   }, []);
 
@@ -242,6 +264,7 @@ function App() {
           Toggle GLB element
         </button>
       </nav>
+      <output data-testid="canvas-revision">{canvas.revision}</output>
       <output data-testid="persisted-elements">{JSON.stringify(canvas.elements)}</output>
       <output data-testid="glb-snapshot-policy">{JSON.stringify(glbPlaceholder)}</output>
       <CanvasView
@@ -250,11 +273,48 @@ function App() {
         diagnostics={visibleRegistry.diagnostics}
         browserRegistry={visibleRegistry}
         readOnly={readOnly}
-        onElementMove={(elementId, x, y) =>
-          mutateCanvas((elements) =>
-            elements.map((candidate) => (candidate.id === elementId ? { ...candidate, x, y } : candidate))
-          )
-        }
+        onCanvasOperations={async (operations: readonly CanvasOperation[], expectedRevision) => {
+          if (expectedRevision !== canvas.revision) throw new Error('Fixture revision conflict');
+          let elements = canvas.elements.map((candidate) => ({ ...candidate }));
+          for (const operation of operations) {
+            if (operation.op === 'upsertElement') {
+              const element = operation.element as CanvasElement;
+              const index = elements.findIndex((candidate) => candidate.id === element.id);
+              if (index === -1) elements.push(element);
+              else elements[index] = element;
+            } else if (operation.op === 'patchElementFrame') {
+              elements = elements.map((candidate) =>
+                candidate.id === operation.elementId ? { ...candidate, ...operation.frame } : candidate
+              );
+            } else if (operation.op === 'replaceElementData') {
+              elements = elements.map((candidate) =>
+                candidate.id === operation.elementId
+                  ? {
+                      ...candidate,
+                      data: operation.data,
+                      ...(operation.style !== undefined ? { style: operation.style } : {})
+                    }
+                  : candidate
+              );
+            } else if (operation.op === 'replaceElementMetadata') {
+              elements = elements.map((candidate) =>
+                candidate.id === operation.elementId ? { ...candidate, metadata: operation.metadata } : candidate
+              );
+            } else if (operation.op === 'deleteElement') {
+              elements = elements.filter((candidate) => candidate.id !== operation.elementId);
+            } else if (operation.op === 'clear') {
+              elements = [];
+            }
+          }
+          const next: CanvasDocument = {
+            ...canvas,
+            elements,
+            revision: canvas.revision + 1,
+            updatedAt: new Date().toISOString()
+          };
+          setCanvas(next);
+          return next;
+        }}
       />
     </div>
   );

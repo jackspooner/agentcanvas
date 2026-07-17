@@ -1,6 +1,11 @@
 # create-agentcanvas-plugin
 
-Scaffold a standalone AgentCanvas plugin that imports only `@agentcanvas/plugin-sdk` and uses `@agentcanvas/plugin-testkit` for conformance checks.
+Compatibility scaffolder for standalone AgentCanvas extensions. New projects
+use `@agentcanvas/extension-sdk`, `@agentcanvas/extension-testkit`, and a typed
+descriptor that generates the static installation manifest.
+
+New authors should prefer `create-agentcanvas-extension`. This package remains
+available so existing automation and documentation do not break.
 
 This package is publication-ready but is not published by the AgentCanvas v0.2 repository refactor. From the AgentCanvas checkout:
 
@@ -10,7 +15,7 @@ npm exec --workspace create-agentcanvas-plugin -- create-agentcanvas-plugin my-p
 cd my-plugin
 npm install
 npm test
-npm run pack:plugin
+npm run pack:extension
 npm run agentcanvas:verify
 ```
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["roots", "contentMaxBytes", "resourceTtlMs"],
+  "properties": {
+    "roots": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+          "path": { "type": "string", "minLength": 1, "maxLength": 4096 }
+        }
+      }
+    },
+    "contentMaxBytes": { "type": "integer", "minimum": 1024, "maximum": 536870912 },
+    "resourceTtlMs": { "type": "integer", "minimum": 1000, "maximum": 86400000 }
+  }
+}

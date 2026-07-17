@@ -93,11 +93,11 @@ Optional-plugin removal is data-preserving:
 
 AgentCanvas never silently deletes, downgrades, or converts the element to a generic fallback.
 
-## Capabilities and required Assets-2
+## Capabilities and media sources
 
 Capabilities are singleton providers with semantic versions. Consumers declare a required range in the manifest and may consume only that declaration.
 
-The standard host requires `agentcanvas.assets@^1.0.0`. The default `agentcanvas.assets2` plugin provides it and verifies Assets-2 health, exact identity, and required capabilities before the host listens. This plugin is therefore required even though the integration uses the same public capability system available to third parties.
+AgentCanvas core has no required extension capability. `agentcanvas.assets2` optionally provides `agentcanvas.assets@1.0.0` for extensions that work with durable Assets-2 references. `agentcanvas.filesystem-images` is independent: it reads raster files only from configured allowlisted roots and delivers them through the host resource broker.
 
 ## Trust and security
 
@@ -117,10 +117,11 @@ Default activation:
 - `agentcanvas.primitives`
 - `agentcanvas.markdown`
 - `agentcanvas.table`
-- `agentcanvas.assets2`
 
 Built but optional by default:
 
+- `agentcanvas.filesystem-images`
+- `agentcanvas.assets2`
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
 - `agentcanvas.glb-viewer`

@@ -3,7 +3,7 @@
   "id": "agentcanvas.assets2",
   "version": "0.2.0",
   "displayName": "AgentCanvas Assets-2",
-  "description": "Required Assets-2 capability, image asset element, details, and resource delivery.",
+  "description": "Optional Assets-2 capability, image asset element, details, and resource delivery.",
   "license": "MIT",
   "entrypoints": {
     "server": "dist/server.mjs",

@@ -11,6 +11,7 @@
   "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
   "contributes": {
     "elements": [{ "name": "signal-card", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "commands": ["toggle-status"],
     "tools": ["add-signal-card"],
     "procedures": ["summarize-signal"],
     "migrations": ["legacy-signal-card-v1"]

@@ -7,8 +7,8 @@ import type {
   PluginToolDescriptor,
   ServerPluginHost
 } from '@agentcanvas/plugin-sdk';
+import { resolveConnectorEndpoints } from './browser/geometry.js';
 import { importLegacyPrimitive } from './legacy.js';
-import { resolveConnectorEndpoints } from './geometry.js';
 import type { ConnectorEndpointData } from './browser/data.js';
 import {
   addConnectorInputSchema,

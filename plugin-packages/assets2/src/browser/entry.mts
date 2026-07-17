@@ -9,7 +9,7 @@ import { assetElementData, fitToObjectFit, type AssetReference } from '../contra
 
 const styles = `
   :host{display:block;width:100%;height:100%;box-sizing:border-box;color:#0f172a;font:13px/1.35 system-ui,sans-serif}
-  .frame{position:relative;box-sizing:border-box;width:100%;height:100%;overflow:hidden;border:var(--asset-border-width,1px) solid var(--asset-border,#cbd5e1);border-radius:var(--asset-radius,8px);background:var(--asset-background,#f8fafc)}
+  .frame{position:relative;box-sizing:border-box;width:100%;height:100%;margin:0;overflow:hidden;border:var(--asset-border-width,1px) solid var(--asset-border,#cbd5e1);border-radius:var(--asset-radius,8px);background:var(--asset-background,#f8fafc)}
   img{display:block;width:100%;height:100%;object-position:center;background:var(--asset-background,#f8fafc)}
   .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:#64748b;background:#f8fafc}.placeholder strong{color:#475569}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:rgba(255,255,255,.92);color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

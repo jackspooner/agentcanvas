@@ -1,4 +1,9 @@
-import type { BrowserElementRenderer, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
+import {
+  isLocalContributionName,
+  type BrowserCommandDescriptor,
+  type BrowserElementRenderer,
+  type PluginDiagnostic
+} from '@agentcanvas/plugin-sdk';
 
 const PLUGIN_MODULE_PATH = /^\/api\/v1\/plugin-modules\/([^/]+)\/([a-f0-9]{8,128})\/(.+)$/;
 
@@ -14,6 +19,7 @@ export interface BrowserCatalogPlugin {
   buildHash: string | null;
   browserEntryUrl: string | null;
   elements: readonly BrowserCatalogElement[];
+  commands: readonly string[];
   diagnostics: readonly PluginDiagnostic[];
 }
 
@@ -24,7 +30,15 @@ export interface BrowserPluginCatalog {
 export interface LoadedBrowserRegistry {
   plugins: BrowserPluginCatalog;
   renderers: ReadonlyMap<string, BrowserElementRenderer>;
+  commands: ReadonlyMap<string, LoadedBrowserCommand>;
   diagnostics: readonly PluginDiagnostic[];
+  dispose(): Promise<void>;
+}
+
+export interface LoadedBrowserCommand {
+  id: string;
+  pluginId: string;
+  descriptor: BrowserCommandDescriptor;
 }
 
 export type BrowserModuleImporter = (url: string) => Promise<unknown>;
@@ -89,6 +103,7 @@ function parseCatalog(value: unknown): BrowserPluginCatalog {
       !(candidate.buildHash === null || typeof candidate.buildHash === 'string') ||
       !(candidate.browserEntryUrl === null || typeof candidate.browserEntryUrl === 'string') ||
       !Array.isArray(candidate.elements) ||
+      !(candidate.commands === undefined || Array.isArray(candidate.commands)) ||
       !Array.isArray(candidate.diagnostics)
     ) {
       throw new TypeError('Plugin catalog entry has an invalid shape');
@@ -119,6 +134,14 @@ function parseCatalog(value: unknown): BrowserPluginCatalog {
       buildHash: candidate.buildHash,
       browserEntryUrl: candidate.browserEntryUrl,
       elements: Object.freeze(elements),
+      commands: Object.freeze(
+        (candidate.commands ?? []).map((command) => {
+          if (typeof command !== 'string' || !isLocalContributionName(command)) {
+            throw new TypeError(`Invalid browser command declaration for ${candidate.id}`);
+          }
+          return command;
+        })
+      ),
       diagnostics: Object.freeze(candidate.diagnostics.map(parseDiagnostic))
     });
   });
@@ -160,14 +183,19 @@ export async function loadBrowserPluginRegistry(options: {
   importer?: BrowserModuleImporter;
 }): Promise<LoadedBrowserRegistry> {
   const renderers = new Map<string, BrowserElementRenderer>();
+  const commands = new Map<string, LoadedBrowserCommand>();
   const diagnostics: PluginDiagnostic[] = options.catalog.plugins.flatMap((plugin) => [...plugin.diagnostics]);
+  const disposables: Array<() => void | Promise<void>> = [];
   const importer = options.importer ?? nativeImporter;
   const baseUrl = options.baseUrl ?? window.location.href;
   for (const plugin of options.catalog.plugins) {
     if (!plugin.browserEntryUrl) continue;
+    let activationDispose: (() => void | Promise<void>) | null = null;
     try {
       const expected = new Map(plugin.elements.map((element) => [element.type, element]));
+      const expectedCommands = new Set(plugin.commands);
       const registered = new Map<string, BrowserElementRenderer>();
+      const registeredCommands = new Map<string, BrowserCommandDescriptor>();
       const moduleValue = await importer(validateModuleUrl(plugin, baseUrl));
       if (
         !isObject(moduleValue) ||
@@ -176,7 +204,7 @@ export async function loadBrowserPluginRegistry(options: {
       ) {
         throw new TypeError(`${plugin.id} browser entry must default-export a browser plugin`);
       }
-      await moduleValue.default.activate({
+      const activated = await moduleValue.default.activate({
         registerRenderer(renderer: BrowserElementRenderer) {
           if (
             !renderer ||
@@ -199,12 +227,55 @@ export async function loadBrowserPluginRegistry(options: {
             );
           }
           registered.set(renderer.type, Object.freeze(renderer));
+        },
+        registerCommand(command: BrowserCommandDescriptor) {
+          if (
+            !command ||
+            !isLocalContributionName(command.name) ||
+            typeof command.title !== 'string' ||
+            command.title.length === 0 ||
+            !(command.category === undefined || typeof command.category === 'string') ||
+            !(command.isEnabled === undefined || typeof command.isEnabled === 'function') ||
+            typeof command.execute !== 'function'
+          ) {
+            throw new TypeError(`${plugin.id} registered an invalid browser command`);
+          }
+          if (!expectedCommands.has(command.name)) {
+            throw new TypeError(`${plugin.id} registered undeclared browser command ${command.name}`);
+          }
+          const id = `${plugin.id}.${command.name}`;
+          if (registeredCommands.has(command.name) || commands.has(id)) {
+            throw new TypeError(`Duplicate browser command ${id}`);
+          }
+          registeredCommands.set(command.name, Object.freeze(command));
         }
       });
+      if (isObject(activated) && typeof activated.dispose === 'function') {
+        const dispose = activated.dispose as () => void | Promise<void>;
+        activationDispose = () => dispose.call(activated);
+      } else if (activated !== undefined) {
+        throw new TypeError(`${plugin.id} browser activation returned an invalid disposable`);
+      }
       const missing = [...expected.keys()].filter((type) => !registered.has(type));
       if (missing.length) throw new TypeError(`${plugin.id} did not register browser renderers: ${missing.join(', ')}`);
+      const missingCommands = [...expectedCommands].filter((name) => !registeredCommands.has(name));
+      if (missingCommands.length) {
+        throw new TypeError(`${plugin.id} did not register browser commands: ${missingCommands.join(', ')}`);
+      }
       for (const [type, renderer] of registered) renderers.set(type, renderer);
+      for (const [name, descriptor] of registeredCommands) {
+        const id = `${plugin.id}.${name}`;
+        commands.set(id, Object.freeze({ id, pluginId: plugin.id, descriptor }));
+      }
+      if (activationDispose) disposables.push(activationDispose);
     } catch {
+      if (activationDispose) {
+        try {
+          await activationDispose();
+        } catch (error) {
+          void error;
+        }
+      }
       diagnostics.push({
         code: 'browser_plugin_activation_failed',
         severity: 'error',
@@ -217,6 +288,18 @@ export async function loadBrowserPluginRegistry(options: {
   return Object.freeze({
     plugins: options.catalog,
     renderers: readonlyMap(renderers),
-    diagnostics: Object.freeze(diagnostics)
+    commands: readonlyMap(commands),
+    diagnostics: Object.freeze(diagnostics),
+    async dispose() {
+      const failures: unknown[] = [];
+      for (const dispose of disposables.splice(0).reverse()) {
+        try {
+          await dispose();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length > 0) throw new AggregateError(failures, 'Browser extension disposal failed');
+    }
   });
 }

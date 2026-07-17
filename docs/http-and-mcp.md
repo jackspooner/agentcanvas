@@ -8,7 +8,7 @@ AgentCanvas exposes one registry-derived contract through HTTP, runtime OpenAPI,
 - `GET /api/v1/plugins`: sanitized active-plugin and capability status.
 - `GET /api/v1/plugins/{pluginId}`: one plugin's contributions and browser entry URL.
 - MCP `tools/list`: core tools plus active plugin tools using the same JSON Schemas.
-- `docs/openapi.standard.json`: generated four-default-plugin reference, not a substitute for runtime discovery.
+- `docs/openapi.standard.json`: generated four-default-extension reference, not a substitute for runtime discovery.
 
 The owning schemas live in the frozen registry. Plugins register JSON Schema 2020-12 for elements, tools, and procedures; the host must not maintain a parallel handwritten schema.
 

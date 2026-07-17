@@ -76,6 +76,14 @@ describe('Assets-2 browser renderer', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:asset-1');
   });
 
+  it('resets the semantic figure margin to stay inside the canonical element frame', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = renderer.mount(root, context(element(), new AbortController().signal));
+    expect(root.querySelector('style')?.textContent).toContain('margin:0');
+    await mounted.dispose();
+  });
+
   it('refuses a runtime content URL that is not the host resource route', async () => {
     const fetcher = vi.fn();
     vi.stubGlobal('fetch', fetcher);

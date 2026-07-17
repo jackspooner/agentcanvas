@@ -1,4 +1,9 @@
-import type { AgentCanvasBrowserPlugin, BrowserElementRenderer, RendererContext } from '@agentcanvas/plugin-sdk';
+import type {
+  AgentCanvasBrowserPlugin,
+  BrowserCommandDescriptor,
+  BrowserElementRenderer,
+  RendererContext
+} from '@agentcanvas/plugin-sdk';
 
 function update(card: HTMLElement, context: RendererContext): void {
   card.textContent = `${String(context.element.data.label)} · ${String(context.element.data.status)}`;
@@ -14,5 +19,25 @@ export const renderer: BrowserElementRenderer = {
     return { update: (next) => update(card, next), dispose: () => root.replaceChildren() };
   }
 };
-const plugin: AgentCanvasBrowserPlugin = { activate(host) { host.registerRenderer(renderer); } };
+export const toggleStatusCommand: BrowserCommandDescriptor = {
+  name: 'toggle-status',
+  title: 'Toggle signal status',
+  isEnabled: (context) =>
+    !context.readOnly && context.selection.some((element) => element.type === 'external.signal-card/signal-card'),
+  async execute(context) {
+    const element = context.selection.find((candidate) => candidate.type === 'external.signal-card/signal-card');
+    if (!element) return;
+    const current = element.data.status === 'active' ? 'paused' : 'active';
+    await context.transact('Toggle signal status', [
+      { op: 'replaceElementData', elementId: element.id, data: { ...element.data, status: current } }
+    ]);
+  }
+};
+const plugin: AgentCanvasBrowserPlugin = {
+  activate(host) {
+    host.registerRenderer(renderer);
+    if (!host.registerCommand) throw new Error('AgentCanvas host does not support declared browser commands');
+    host.registerCommand(toggleStatusCommand);
+  }
+};
 export default plugin;

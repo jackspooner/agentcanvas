@@ -1,10 +1,14 @@
-# AgentCanvas v0.2 architecture
+# AgentCanvas architecture
 
 ## Product boundary
 
-AgentCanvas is a local-first, single-process plugin host for revisioned visual canvas documents. SQLite owns document state. Assets-2 owns durable media identity and bytes. Normal element implementations are trusted plugins discovered from the installation's `plugins/` folder.
+AgentCanvas is a local-first, single-process visual editor and extension host
+for revisioned canvas documents. SQLite owns document state. Optional source
+extensions own media references and byte resolution. Normal element
+implementations are trusted extensions discovered from `plugins/`.
 
-The kernel does not provide a plugin marketplace, remote loading, hot reload, sandboxing, user accounts, or real-time multi-user editing.
+The kernel does not provide a marketplace, remote loading, production hot
+reload, sandboxing, user accounts, or real-time multi-user editing.
 
 ## System map
 
@@ -12,22 +16,31 @@ The kernel does not provide a plugin marketplace, remote loading, hot reload, sa
 flowchart LR
   Agent["MCP client"] --> Resident["Resident /mcp"]
   Stdio["stdio bridge"] --> Resident
-  Browser["React canvas shell"] --> HTTP["Hono /api/v1"]
+  Browser["React editor shell"] --> Editor["@agentcanvas/editor"]
+  Editor --> Flow["private React Flow adapter"]
+  Editor --> HTTP["Hono /api/v1"]
   Resident --> Registry["Frozen plugin registry"]
   HTTP --> Registry
   Browser --> Modules["Same-origin plugin modules"]
   Registry --> Store["SQLite v0.2 store"]
   Registry --> Snapshot["Safe scene compositor"]
   Registry --> Broker["Opaque resource broker"]
-  AssetsPlugin["agentcanvas.assets2"] --> Assets["Assets-2"]
+  AssetsPlugin["Optional Assets-2 source"] --> Assets["Assets-2"]
+  FilesPlugin["Optional filesystem source"] --> Files["Allowlisted roots"]
   Registry --> AssetsPlugin
+  Registry --> FilesPlugin
 ```
 
 ## Kernel ownership
 
 The root application owns startup ordering, configuration, database versions, canvas CRUD, revisions, idempotency, sharing, viewports, plugin discovery/activation, capability resolution, diagnostics, HTTP/MCP transports, browser framing, snapshot composition, resources, and security headers/origin checks.
 
-`@agentcanvas/core` retains portable kernel canvas contracts. Public generic plugin contracts live in `@agentcanvas/plugin-sdk`. First-party plugins may not import root-private modules.
+`@agentcanvas/core` retains portable kernel canvas contracts.
+`@agentcanvas/editor` owns React Flow projection, selection, movement, resize,
+viewport conversion, commands, and history primitives. React Flow is private
+to that package. Public extension contracts live in
+`@agentcanvas/extension-sdk`, which preserves plugin API v1 compatibility
+through `@agentcanvas/plugin-sdk`.
 
 ## Runtime state
 
@@ -39,11 +52,11 @@ The root application owns startup ordering, configuration, database versions, ca
 
 The default service binds to `127.0.0.1:23003`. Non-loopback binding requires explicit remote access configuration.
 
-## Required Assets boundary
+## Optional media-source boundary
 
-The host requires `agentcanvas.assets@^1.0.0`. `agentcanvas.assets2` provides it and verifies that Assets-2 is healthy, identifies as `asset-service`, and advertises `asset_crud` and `asset_refs`. Startup fails without readiness; runtime `/health` returns 503 when readiness fails.
+The host requires no media capability. `agentcanvas.assets2` optionally provides `agentcanvas.assets@1.0.0` and verifies Assets-2 identity and capabilities for consumers that declare it. `agentcanvas.filesystem-images` independently resolves `rootId + relative path` references below configured real roots.
 
-Assets are exposed to plugins as validated refs, safe details, bounded JSON content, and opaque content handles. The host broker applies MIME, byte, TTL, and checksum controls.
+Both sources deliver browser and snapshot bytes through opaque content handles. The host broker applies MIME, byte, TTL, and checksum controls; filesystem policy additionally rejects absolute paths, traversal, symlink escapes, unsupported types, and oversized files.
 
 ## Persistence
 

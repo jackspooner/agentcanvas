@@ -1,6 +1,6 @@
 import { cp, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { derivePluginNames } from './naming.js';
+import { deriveExtensionNames, derivePluginNames, type PluginNames } from './naming.js';
 
 export interface ScaffoldPluginOptions {
   name: string;
@@ -23,8 +23,7 @@ async function replaceTokens(directory: string, replacements: Readonly<Record<st
   }
 }
 
-export async function scaffoldPlugin(options: ScaffoldPluginOptions): Promise<string> {
-  const names = derivePluginNames(options.name);
+async function scaffold(options: ScaffoldPluginOptions, names: PluginNames): Promise<string> {
   const parent = resolve(options.cwd ?? process.cwd());
   const target = join(parent, names.directoryName);
   try {
@@ -52,4 +51,12 @@ export async function scaffoldPlugin(options: ScaffoldPluginOptions): Promise<st
     throw error;
   }
   return target;
+}
+
+export async function scaffoldPlugin(options: ScaffoldPluginOptions): Promise<string> {
+  return scaffold(options, derivePluginNames(options.name));
+}
+
+export async function scaffoldExtension(options: ScaffoldPluginOptions): Promise<string> {
+  return scaffold(options, deriveExtensionNames(options.name));
 }

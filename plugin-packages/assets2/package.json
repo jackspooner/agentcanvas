@@ -1,7 +1,7 @@
 {
   "name": "@agentcanvas/plugin-assets2",
   "version": "0.2.0",
-  "description": "Required Assets-2 capability and asset element plugin for AgentCanvas.",
+  "description": "Optional Assets-2 capability and asset element extension for AgentCanvas.",
   "license": "MIT",
   "private": true,
   "type": "module",

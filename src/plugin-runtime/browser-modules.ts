@@ -14,6 +14,7 @@ export interface BrowserPluginCatalogEntry {
   browserEntryUrl: string | null;
   browserBuildHash: string | null;
   elements: readonly { type: string; schemaVersion: number; browser: boolean; snapshot: string }[];
+  commands: readonly string[];
   tools: readonly string[];
   procedures: readonly string[];
   requires: {
@@ -85,6 +86,7 @@ function sanitizedEntry(manifest: PluginManifest, record?: BrowserModuleRecord):
         })
       )
     ),
+    commands: Object.freeze([...(manifest.contributes.commands ?? [])]),
     tools: Object.freeze([...manifest.contributes.tools]),
     procedures: Object.freeze([...manifest.contributes.procedures]),
     requires: Object.freeze({

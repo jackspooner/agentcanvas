@@ -1,6 +1,7 @@
 # Operations
 
-This guide covers service and plugin lifecycle for an installed AgentCanvas v0.2 host.
+This guide covers service and extension lifecycle for an installed AgentCanvas
+host.
 
 ## Runtime layout
 
@@ -63,7 +64,7 @@ The command moves the runtime folder to a timestamped directory under `plugins-d
 
 Removing an optional plugin does not delete its stored elements. Reads preserve canonical envelopes and add diagnostics. Generic frame and metadata changes, deletion, and clear remain available; data/style replacement and new writes for that type fail with `plugin_unavailable`.
 
-Do not disable `agentcanvas.assets2` in a standard installation. The host requires its `agentcanvas.assets` capability and will fail startup without it.
+`agentcanvas.assets2` and `agentcanvas.filesystem-images` are independent optional image sources. Disable either while AgentCanvas is stopped; stored nodes remain intact and show missing-extension diagnostics until their owner is reinstalled.
 
 ## Least-privilege deployment
 
@@ -105,9 +106,7 @@ curl http://127.0.0.1:23003/whoami
 curl http://127.0.0.1:23003/api/v1/plugins
 ```
 
-`/health` is readiness-oriented and returns HTTP 503 when the required Assets-2 provider is unhealthy. `/whoami` safely reports host version, plugin API version, active IDs, MCP endpoint, and Assets-2 identity/capabilities.
-
-Before listening, the host retries only provider failures marked retryable for the bounded interval configured by `AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS` and `AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS`. This lets an automatic service dependency finish becoming HTTP-ready without masking missing capabilities, incompatible versions, or identity errors.
+`/health` reports core host readiness. `/whoami` safely reports host version, plugin API version, active IDs, and the MCP endpoint. When the optional Assets-2 extension is active, both routes include its provider status under `dependencies.assets`; provider failure is visible but does not make core unhealthy.
 
 ## Database operations
 

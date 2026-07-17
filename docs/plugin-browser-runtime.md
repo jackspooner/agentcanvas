@@ -1,4 +1,4 @@
-# AgentCanvas browser plugin runtime
+# AgentCanvas browser extension runtime
 
 ## Delivery
 
@@ -20,7 +20,28 @@ interface BrowserElementRenderer {
 }
 ```
 
-The browser activation host only exposes `registerRenderer`.
+The browser activation host exposes `registerRenderer` and, when supported,
+`registerCommand`. Existing browser extensions that only register renderers
+remain valid.
+
+## Commands
+
+The installed manifest declares local command names under
+`contributes.commands`. Browser activation must register exactly those names.
+The host exposes them through the same command service used by toolbar and
+keyboard actions.
+
+Commands receive selection snapshots, read-only state, viewport state,
+`reveal`, command dispatch, extension-owned transactions, overlays,
+diagnostics, and an abort signal. Transactions may upsert, replace data/style,
+or delete only elements owned by the registering extension. They participate
+in canonical revision-aware undo and redo.
+
+## Activation disposal
+
+Browser activation may return `{ dispose() }`. The registry calls it exactly
+once when the application tears down or replaces the registry. Renderers still
+own their per-element `mount`/`update`/`dispose` lifecycle separately.
 
 ## Host responsibilities
 

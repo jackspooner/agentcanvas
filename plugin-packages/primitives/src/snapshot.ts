@@ -5,8 +5,8 @@ import type {
   SnapshotContribution,
   SnapshotNode
 } from '@agentcanvas/plugin-sdk';
-import { connectorData, elementSize, stringValue } from './data.js';
-import { arrowHead, connectorMidpoint, type Point, resolveConnectorEndpoints } from './geometry.js';
+import { connectorData, elementSize, stringValue } from './browser/data.js';
+import { arrowHead, connectorMidpoint, type Point, resolveConnectorEndpoints } from './browser/geometry.js';
 
 function styleString(element: Readonly<CanvasElement>, key: string, fallback: string): string {
   const value = element.style?.[key];

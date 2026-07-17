@@ -25,7 +25,7 @@ function fixturePlugins(): string {
       license: 'MIT',
       entrypoints: { server: 'dist/server.mjs', browser: 'dist/browser/entry.mjs' },
       requires: { hostApi: '^1.0.0', plugins: {}, capabilities: {} },
-      provides: { capabilities: { 'agentcanvas.assets': '1.0.0' } },
+      provides: { capabilities: {} },
       permissions: ['canvas.read', 'canvas.mutate-own'],
       contributes: {
         elements: [{ name: 'card', schemaVersion: 1, browser: true, snapshot: 'supported' }],
@@ -37,14 +37,7 @@ function fixturePlugins(): string {
   );
   fs.writeFileSync(
     path.join(pluginRoot, 'dist', 'server.mjs'),
-    `let readinessChecks = 0;
-    export default { activate(host) {
-      host.provideCapability({ name: 'agentcanvas.assets', version: '1.0.0', value: {}, readiness: async () => {
-        readinessChecks += 1;
-        return readinessChecks < 3
-          ? { ok: false, code: 'assets_unavailable', retryable: true }
-          : { ok: true };
-      } });
+    `export default { activate(host) {
       host.registerElementType({
         name: 'card', schemaVersion: 1, browser: true, snapshot: 'supported',
         dataSchema: { type: 'object', additionalProperties: false, required: ['title'], properties: { title: { type: 'string' } } },
@@ -79,13 +72,14 @@ describe('v0.2 assembled runtime', () => {
       pluginsRoot: fixturePlugins(),
       databasePath: ':memory:',
       config: {
-        publicBaseUrl: 'http://127.0.0.1:23003',
-        startupReadinessTimeoutMs: 100,
-        startupReadinessRetryIntervalMs: 1
+        publicBaseUrl: 'http://127.0.0.1:23003'
       }
     });
     const app = createV2App(runtime);
-    expect((await app.request('/health')).status).toBe(200);
+    const health = await app.request('/health');
+    expect(health.status).toBe(200);
+    expect(await health.json()).toMatchObject({ ok: true, dependencies: {} });
+    expect(await (await app.request('/whoami')).json()).toMatchObject({ dependencies: {} });
 
     const plugins = await (await app.request('/api/v1/plugins')).json();
     expect(plugins.plugins[0]).toMatchObject({

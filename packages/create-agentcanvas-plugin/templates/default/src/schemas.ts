@@ -1,4 +1,4 @@
-import type { JsonSchema } from '@agentcanvas/plugin-sdk';
+import type { JsonSchema } from '@agentcanvas/extension-sdk';
 
 export const helloCardDataSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',

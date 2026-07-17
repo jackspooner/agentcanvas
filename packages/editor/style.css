@@ -1,0 +1,204 @@
+@import "@xyflow/react/dist/style.css";
+
+.agentcanvas-editor {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.agentcanvas-editor .react-flow__pane {
+  cursor: grab;
+}
+
+.agentcanvas-editor .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+.agentcanvas-editor .react-flow__node {
+  border: 0;
+  background: transparent;
+}
+
+.agentcanvas-editor-node {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid transparent;
+  transform-origin: center;
+}
+
+.agentcanvas-editor-node.is-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.agentcanvas-editor-node.is-locked.is-selected {
+  border-color: #64748b;
+}
+
+.agentcanvas-editor-node-content,
+.agentcanvas-editor-node-content > * {
+  width: 100%;
+  height: 100%;
+}
+
+.agentcanvas-editor-drag-handle {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  color: #1d4ed8;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.16);
+  cursor: move;
+}
+
+.agentcanvas-editor-drag-handle:hover,
+.agentcanvas-editor-drag-handle:focus-visible {
+  border-color: #2563eb;
+  background: #eff6ff;
+  outline: 2px solid transparent;
+}
+
+.agentcanvas-editor-resize-line {
+  border-color: #2563eb !important;
+}
+
+.agentcanvas-editor-resize-handle {
+  width: 9px !important;
+  height: 9px !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 2px !important;
+  background: #2563eb !important;
+}
+
+.agentcanvas-editor-fixed-board {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -10000;
+  box-sizing: border-box;
+  border: 1px solid #94a3b8;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  pointer-events: none;
+}
+
+.agentcanvas-editor-world-underlay,
+.agentcanvas-editor-world-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.agentcanvas-editor-world-underlay {
+  z-index: -9000;
+}
+
+.agentcanvas-editor-world-overlay {
+  z-index: 9000;
+}
+
+.agentcanvas-editor .react-flow__selection,
+.agentcanvas-editor .react-flow__nodesselection-rect {
+  border: 1px solid #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.agentcanvas-editor-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.agentcanvas-editor-viewport-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agentcanvas-editor-viewport-toolbar button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #111827;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.agentcanvas-editor-viewport-toolbar button:hover:not(:disabled),
+.agentcanvas-editor-viewport-toolbar button[aria-pressed="true"] {
+  border-color: #60a5fa;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.agentcanvas-editor-viewport-toolbar button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.agentcanvas-editor-viewport-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.agentcanvas-editor-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: #334155;
+  background: transparent;
+  cursor: pointer;
+}
+
+.agentcanvas-editor-toolbar button:hover:not(:disabled),
+.agentcanvas-editor-toolbar button:focus-visible {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.agentcanvas-editor-toolbar button:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.agentcanvas-editor-toolbar select {
+  height: 28px;
+  max-width: 150px;
+  border: 0;
+  border-left: 1px solid #e2e8f0;
+  border-radius: 0;
+  padding: 0 6px 0 9px;
+  color: #334155;
+  background: #ffffff;
+  font-size: 12px;
+}

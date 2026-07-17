@@ -48,7 +48,11 @@ describe('external plugin fixture', () => {
     expect(importLegacy(legacy)).toEqual(importLegacy(legacy));
     expect(snapshot(element).nodes).toHaveLength(2);
     const renderers: Parameters<BrowserPluginHost['registerRenderer']>[0][] = [];
-    await browserPlugin.activate({ registerRenderer: (value) => renderers.push(value) });
+    const commands: Parameters<NonNullable<BrowserPluginHost['registerCommand']>>[0][] = [];
+    await browserPlugin.activate({
+      registerRenderer: (value) => renderers.push(value),
+      registerCommand: (value) => commands.push(value)
+    });
     const root = document.createElement('div').attachShadow({ mode: 'open' });
     const renderer = renderers[0];
     if (!renderer) throw new Error('External plugin did not register its browser renderer.');
@@ -66,5 +70,28 @@ describe('external plugin fixture', () => {
     expect(root.textContent).toContain('Build · active');
     await mounted.dispose();
     expect(root.childNodes).toHaveLength(0);
+    expect(commands.map((command) => command.name)).toEqual(['toggle-status']);
+    let operations: unknown;
+    await commands[0]?.execute({
+      pluginId: 'external.signal-card',
+      readOnly: false,
+      selection: [element],
+      viewport: { centerX: 0, centerY: 0, zoom: 1 },
+      signal: new AbortController().signal,
+      overlays: { open: () => ({ update() {}, close() {} }) },
+      executeCommand: async () => false,
+      reveal() {},
+      transact: async (_label, value) => {
+        operations = value;
+      },
+      reportDiagnostic() {}
+    });
+    expect(operations).toEqual([
+      {
+        op: 'replaceElementData',
+        elementId: element.id,
+        data: { ...element.data, status: 'paused' }
+      }
+    ]);
   });
 });

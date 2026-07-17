@@ -27,7 +27,6 @@ import {
 import { loadConfig, type AgentCanvasConfig } from './config.js';
 import { CanvasError, toCanvasError } from './errors.js';
 import {
-  assertRequiredPluginCapabilities,
   createPluginCanvasOperations,
   createBrowserPluginCatalog,
   PluginElementValidator,
@@ -53,6 +52,7 @@ interface V2Runtime {
   resources: ResourceBroker;
   store: V2SqliteCanvasStore;
   openapi: JsonObject;
+  developmentReloadVersion?: string;
 }
 
 const INSTALLATION_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -72,6 +72,7 @@ export interface CreateV2RuntimeOptions {
   config?: Partial<AgentCanvasConfig>;
   pluginsRoot?: string;
   databasePath?: string;
+  developmentReloadVersion?: string;
 }
 
 function invocationContext(
@@ -186,9 +187,9 @@ async function assetsProviderStatus(
   capabilities?: readonly string[];
   code?: string;
   retryable?: boolean;
-}> {
+} | null> {
   const provider = registry.capabilities['agentcanvas.assets'];
-  if (!provider) return { ok: false, code: 'assets_capability_missing', retryable: false };
+  if (!provider) return null;
   const value = provider.value as AssetsCapabilityV1;
   if (typeof value.providerStatus !== 'function') {
     return { ok: false, code: 'assets_provider_status_missing', retryable: false };
@@ -237,11 +238,10 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     '/health': {
       get: {
         operationId: 'canvasHealth',
-        summary: 'Check AgentCanvas and required Assets-2 readiness',
+        summary: 'Check AgentCanvas readiness and optional capability status',
         tags: ['Service'],
         responses: {
-          200: response('Service and required dependencies are ready'),
-          503: response('A required dependency is unavailable')
+          200: response('Service is ready')
         },
         'x-agent-notes': agentNotes([], true)
       }
@@ -249,7 +249,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     '/whoami': {
       get: {
         operationId: 'canvasWhoami',
-        summary: 'Inspect safe service, plugin, MCP, and Assets-2 identity',
+        summary: 'Inspect safe service, plugin, MCP, and optional dependency identity',
         tags: ['Service'],
         responses: { 200: response('Safe service identity') },
         'x-agent-notes': agentNotes()
@@ -554,15 +554,11 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
   const store = new V2SqliteCanvasStore(new PluginElementValidator(plugins.registry), config.databasePath, config);
   plugins.bindDatabase(store.db);
   assertPluginSchemasReady(store.db, plugins.registry, config.databasePath, plugins.pluginsRoot);
-  await assertRequiredPluginCapabilities(plugins.registry, {
-    timeoutMs: config.startupReadinessTimeoutMs,
-    retryIntervalMs: config.startupReadinessRetryIntervalMs
-  });
   const browserCatalog = await createBrowserPluginCatalog(plugins.registry);
   const openapi = createRegistryOpenApiDocument(plugins.registry, {
     title: 'AgentCanvas API',
     version: AGENTCANVAS_VERSION,
-    description: 'Registry-derived AgentCanvas v0.2 HTTP contract.',
+    description: 'Registry-derived AgentCanvas HTTP contract.',
     serverUrls: [config.publicBaseUrl],
     corePaths: coreOpenApiPaths(),
     additionalSchemas: {
@@ -579,7 +575,8 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     browserCatalog,
     resources: plugins.resources,
     store,
-    openapi
+    openapi,
+    ...(options.developmentReloadVersion ? { developmentReloadVersion: options.developmentReloadVersion } : {})
   };
 }
 
@@ -604,24 +601,48 @@ export function createV2App(runtime: V2Runtime): Hono {
   app.get('/health', async (c) => {
     const statuses = await capabilityStatus(registry);
     const assets = statuses['agentcanvas.assets'];
-    return c.json(
-      { ok: Boolean(assets?.ok), service: 'AgentCanvas', version: AGENTCANVAS_VERSION, dependencies: { assets } },
-      assets?.ok ? 200 : 503
-    );
+    return c.json({
+      ok: true,
+      service: 'AgentCanvas',
+      version: AGENTCANVAS_VERSION,
+      dependencies: { ...(assets ? { assets } : {}) }
+    });
   });
-  app.get('/whoami', async (c) =>
-    c.json({
+  app.get('/whoami', async (c) => {
+    const assets = await assetsProviderStatus(registry, c.req.raw.signal);
+    return c.json({
       service: 'AgentCanvas',
       version: AGENTCANVAS_VERSION,
       pluginApi: AGENTCANVAS_HOST_API_VERSION,
       plugins: registry.plugins.map((plugin) => plugin.plugin.manifest.id),
-      dependencies: { assets: await assetsProviderStatus(registry, c.req.raw.signal) },
+      dependencies: { ...(assets ? { assets } : {}) },
       mcp: { endpoint: `${config.publicBaseUrl}/mcp`, transport: 'streamable-http' },
       host: config.host,
       port: config.port
-    })
-  );
+    });
+  });
   app.get('/openapi.json', (c) => c.json(runtime.openapi));
+  if (runtime.developmentReloadVersion) {
+    app.get('/__agentcanvas/dev-version', (c) => {
+      c.header('cache-control', 'no-store');
+      return c.text(runtime.developmentReloadVersion ?? '');
+    });
+    app.get('/__agentcanvas/dev-reload.js', (c) => {
+      c.header('content-type', 'text/javascript; charset=utf-8');
+      c.header('cache-control', 'no-store');
+      return c.body(`
+const initial = await fetch('/__agentcanvas/dev-version', { cache: 'no-store' }).then((response) => response.text());
+setInterval(async () => {
+  try {
+    const current = await fetch('/__agentcanvas/dev-version', { cache: 'no-store' }).then((response) => response.text());
+    if (current && current !== initial) location.reload();
+  } catch (error) {
+    void error;
+  }
+}, 750);
+`);
+    });
+  }
 
   app.get('/api/v1/plugins', async (c) =>
     c.json(
@@ -796,10 +817,16 @@ export function createV2App(runtime: V2Runtime): Hono {
     return c.json({ ok: true, ...resolved, ...projection, readOnly: true });
   });
 
-  app.get('/', (c) => c.html(readWebShell()));
-  app.get('/canvases', (c) => c.html(readWebShell()));
-  app.get('/canvases/:canvasId', (c) => c.html(readWebShell()));
-  app.get('/c/:shareToken', (c) => c.html(readWebShell()));
+  const webShell = () => {
+    const shell = readWebShell();
+    return runtime.developmentReloadVersion
+      ? shell.replace('</body>', '<script type="module" src="/__agentcanvas/dev-reload.js"></script></body>')
+      : shell;
+  };
+  app.get('/', (c) => c.html(webShell()));
+  app.get('/canvases', (c) => c.html(webShell()));
+  app.get('/canvases/:canvasId', (c) => c.html(webShell()));
+  app.get('/c/:shareToken', (c) => c.html(webShell()));
   return app;
 }
 
@@ -842,7 +869,7 @@ export async function startAgentCanvas(): Promise<void> {
   const runtime = await createV2Runtime();
   const server = createServer(createV2ServiceHandler(runtime));
   server.listen(runtime.config.port, runtime.config.host, () => {
-    console.log(`AgentCanvas v0.2 listening on ${runtime.config.publicBaseUrl}`);
+    console.log(`AgentCanvas ${AGENTCANVAS_VERSION} listening on ${runtime.config.publicBaseUrl}`);
   });
 }
 

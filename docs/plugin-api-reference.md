@@ -1,6 +1,16 @@
-# AgentCanvas plugin API v1 reference
+# AgentCanvas extension API reference
 
-The public package is `@agentcanvas/plugin-sdk`. Plugins should not import root AgentCanvas source, private React components, Hono, or SQLite.
+New extensions should import `@agentcanvas/extension-sdk`.
+`@agentcanvas/plugin-sdk` remains the compatible plugin API v1 contract.
+Extensions must not import root AgentCanvas source, private React components,
+React Flow, Hono, or SQLite.
+
+## Typed definition
+
+`defineExtension`, `defineElement`, and `defineCommand` create one typed
+authoring descriptor. Build tooling serializes
+`definition.manifest` to the static `agentcanvas.plugin.json` installed by the
+host. Host discovery never executes the descriptor.
 
 ## Server activation
 
@@ -54,6 +64,20 @@ KV keys match a bounded safe-key pattern. Values must be finite JSON and at most
 ## Browser activation
 
 Browser entries default-export `AgentCanvasBrowserPlugin` and register framework-neutral `BrowserElementRenderer` objects. See [Browser plugin runtime](plugin-browser-runtime.md).
+
+Browser entries may also register declared `BrowserCommandDescriptor` values.
+Command IDs are namespaced as `<extension-id>.<local-name>`. A command receives:
+
+- read-only selected element snapshots;
+- current viewport and a `reveal` operation;
+- the shared command dispatcher;
+- extension-owned element transactions;
+- overlays and scoped diagnostics;
+- an abort signal.
+
+The context deliberately does not expose React Flow or host-private React
+state. Activation may return a disposable, which the browser registry invokes
+once during teardown.
 
 ## Snapshot scene
 

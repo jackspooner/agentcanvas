@@ -1,6 +1,6 @@
 {
   "name": "agent-canvas",
-  "version": "0.2.0",
+  "version": "0.3.0-alpha.1",
   "description": "Clone-and-run local web canvas and MCP server for agent-created boards.",
   "private": true,
   "bin": {
@@ -31,8 +31,8 @@
     "workspace"
   ],
   "scripts": {
-    "build:packages": "npm run build --workspace @agentcanvas/plugin-sdk && npm run build --workspace @agentcanvas/plugin-testkit && npm run build --workspace @agentcanvas/core && npm run build --workspace create-agentcanvas-plugin",
-    "build:plugins": "npm run build --workspace @agentcanvas/plugin-assets2 && npm run build --workspace @agentcanvas/plugin-glb-viewer && npm run build --workspace @agentcanvas/plugin-image-overlays && npm run build --workspace @agentcanvas/plugin-markdown && npm run build --workspace @agentcanvas/plugin-primitives && npm run build --workspace @agentcanvas/plugin-table && npm run build --workspace @agentcanvas/plugin-video",
+    "build:packages": "npm run build --workspace @agentcanvas/plugin-sdk && npm run build --workspace @agentcanvas/plugin-testkit && npm run build --workspace @agentcanvas/extension-sdk && npm run build --workspace @agentcanvas/extension-testkit && npm run build --workspace @agentcanvas/core && npm run build --workspace @agentcanvas/editor && npm run build --workspace create-agentcanvas-plugin && npm run build --workspace create-agentcanvas-extension",
+    "build:plugins": "npm run build --workspace @agentcanvas/plugin-assets2 && npm run build --workspace @agentcanvas/plugin-filesystem-images && npm run build --workspace @agentcanvas/plugin-glb-viewer && npm run build --workspace @agentcanvas/plugin-image-overlays && npm run build --workspace @agentcanvas/plugin-markdown && npm run build --workspace @agentcanvas/plugin-primitives && npm run build --workspace @agentcanvas/plugin-table && npm run build --workspace @agentcanvas/plugin-video",
     "test:packages": "npm run test --workspaces --if-present",
     "check:packages": "npm run check --workspaces --if-present",
     "dev": "npm run build:packages && tsx src/server.ts",
@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@agentcanvas/core": "0.2.0",
+    "@agentcanvas/editor": "0.3.0-alpha.1",
     "@agentcanvas/plugin-sdk": "0.2.0",
     "@hono/node-server": "^2.0.8",
     "@modelcontextprotocol/sdk": "^1.29.0",

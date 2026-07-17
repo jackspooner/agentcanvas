@@ -1,9 +1,10 @@
 import type {
   AgentCanvasBrowserPlugin,
+  BrowserCommandDescriptor,
   BrowserElementRenderer,
   CanvasElement,
   RendererContext
-} from '@agentcanvas/plugin-sdk';
+} from '@agentcanvas/extension-sdk';
 
 function render(container: HTMLElement, element: Readonly<CanvasElement>, readOnly: boolean): void {
   const data = element.data;
@@ -46,9 +47,25 @@ export const renderer: BrowserElementRenderer = {
   }
 };
 
+export const showSelectionCountCommand: BrowserCommandDescriptor = {
+  name: 'show-selection-count',
+  title: 'Show selection count',
+  category: '__DISPLAY_NAME__',
+  execute(context) {
+    context.reportDiagnostic({
+      code: 'selection_count',
+      severity: 'info',
+      message: `${context.selection.length} element${context.selection.length === 1 ? '' : 's'} selected.`,
+      retryable: false
+    });
+  }
+};
+
 const plugin: AgentCanvasBrowserPlugin = {
   activate(host) {
     host.registerRenderer(renderer);
+    if (!host.registerCommand) throw new Error('This extension requires AgentCanvas browser command support.');
+    host.registerCommand(showSelectionCountCommand);
   }
 };
 

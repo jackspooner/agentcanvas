@@ -80,6 +80,7 @@ export const pluginManifestSchema = {
             }
           }
         },
+        commands: { type: 'array', uniqueItems: true, items: { type: 'string', pattern: localNamePattern } },
         tools: { type: 'array', uniqueItems: true, items: { type: 'string', pattern: localNamePattern } },
         procedures: { type: 'array', uniqueItems: true, items: { type: 'string', pattern: localNamePattern } },
         migrations: { type: 'array', uniqueItems: true, items: { type: 'string', pattern: localNamePattern } }
@@ -133,6 +134,7 @@ export function validatePluginManifest(value: unknown): PluginManifest {
   }
   const localNames = [
     ...manifest.contributes.elements.map((item) => item.name),
+    ...(manifest.contributes.commands ?? []),
     ...manifest.contributes.tools,
     ...manifest.contributes.procedures,
     ...manifest.contributes.migrations
@@ -141,6 +143,12 @@ export function validatePluginManifest(value: unknown): PluginManifest {
     throw new PluginRuntimeError('plugin_manifest_invalid', 'Invalid local contribution name');
   if (new Set(manifest.contributes.elements.map((item) => item.name)).size !== manifest.contributes.elements.length) {
     throw new PluginRuntimeError('plugin_manifest_invalid', `Duplicate element contribution in ${manifest.id}`);
+  }
+  if ((manifest.contributes.commands?.length ?? 0) > 0 && !manifest.entrypoints.browser) {
+    throw new PluginRuntimeError(
+      'plugin_manifest_invalid',
+      `Plugin ${manifest.id} declares browser commands without a browser entrypoint`
+    );
   }
   return manifest;
 }

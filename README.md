@@ -1,32 +1,40 @@
 # AgentCanvas
 
-AgentCanvas v0.2 is a local browser canvas and MCP server built around automatically discovered plugins. The kernel owns canvas documents, revisions, SQLite persistence, sharing, viewports, resource security, HTTP/MCP infrastructure, browser framing, and safe snapshot composition. Element schemas, renderers, tools, procedures, legacy importers, and snapshot contributions come from plugins.
+AgentCanvas is a local-first visual workspace and MCP server for canvases built
+by people and agents. The current main branch includes the v0.3 editor
+foundation: polished pan, zoom, selection, marquee, multi-move, resize,
+clipboard, undo/redo, grid snapping, and a shared command service.
 
-AgentCanvas binds to loopback by default and has no user-account or authentication layer. Plugins are trusted executable application dependencies, not sandboxed extensions.
+Canvas documents, revisions, SQLite persistence, sharing, viewports, resource
+security, HTTP/MCP infrastructure, and snapshot composition remain owned by
+the AgentCanvas kernel. Extensions contribute element schemas, renderers,
+commands, tools, procedures, migrations, and snapshots without importing the
+editor implementation.
+
+AgentCanvas binds to loopback by default and has no user-account or
+authentication layer. Extensions are trusted executable application
+dependencies; they are not sandboxed.
 
 ## Documentation
 
 Start at the [documentation home](docs/README.md). It provides separate paths for installation, operations, HTTP/MCP use, architecture, troubleshooting, database migration, and plugin creation.
 
-For plugins, start with [how plugins work](docs/plugins.md), then use the [plugin authoring overview](docs/plugin-authoring/README.md) and [complete first-plugin tutorial](docs/plugin-authoring/tutorial.md).
+The [v0.3 specification set](docs/specs/README.md) records the product,
+interaction, architecture, extension SDK, delivery, and acceptance contracts
+for this work. Runtime distribution remains compatible with plugin API v1.
+
+For extensions, start with the [extension authoring
+overview](docs/plugin-authoring/README.md) and [complete
+tutorial](docs/plugin-authoring/tutorial.md). [How the runtime loads
+extensions](docs/plugins.md) explains the compatibility format and operational
+model.
 
 ## Requirements
 
 - Node.js 24 or newer and npm 11 or newer.
-- [Assets-2](https://github.com/jackspooner/Assets-2) running at the configured `ASSETS_BASE_URL` with exact `/whoami` identity `asset-service` and capabilities `asset_crud` and `asset_refs`.
 - An empty v0.2 database, or a v0.1 database migrated with the offline CLI before startup.
 
-Assets-2 is a separate, simultaneously running service rather than an npm dependency embedded in AgentCanvas. Clone and start it before AgentCanvas:
-
-```bash
-git clone https://github.com/jackspooner/Assets-2.git
-cd Assets-2
-npm install
-cp .env.example .env
-npm start
-```
-
-On Windows PowerShell, replace the copy command with `Copy-Item .env.example .env`. The default public setup listens at `http://127.0.0.1:23000`; confirm `GET /health` and `GET /whoami` before starting AgentCanvas. Keep Assets-2 running whenever AgentCanvas is running. See [Getting started](docs/getting-started.md) for the two-service startup order and verification.
+No media service is required. Local files and [Assets-2](https://github.com/jackspooner/Assets-2) are independently installable image-source extensions.
 
 ## Quick start
 
@@ -47,11 +55,14 @@ curl http://127.0.0.1:23003/whoami
 curl http://127.0.0.1:23003/openapi.json
 ```
 
-AgentCanvas does not listen if the required Assets-2 plugin or provider is unavailable, has the wrong identity, or lacks required capabilities. `/health` becomes HTTP 503 if Assets-2 later becomes unhealthy.
+`/health` reports AgentCanvas core readiness. When the optional Assets-2 extension is installed, its current readiness is reported under `dependencies.assets` without making the core host unavailable.
 
-## Plugins
+## Extensions
 
-See [How plugins work](docs/plugins.md) for the full discovery, activation, registry, trust, missing-plugin, and capability model.
+See [How extensions are loaded](docs/plugins.md) for the full discovery,
+activation, registry, trust, missing-extension, and capability model. The
+installation format and directory retain their plugin API v1 names for
+compatibility.
 
 The runtime source of truth is folder presence:
 
@@ -63,7 +74,10 @@ plugins/
     dist/browser/...
 ```
 
-Every non-hidden immediate child directory of `plugins/` is active. Discovery is non-recursive and deterministic. There is no `agentcanvas.config.mjs`, enabled-plugin list, database flag, remote loader, marketplace, hot reload, or browser upload. Add, remove, or replace a plugin while AgentCanvas is stopped, then restart.
+Every non-hidden immediate child directory of `plugins/` is active. Discovery
+is non-recursive and deterministic. There is no enabled-extension list,
+remote loader, marketplace, or browser upload. Add, remove, or replace a
+production extension while AgentCanvas is stopped, then restart.
 
 Source and distribution layout:
 
@@ -89,45 +103,64 @@ Default materialization activates:
 - `agentcanvas.primitives`
 - `agentcanvas.markdown`
 - `agentcanvas.table`
-- `agentcanvas.assets2` (required)
 
 The catalog also builds these optional plugins without activating them by default:
 
+- `agentcanvas.filesystem-images`
+- `agentcanvas.assets2`
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
 - `agentcanvas.glb-viewer`
 
 Removing an optional plugin preserves canonical stored envelopes. Reads show an explicit diagnostic; frame and metadata edits, deletion, and clear remain available. Reinstalling a compatible plugin restores validation and rendering without rewriting the document.
 
-## Plugin authoring
+## Extension authoring
 
-Third-party plugins import only the public packages:
+New third-party extensions import only the public packages:
+
+- `@agentcanvas/extension-sdk`
+- `@agentcanvas/extension-testkit`
+- `create-agentcanvas-extension`
+
+The v0.2 package names remain compatibility entrypoints:
 
 - `@agentcanvas/plugin-sdk`
 - `@agentcanvas/plugin-testkit`
 - `create-agentcanvas-plugin`
 
-The scaffolder is publication-ready but is not published by this repository refactor. From this checkout:
+The packages are publication-ready but are not yet published from this
+checkout. To scaffold with the public terminology:
 
 ```bash
-npm run build --workspace create-agentcanvas-plugin
-npm exec --workspace create-agentcanvas-plugin -- create-agentcanvas-plugin my-plugin
-cd my-plugin
+npm run build --workspace create-agentcanvas-extension
+npm exec --workspace create-agentcanvas-extension -- create-agentcanvas-extension my-extension
+cd my-extension
 npm install
 npm test
-npm run pack:plugin
+npm run pack:extension
 npm run agentcanvas:verify
 ```
 
-After npm publication, the public entrypoint will be `npx create-agentcanvas-plugin my-plugin`.
+After npm publication, the public entrypoint will be
+`npx create-agentcanvas-extension my-extension`.
 
-Copy the resulting distribution into AgentCanvas with `npm run plugins:install -- <distribution-path>` and restart. Browser plugins use a framework-neutral Shadow DOM lifecycle; server plugins register declared contributions against a frozen host registry. Permissions constrain supported host services such as `canvas.read` and `canvas.mutate-own`, but they are not a code-execution sandbox.
+The generated `src/extension.mts` descriptor is the authoring source for the
+static installation manifest. Browser extensions use a framework-neutral
+Shadow DOM renderer lifecycle and may register commands against the shared
+editor command service. Commands receive selection, viewport, reveal,
+transaction, overlay, diagnostic, and cancellation services; they never
+receive a React Flow instance.
+
+Copy the resulting distribution into AgentCanvas with `npm run
+plugins:install -- <distribution-path>` and restart. Permissions constrain
+supported host services such as `canvas.read` and `canvas.mutate-own`, but they
+are not a code-execution sandbox.
 
 See the [author quick start](docs/plugin-authoring/README.md), [complete tutorial](docs/plugin-authoring/tutorial.md), [manifest reference](docs/plugin-manifest-reference.md), [public API reference](docs/plugin-api-reference.md), and [testing/distribution guide](docs/plugin-authoring/testing-and-distribution.md).
 
 ## Database migration
 
-AgentCanvas v0.2 does not upgrade a live database during startup. Stop AgentCanvas and use:
+AgentCanvas does not upgrade a live database during startup. Stop AgentCanvas and use:
 
 ```bash
 npm run migrate -- inspect --database <path> --json
@@ -158,7 +191,7 @@ Important routes:
 - `GET /api/v1/resources/:handle/content`
 - share-link, configuration, and viewport routes documented by `/openapi.json`
 
-The installed frozen plugin registry generates runtime OpenAPI and both MCP transports. The committed [standard OpenAPI document](docs/openapi.standard.json) represents the four-plugin default distribution; verify freshness with `npm run check:openapi`.
+The installed frozen plugin registry generates runtime OpenAPI and both MCP transports. The committed [standard OpenAPI document](docs/openapi.standard.json) represents the three-extension default distribution; verify freshness with `npm run check:openapi`.
 
 Resident MCP is `POST http://127.0.0.1:23003/mcp`. The stdio command is a transport bridge to that resident endpoint and does not rediscover plugins:
 
@@ -197,8 +230,6 @@ AGENT_CANVAS_PUBLIC_BASE_URL=http://127.0.0.1:23003
 AGENT_CANVAS_ALLOW_REMOTE=false
 AGENT_CANVAS_DB=./data/agent-canvas.sqlite
 AGENT_CANVAS_DEFAULT_SIZE=unlimited
-AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS=30000
-AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS=500
 ```
 
 The stdio MCP bridge uses `AGENT_CANVAS_BASE_URL` when set and otherwise connects to `AGENT_CANVAS_PUBLIC_BASE_URL`:
@@ -207,7 +238,7 @@ The stdio MCP bridge uses `AGENT_CANVAS_BASE_URL` when set and otherwise connect
 AGENT_CANVAS_BASE_URL=http://127.0.0.1:23003
 ```
 
-The required Assets-2 plugin owns the existing asset settings:
+The optional Assets-2 extension owns these settings when installed:
 
 ```text
 ASSETS_BASE_URL=http://127.0.0.1:23000
@@ -221,14 +252,14 @@ Plugin secrets belong only in environment variables declared by that plugin mani
 
 AgentCanvas refuses a non-loopback bind unless `AGENT_CANVAS_ALLOW_REMOTE=true`. This is only for an intentional trusted network and does not add authentication. Host and Origin allowlists are configured with `AGENT_CANVAS_ALLOWED_HOSTS` and `AGENT_CANVAS_ALLOWED_ORIGINS`.
 
-At startup, AgentCanvas retries only required-capability failures marked `retryable` until `AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS` expires, pausing for `AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS` between probes. Missing capabilities, incompatible versions, and non-retryable identity failures still fail immediately.
+The optional filesystem-images extension is configured in its installed `plugin.config.json`; it deliberately does not accept arbitrary absolute paths from canvas documents or MCP calls.
 
 Run AgentCanvas under a dedicated least-privilege operating-system account that can read the installation/plugin directories and write only the configured database, data, and log locations. Do not run it as an administrator, root, or `LocalSystem`. The supplied Windows templates use passwordless per-service virtual accounts. Because plugins execute trusted Node.js and same-origin browser code, the service account's filesystem and network permissions are the effective security boundary.
 
 ## Repository layout
 
 ```text
-packages/                    public core, SDK, testkit, and scaffolder packages
+packages/                    public core, editor, SDK, testkit, and scaffolders
 plugin-packages/             first-party plugin sources
 dist/plugin-catalog/         built plugin distributions
 plugins/                     active generated runtime plugins
@@ -237,12 +268,16 @@ src/store/                   v0.2 SQLite store and version checks
 src/migrations/              offline migration and restore
 src/snapshot-runtime/        safe scene validation and SVG composition
 src/mcp-v2/                  registry-derived HTTP and stdio MCP
-src/web/                     generic browser host
+src/web/                     browser host and canonical mutation reconciliation
 test/                        unit, integration, migration, security, and E2E fixtures
 docs/                        architecture, contracts, migration, and author guides
 ```
 
-`@agentcanvas/core` contains only generic canvas/document kernel contracts. Normal element and media contracts live in the public SDK or owning plugin; the kernel has no closed element union or element renderer switch.
+`@agentcanvas/core` contains generic canvas/document kernel contracts.
+`@agentcanvas/editor` owns the React Flow adapter and interaction primitives.
+React Flow types do not cross into document, HTTP, MCP, or extension
+contracts. Normal element and media behavior lives in the public SDK or owning
+extension; the kernel has no closed element union or renderer switch.
 
 ## Verification
 

@@ -121,261 +121,6 @@
         ],
         "type": "object"
       },
-      "Element_agentcanvas_assets2_asset": {
-        "allOf": [
-          {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "additionalProperties": false,
-            "properties": {
-              "data": {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              "height": {
-                "type": [
-                  "number",
-                  "null"
-                ]
-              },
-              "id": {
-                "minLength": 1,
-                "type": "string"
-              },
-              "locked": {
-                "type": [
-                  "boolean",
-                  "null"
-                ]
-              },
-              "metadata": {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              "opacity": {
-                "type": [
-                  "number",
-                  "null"
-                ]
-              },
-              "rotation": {
-                "type": [
-                  "number",
-                  "null"
-                ]
-              },
-              "schemaVersion": {
-                "minimum": 1,
-                "type": "integer"
-              },
-              "style": {
-                "oneOf": [
-                  {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": {
-                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
-                "type": "string"
-              },
-              "width": {
-                "type": [
-                  "number",
-                  "null"
-                ]
-              },
-              "x": {
-                "type": "number"
-              },
-              "y": {
-                "type": "number"
-              },
-              "zIndex": {
-                "type": [
-                  "number",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "type",
-              "schemaVersion",
-              "x",
-              "y",
-              "data"
-            ],
-            "type": "object"
-          },
-          {
-            "properties": {
-              "data": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "additionalProperties": false,
-                "properties": {
-                  "alt": {
-                    "maxLength": 2000,
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "assetRef": {
-                    "additionalProperties": false,
-                    "anyOf": [
-                      {
-                        "properties": {
-                          "assetId": {}
-                        },
-                        "required": [
-                          "assetId"
-                        ]
-                      },
-                      {
-                        "properties": {
-                          "assetKey": {}
-                        },
-                        "required": [
-                          "assetKey"
-                        ]
-                      }
-                    ],
-                    "properties": {
-                      "assetBaseUrl": {
-                        "pattern": "^https?://[^\\s]+$",
-                        "type": "string"
-                      },
-                      "assetId": {
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-                        "type": "string"
-                      },
-                      "assetKey": {
-                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}(?:/[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127})*$",
-                        "type": "string"
-                      },
-                      "project": {
-                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
-                        "type": "string"
-                      },
-                      "type": {
-                        "const": "asset"
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "project"
-                    ],
-                    "type": "object"
-                  },
-                  "caption": {
-                    "maxLength": 2000,
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "fit": {
-                    "enum": [
-                      "contain",
-                      "cover",
-                      "stretch",
-                      "original",
-                      null
-                    ],
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  }
-                },
-                "required": [
-                  "assetRef"
-                ],
-                "type": "object"
-              },
-              "schemaVersion": {
-                "const": 1
-              },
-              "style": {
-                "oneOf": [
-                  {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "additionalProperties": false,
-                    "properties": {
-                      "background": {
-                        "maxLength": 100,
-                        "type": "string"
-                      },
-                      "borderColor": {
-                        "maxLength": 100,
-                        "type": "string"
-                      },
-                      "borderRadius": {
-                        "maximum": 10000,
-                        "minimum": 0,
-                        "type": "number"
-                      },
-                      "borderWidth": {
-                        "maximum": 100,
-                        "minimum": 0,
-                        "type": "number"
-                      },
-                      "color": {
-                        "maxLength": 100,
-                        "type": "string"
-                      },
-                      "fill": {
-                        "maxLength": 100,
-                        "type": "string"
-                      },
-                      "fontFamily": {
-                        "maxLength": 500,
-                        "type": "string"
-                      },
-                      "fontSize": {
-                        "maximum": 1000,
-                        "minimum": 1,
-                        "type": "number"
-                      },
-                      "fontWeight": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "number"
-                          }
-                        ]
-                      },
-                      "stroke": {
-                        "maxLength": 100,
-                        "type": "string"
-                      },
-                      "strokeWidth": {
-                        "maximum": 100,
-                        "minimum": 0,
-                        "type": "number"
-                      }
-                    },
-                    "type": "object"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": {
-                "const": "agentcanvas.assets2/asset"
-              }
-            },
-            "type": "object"
-          }
-        ]
-      },
       "Element_agentcanvas_markdown_document": {
         "allOf": [
           {
@@ -1904,6 +1649,12 @@
           "contributions": {
             "additionalProperties": false,
             "properties": {
+              "commands": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
               "elements": {
                 "type": "array"
               },
@@ -1928,6 +1679,7 @@
             },
             "required": [
               "elements",
+              "commands",
               "tools",
               "procedures",
               "migrations"
@@ -2146,6 +1898,12 @@
                 "contributions": {
                   "additionalProperties": false,
                   "properties": {
+                    "commands": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
                     "elements": {
                       "type": "array"
                     },
@@ -2170,6 +1928,7 @@
                   },
                   "required": [
                     "elements",
+                    "commands",
                     "tools",
                     "procedures",
                     "migrations"
@@ -2363,9 +2122,6 @@
       "WritableCanvasElement": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Element_agentcanvas_assets2_asset"
-          },
-          {
             "$ref": "#/components/schemas/Element_agentcanvas_markdown_document"
           },
           {
@@ -2388,9 +2144,9 @@
     }
   },
   "info": {
-    "description": "Standard AgentCanvas v0.2 distribution contract. Runtime OpenAPI reflects the exact active plugin set.",
+    "description": "Standard AgentCanvas distribution contract. Runtime OpenAPI reflects the exact active extension set.",
     "title": "AgentCanvas API",
-    "version": "0.2.0"
+    "version": "0.3.0-alpha.1"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3800,157 +3556,6 @@
         }
       }
     },
-    "/api/v1/plugins/agentcanvas.assets2/procedures/details": {
-      "post": {
-        "operationId": "plugin_agentcanvas_assets2__details",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "additionalProperties": false,
-                "properties": {
-                  "assetRef": {
-                    "additionalProperties": false,
-                    "anyOf": [
-                      {
-                        "properties": {
-                          "assetId": {}
-                        },
-                        "required": [
-                          "assetId"
-                        ]
-                      },
-                      {
-                        "properties": {
-                          "assetKey": {}
-                        },
-                        "required": [
-                          "assetKey"
-                        ]
-                      }
-                    ],
-                    "properties": {
-                      "assetBaseUrl": {
-                        "pattern": "^https?://[^\\s]+$",
-                        "type": "string"
-                      },
-                      "assetId": {
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-                        "type": "string"
-                      },
-                      "assetKey": {
-                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}(?:/[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127})*$",
-                        "type": "string"
-                      },
-                      "project": {
-                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
-                        "type": "string"
-                      },
-                      "type": {
-                        "const": "asset"
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "project"
-                    ],
-                    "type": "object"
-                  }
-                },
-                "required": [
-                  "assetRef"
-                ],
-                "type": "object"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "details": {
-                      "type": "object"
-                    },
-                    "ok": {
-                      "const": true
-                    }
-                  },
-                  "required": [
-                    "ok",
-                    "details"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Validated plugin procedure result"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Procedure input failed validation"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Plugin or procedure is unavailable"
-          },
-          "408": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Procedure timed out"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Procedure execution failed"
-          }
-        },
-        "summary": "Read the safe browser details projection for an Assets-2 asset.",
-        "tags": [
-          "Plugin procedures"
-        ],
-        "x-agent-notes": {
-          "consistency": {
-            "refresh": [
-              "Affected canvas and plugin diagnostics after successful mutation."
-            ]
-          },
-          "sideEffects": [
-            "Runs trusted plugin code and may mutate canvases according to the plugin permissions."
-          ],
-          "useWhen": [
-            "Invoke the agentcanvas.assets2/details plugin workflow."
-          ]
-        }
-      }
-    },
     "/api/v1/resources/{handle}/content": {
       "get": {
         "operationId": "canvasGetResourceContent",
@@ -4109,13 +3714,10 @@
         "operationId": "canvasHealth",
         "responses": {
           "200": {
-            "description": "Service and required dependencies are ready"
-          },
-          "503": {
-            "description": "A required dependency is unavailable"
+            "description": "Service is ready"
           }
         },
-        "summary": "Check AgentCanvas and required Assets-2 readiness",
+        "summary": "Check AgentCanvas readiness and optional capability status",
         "tags": [
           "Service"
         ],
@@ -4134,7 +3736,7 @@
             "description": "Safe service identity"
           }
         },
-        "summary": "Inspect safe service, plugin, MCP, and Assets-2 identity",
+        "summary": "Inspect safe service, plugin, MCP, and optional dependency identity",
         "tags": [
           "Service"
         ],

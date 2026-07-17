@@ -26,7 +26,9 @@ function registry(): LoadedBrowserRegistry {
   return {
     plugins: { plugins: [] },
     renderers: new Map([[renderer.type, renderer]]),
-    diagnostics: []
+    commands: new Map(),
+    diagnostics: [],
+    dispose: async () => undefined
   };
 }
 
@@ -64,26 +66,52 @@ describe('plugin canvas React host', () => {
       const frame = container.querySelector<HTMLElement>('[data-element-id="card_1"]');
       expect(frame?.querySelector('.plugin-renderer-surface')?.shadowRoot?.textContent).toContain('Hello Shadow DOM');
     });
-    expect(container.querySelector('.plugin-frame-drag-handle')).toBeNull();
+    expect(container.querySelector('.agentcanvas-editor-drag-handle')).toBeNull();
     unmount();
     expect(container.querySelector('[data-element-id="card_1"]')).toBeNull();
   });
 
-  it('keeps a visible host drag handle and persists only frame coordinates', async () => {
-    const moved = vi.fn(async () => undefined);
+  it('keeps visible host-owned movement and resize controls for editable elements', async () => {
+    const moved = vi.fn(async () => canvas());
     const { container } = render(
       <CanvasView
         canvas={canvas()}
         elementRuntime={{}}
         diagnostics={[]}
         browserRegistry={registry()}
-        onElementMove={moved}
+        onCanvasOperations={moved}
       />
     );
-    const handle = container.querySelector<HTMLButtonElement>('.plugin-frame-drag-handle') as HTMLButtonElement;
-    fireEvent.pointerDown(handle, { button: 0, pointerId: 5, clientX: 10, clientY: 10 });
-    fireEvent.pointerMove(handle, { pointerId: 5, clientX: 30, clientY: 40 });
-    fireEvent.pointerUp(handle, { pointerId: 5, clientX: 30, clientY: 40 });
-    await waitFor(() => expect(moved).toHaveBeenCalledWith('card_1', 30, 50));
+    await waitFor(() => {
+      expect(container.querySelector<HTMLButtonElement>('.agentcanvas-editor-drag-handle')).not.toBeNull();
+    });
+    expect(moved).not.toHaveBeenCalled();
+  });
+
+  it('restores the confirmed frame after a failed optimistic commit', async () => {
+    const failed = vi.fn(async () => {
+      throw new Error('revision conflict');
+    });
+    const { container, getByText } = render(
+      <CanvasView
+        canvas={canvas()}
+        elementRuntime={{}}
+        diagnostics={[]}
+        browserRegistry={registry()}
+        onCanvasOperations={failed}
+      />
+    );
+    const frame = await waitFor(() => {
+      const value = container.querySelector<HTMLElement>('[data-element-id="card_1"]');
+      if (!value) throw new Error('frame not mounted');
+      return value;
+    });
+    const flowNode = frame.closest<HTMLElement>('.react-flow__node');
+    const before = flowNode?.style.transform;
+    fireEvent.click(frame);
+    fireEvent.keyDown(container.querySelector('.agentcanvas-editor') as Element, { key: 'ArrowRight' });
+    await waitFor(() => expect(failed).toHaveBeenCalledOnce());
+    await waitFor(() => expect(getByText('revision conflict')).toBeTruthy());
+    expect(flowNode?.style.transform).toBe(before);
   });
 });

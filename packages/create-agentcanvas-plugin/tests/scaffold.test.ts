@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertPluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { afterEach, describe, expect, it } from 'vitest';
-import { derivePluginNames, scaffoldPlugin } from '../src/index.js';
+import { deriveExtensionNames, derivePluginNames, scaffoldExtension, scaffoldPlugin } from '../src/index.js';
 
 const created: string[] = [];
 afterEach(async () => Promise.all(created.splice(0).map((path) => rm(path, { recursive: true, force: true }))));
@@ -14,6 +14,12 @@ describe('create-agentcanvas-plugin', () => {
       directoryName: 'hello-card',
       pluginId: 'hello-card',
       packageName: 'agentcanvas-plugin-hello-card',
+      displayName: 'Hello Card'
+    });
+    expect(deriveExtensionNames('hello-card')).toEqual({
+      directoryName: 'hello-card',
+      pluginId: 'hello-card',
+      packageName: 'agentcanvas-extension-hello-card',
       displayName: 'Hello Card'
     });
   });
@@ -39,5 +45,14 @@ describe('create-agentcanvas-plugin', () => {
     created.push(parent);
     await scaffoldPlugin({ name: 'taken', cwd: parent });
     await expect(scaffoldPlugin({ name: 'taken', cwd: parent })).rejects.toThrow(/already exists/);
+  });
+
+  it('creates an extension-named package through the shared implementation', async () => {
+    const parent = await mkdtemp(join(tmpdir(), 'agentcanvas-extension-scaffold-'));
+    created.push(parent);
+    const target = await scaffoldExtension({ name: 'signal-card', cwd: parent });
+    const packageJson = JSON.parse(await readFile(join(target, 'package.json'), 'utf8')) as { name: string };
+    expect(packageJson.name).toBe('agentcanvas-extension-signal-card');
+    expect(await readFile(join(target, 'src/extension.mts'), 'utf8')).toContain('defineExtension');
   });
 });

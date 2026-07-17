@@ -5,7 +5,7 @@
   "ExecutablePath": "C:/Program Files/nodejs/node.exe",
   "StartupDirectory": "C:/path/to/AgentCanvas",
   "Parameters": "--import tsx src/server.ts",
-  "EnvironmentVariables": "AGENT_CANVAS_DB=C:/path/to/AgentCanvas/data/agent-canvas.sqlite;AGENT_CANVAS_HOST=127.0.0.1;AGENT_CANVAS_PORT=23003;AGENT_CANVAS_PUBLIC_BASE_URL=http://127.0.0.1:23003;AGENT_CANVAS_STARTUP_READINESS_TIMEOUT_MS=30000;AGENT_CANVAS_STARTUP_READINESS_RETRY_INTERVAL_MS=500;ASSETS_BASE_URL=http://127.0.0.1:23000;AGENT_CANVAS_ASSET_FETCH_TIMEOUT_MS=10000;AGENT_CANVAS_ASSET_METADATA_MAX_BYTES=1048576;AGENT_CANVAS_ASSET_PREVIEW_MAX_BYTES=8388608;AGENT_CANVAS_ASSET_PROXY_MAX_BYTES=268435456",
+  "EnvironmentVariables": "AGENT_CANVAS_DB=C:/path/to/AgentCanvas/data/agent-canvas.sqlite;AGENT_CANVAS_HOST=127.0.0.1;AGENT_CANVAS_PORT=23003;AGENT_CANVAS_PUBLIC_BASE_URL=http://127.0.0.1:23003",
   "StdoutPath": "C:/path/to/AgentCanvas/data/logs/AgentCanvas.stdout.log",
   "StderrPath": "C:/path/to/AgentCanvas/data/logs/AgentCanvas.stderr.log",
   "EnableConsoleUI": false,

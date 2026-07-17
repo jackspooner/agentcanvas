@@ -29,6 +29,32 @@ export interface RendererOverlayService {
   open(content: Node, options?: { modal?: boolean; label?: string }): RendererOverlayHandle;
 }
 
+export type BrowserOwnCanvasOperation =
+  | { op: 'upsertElement'; element: CanvasElement }
+  | { op: 'replaceElementData'; elementId: string; data: JsonObject; style?: JsonObject | null }
+  | { op: 'deleteElement'; elementId: string };
+
+export interface BrowserCommandContext {
+  pluginId: string;
+  readOnly: boolean;
+  selection: readonly Readonly<CanvasElement>[];
+  viewport: Readonly<{ centerX: number; centerY: number; zoom: number }>;
+  signal: AbortSignal;
+  overlays: RendererOverlayService;
+  executeCommand(commandId: string): Promise<boolean>;
+  reveal(rect: CanvasRect): void;
+  transact(label: string, operations: readonly BrowserOwnCanvasOperation[]): Promise<void>;
+  reportDiagnostic(diagnostic: PluginDiagnostic): void;
+}
+
+export interface BrowserCommandDescriptor {
+  name: string;
+  title: string;
+  category?: string;
+  isEnabled?(context: BrowserCommandContext): boolean;
+  execute(context: BrowserCommandContext): void | Promise<void>;
+}
+
 export interface RendererContext {
   element: Readonly<CanvasElement>;
   runtime: Readonly<JsonObject> | null;
@@ -55,8 +81,13 @@ export interface BrowserElementRenderer {
 
 export interface BrowserPluginHost {
   registerRenderer(renderer: BrowserElementRenderer): void;
+  registerCommand?(command: BrowserCommandDescriptor): void;
+}
+
+export interface BrowserPluginDisposable {
+  dispose(): void | Promise<void>;
 }
 
 export interface AgentCanvasBrowserPlugin {
-  activate(host: BrowserPluginHost): void | Promise<void>;
+  activate(host: BrowserPluginHost): void | BrowserPluginDisposable | Promise<void | BrowserPluginDisposable>;
 }

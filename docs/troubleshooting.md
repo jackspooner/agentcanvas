@@ -16,7 +16,7 @@ Common startup codes and causes:
 | missing/incompatible dependency | Plugin or capability graph cannot resolve | Install a compatible dependency/provider |
 | contribution mismatch | Activation did not match the manifest | Make manifest and registrations exact |
 | pending plugin schema migration | Installed plugin owns a forward migration | Run `npm run migrate -- apply ...` offline with the active plugin set |
-| Assets capability/readiness failure | Required Assets-2 plugin/provider is unavailable | Check Assets-2 health, identity, capabilities, and URL |
+| Assets capability/readiness failure | An installed Assets-dependent extension cannot reach its optional provider | Check Assets-2 health, identity, capabilities, and URL |
 
 Invalid visible plugin directories are never silently ignored.
 
@@ -67,6 +67,8 @@ curl http://127.0.0.1:23003/whoami
 
 Assets-2 must identify exactly as `asset-service` and include `asset_crud` and `asset_refs`. Verify `ASSETS_BASE_URL`, byte limits, timeouts, and that the stored element contains a valid durable asset reference rather than a transient URL.
 
+For `agentcanvas.filesystem-images`, verify the node uses a configured root ID and normalized relative path, the service account can read the file, the real path remains below the configured root, and the file is within the configured byte limit. Absolute paths are intentionally rejected.
+
 ## Snapshot contains a diagnostic card
 
 Snapshot collection isolates normal renderer failures. Inspect the returned `diagnostics` array.
@@ -81,7 +83,7 @@ If the client still shows v0.1 aliases or omits newly installed plugin tools, re
 
 ## Runtime OpenAPI differs from the committed standard document
 
-This is normal when optional or third-party plugins are active. Runtime `/openapi.json` reflects the exact installed registry. `docs/openapi.standard.json` represents only the four default plugins.
+This is normal when optional or third-party extensions are active. Runtime `/openapi.json` reflects the exact installed registry. `docs/openapi.standard.json` represents only the three default extensions.
 
 It is a defect when `npm run check:openapi` reports that the generated default document differs from the committed artifact.
 

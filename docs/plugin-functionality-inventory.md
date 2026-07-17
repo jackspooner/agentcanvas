@@ -8,7 +8,7 @@ This document distinguishes durable source code, generated catalog/runtime state
 
 AgentCanvas v0.2 is a plugin host around a revisioned SQLite canvas kernel. The kernel owns document identity and layout, storage, revisions, idempotency, sharing, viewport state, plugin discovery and activation, HTTP and MCP transports, browser framing, snapshot composition, resource delivery, diagnostics, and security policy. Normal element behavior comes from plugins.
 
-The process entrypoint is `src/server.ts`, which starts the v0.2 runtime in `src/server-v2.ts`. Assets-2 remains a required runtime dependency through `agentcanvas.assets@^1.0.0`.
+The process entrypoint is `src/server.ts`, which starts the v0.2 runtime in `src/server-v2.ts`. Core has no media-service dependency; image sources are optional extensions.
 
 ## Kernel inventory
 
@@ -38,7 +38,8 @@ The source packages exist under `plugin-packages/`. Building the catalog does no
 | `agentcanvas.primitives` | yes | `text`, `shape`, `line`, `arrow` | `add-text`, `add-shape`, `add-line`, `add-arrow` | — | — |
 | `agentcanvas.markdown` | yes | `document` | `add-document` | — | — |
 | `agentcanvas.table` | yes | `table` | `add-table` | — | — |
-| `agentcanvas.assets2` | required/default | `asset` | `place`, `get-details` | `details` | provides `agentcanvas.assets@1.0.0` |
+| `agentcanvas.filesystem-images` | optional | `image` | `place`, `list-roots` | — | allowlisted local raster files through snapshot resources |
+| `agentcanvas.assets2` | optional | `asset` | `place`, `get-details` | `details` | provides `agentcanvas.assets@1.0.0` |
 | `agentcanvas.image-overlays` | optional | `bbox`, `path` | `add-bbox`, `add-path`, `export-png`, `export-mask-zip` | `export-png`, `export-mask-zip` | requires Assets and snapshot resources |
 | `agentcanvas.video` | optional | `video` | `place` | — | requires Assets |
 | `agentcanvas.glb-viewer` | optional | `model` | `place` | — | requires Assets |
@@ -75,7 +76,7 @@ npm run plugins:disable -- <plugin-id>
 npm run plugins:verify
 ```
 
-`plugins:build` builds workspaces and rebuilds the catalog. Default materialization installs primitives, Markdown, table, and Assets-2. Install and materialize use a hidden staging folder followed by rename. Disable moves an active folder to `plugins-disabled/` and refuses while the configured AgentCanvas `/whoami` endpoint identifies a running service. Replacement remains an explicit disable-then-install operation while stopped.
+`plugins:build` builds workspaces and rebuilds the catalog. Default materialization installs primitives, Markdown, and table. Install and materialize use a hidden staging folder followed by rename. Disable moves an active folder to `plugins-disabled/` and refuses while the configured AgentCanvas `/whoami` endpoint identifies a running service. Replacement remains an explicit disable-then-install operation while stopped.
 
 ## Verified distribution and migration behavior
 

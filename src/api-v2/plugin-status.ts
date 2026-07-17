@@ -27,6 +27,7 @@ export interface SanitizedPluginStatus {
   elements: readonly { type: string; schemaVersion: number }[];
   contributions: {
     elements: readonly { type: string; schemaVersion: number; browser: boolean; snapshot: string }[];
+    commands: readonly string[];
     tools: readonly string[];
     procedures: readonly string[];
     migrations: readonly string[];
@@ -142,6 +143,7 @@ export function createPluginStatusCatalog(
             })
           )
         ),
+        commands: Object.freeze([...(manifest.contributes.commands ?? [])]),
         tools: Object.freeze([...manifest.contributes.tools]),
         procedures: Object.freeze([...manifest.contributes.procedures]),
         migrations: Object.freeze([...manifest.contributes.migrations])
@@ -213,9 +215,10 @@ export const PLUGIN_STATUS_SCHEMA: JsonSchema = {
     contributions: {
       type: 'object',
       additionalProperties: false,
-      required: ['elements', 'tools', 'procedures', 'migrations'],
+      required: ['elements', 'commands', 'tools', 'procedures', 'migrations'],
       properties: {
         elements: { type: 'array' },
+        commands: { type: 'array', items: { type: 'string' } },
         tools: { type: 'array', items: { type: 'string' } },
         procedures: { type: 'array', items: { type: 'string' } },
         migrations: { type: 'array', items: { type: 'string' } }

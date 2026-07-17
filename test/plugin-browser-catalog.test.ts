@@ -1,4 +1,4 @@
-import type { BrowserElementRenderer } from '@agentcanvas/plugin-sdk';
+import type { BrowserCommandDescriptor, BrowserElementRenderer } from '@agentcanvas/plugin-sdk';
 import { describe, expect, it, vi } from 'vitest';
 import {
   type BrowserPluginCatalog,
@@ -6,7 +6,10 @@ import {
   loadBrowserPluginRegistry
 } from '../src/web/plugins/catalog.js';
 
-function catalog(entryUrl = '/api/v1/plugin-modules/acme.cards/abcdef12/entry.mjs'): BrowserPluginCatalog {
+function catalog(
+  entryUrl = '/api/v1/plugin-modules/acme.cards/abcdef12/entry.mjs',
+  commands: readonly string[] = []
+): BrowserPluginCatalog {
   return {
     plugins: [
       {
@@ -16,6 +19,7 @@ function catalog(entryUrl = '/api/v1/plugin-modules/acme.cards/abcdef12/entry.mj
         buildHash: 'abcdef12',
         browserEntryUrl: entryUrl,
         elements: [{ type: 'acme.cards/hello', schemaVersion: 1 }],
+        commands,
         diagnostics: []
       }
     ]
@@ -57,6 +61,72 @@ describe('browser plugin catalog', () => {
     });
     expect(importer).toHaveBeenCalledWith('http://127.0.0.1:23003/api/v1/plugin-modules/acme.cards/abcdef12/entry.mjs');
     expect(registry.renderers.get('acme.cards/hello')).toBe(renderer);
+  });
+
+  it('loads declared browser commands into the same frozen registry', async () => {
+    const command: BrowserCommandDescriptor = {
+      name: 'reset-card',
+      title: 'Reset card',
+      execute: vi.fn()
+    };
+    const registry = await loadBrowserPluginRegistry({
+      catalog: catalog('/api/v1/plugin-modules/acme.cards/abcdef12/entry.mjs', ['reset-card']),
+      baseUrl: 'http://127.0.0.1:23003/',
+      importer: async () => ({
+        default: {
+          activate(host: {
+            registerRenderer(value: BrowserElementRenderer): void;
+            registerCommand(value: BrowserCommandDescriptor): void;
+          }) {
+            host.registerRenderer(renderer);
+            host.registerCommand(command);
+          }
+        }
+      })
+    });
+    expect(registry.commands.get('acme.cards.reset-card')).toMatchObject({
+      id: 'acme.cards.reset-card',
+      pluginId: 'acme.cards',
+      descriptor: command
+    });
+  });
+
+  it('disposes browser extension activation lifecycles exactly once', async () => {
+    const dispose = vi.fn();
+    const registry = await loadBrowserPluginRegistry({
+      catalog: catalog(),
+      baseUrl: 'http://127.0.0.1:23003/',
+      importer: async () => ({
+        default: {
+          activate(host: { registerRenderer(value: BrowserElementRenderer): void }) {
+            host.registerRenderer(renderer);
+            return { dispose };
+          }
+        }
+      })
+    });
+    await registry.dispose();
+    await registry.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('disposes activation immediately when declared registrations are incomplete', async () => {
+    const dispose = vi.fn();
+    const registry = await loadBrowserPluginRegistry({
+      catalog: catalog(),
+      baseUrl: 'http://127.0.0.1:23003/',
+      importer: async () => ({
+        default: {
+          activate() {
+            return { dispose };
+          }
+        }
+      })
+    });
+    expect(registry.renderers.size).toBe(0);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    await registry.dispose();
+    expect(dispose).toHaveBeenCalledTimes(1);
   });
 
   it.each([

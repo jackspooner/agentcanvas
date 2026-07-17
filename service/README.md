@@ -1,6 +1,6 @@
 # Servy templates
 
-`AgentCanvas.servy.json` is the public example. Replace every `C:/path/to/AgentCanvas` placeholder, ensure Assets-2 is already running at `ASSETS_BASE_URL`, and import the template with Servy from an Administrator PowerShell. It binds AgentCanvas to loopback and uses the passwordless Windows virtual account `NT SERVICE\AgentCanvas` rather than `LocalSystem`.
+`AgentCanvas.servy.json` is the public example. Replace every `C:/path/to/AgentCanvas` placeholder and import the template with Servy from an Administrator PowerShell. It binds AgentCanvas to loopback and uses the passwordless Windows virtual account `NT SERVICE\AgentCanvas` rather than `LocalSystem`.
 
 After the service exists and before its first start, grant that virtual account read and execute access to the installation and Modify access to the configured data and log directories. Servy also requires its runtime directory to be writable by a non-LocalSystem service account; grant the virtual account the narrowest access compatible with your Servy version. Do not add a password to the template. AgentCanvas plugins are trusted executable code, so do not run the service as `LocalSystem`, Administrator, or another broadly privileged account.
 
@@ -17,6 +17,6 @@ Stop AgentCanvas before running the script and start it again afterward. The scr
 
 The script refuses service environments containing secret-like keys because Servy's account-setting CLI would otherwise expose them briefly as process arguments. Move those values to an external secret manager or use Servy's interactive account configuration for that deployment.
 
-`Workspace2AgentCanvas.servy.json` is an optional Workspace2-local example. It uses `NT SERVICE\Workspace2AgentCanvas` and additionally declares the local Windows service dependency `Workspace2Assets2`. That service name is not part of AgentCanvas's public runtime contract; external installations should use `AgentCanvas.servy.json` and operate their Assets-2 service independently.
+`Workspace2AgentCanvas.servy.json` is an optional Workspace2-local example using `NT SERVICE\Workspace2AgentCanvas`. Media providers are independent extensions and are not Windows service dependencies of AgentCanvas core.
 
 Both files are strict JSON and intentionally contain no comments or secrets. Environment variables and their semantics are documented in the repository setup and operations guides.
