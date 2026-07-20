@@ -10,9 +10,14 @@ const NATIVE_INTERACTIVE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])'
 ].join(',');
 
-export function isPluginInteractiveEvent(event: Event): boolean {
-  return event.composedPath().some((entry) => {
-    if (!(entry instanceof Element)) return false;
-    return entry.hasAttribute('data-agentcanvas-interactive') || entry.matches(NATIVE_INTERACTIVE_SELECTOR);
-  });
+/** Detects interactive extension content without leaking into focusable editor chrome above its renderer host. */
+export function isPluginInteractiveEvent(event: Event, rendererHost?: Element): boolean {
+  for (const entry of event.composedPath()) {
+    if (!(entry instanceof Element)) continue;
+    if (entry.hasAttribute('data-agentcanvas-interactive') || entry.matches(NATIVE_INTERACTIVE_SELECTOR)) {
+      return true;
+    }
+    if (entry === rendererHost) return false;
+  }
+  return false;
 }

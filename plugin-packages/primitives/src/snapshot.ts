@@ -1,10 +1,12 @@
 import type {
   CanvasElement,
+  CanvasThemeV1,
   JsonObject,
   PluginDiagnostic,
   SnapshotContribution,
   SnapshotNode
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { connectorData, elementSize, stringValue } from './browser/data.js';
 import { arrowHead, connectorMidpoint, type Point, resolveConnectorEndpoints } from './browser/geometry.js';
 
@@ -18,7 +20,10 @@ function styleNumber(element: Readonly<CanvasElement>, key: string, fallback: nu
   return typeof value === 'number' ? value : fallback;
 }
 
-export function renderTextSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+export function renderTextSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
   const { width, height } = elementSize(element, 240, 100);
   const lines = stringValue(element.data.text).split('\n').slice(0, 100);
   const nodes: SnapshotNode[] = [
@@ -28,10 +33,10 @@ export function renderTextSnapshot(element: Readonly<CanvasElement>): SnapshotCo
       y: 0,
       width,
       height,
-      rx: styleNumber(element, 'borderRadius', 10),
-      fill: styleString(element, 'background', '#ffffff'),
-      stroke: styleString(element, 'borderColor', '#d0d7de'),
-      strokeWidth: styleNumber(element, 'borderWidth', 1)
+      rx: styleNumber(element, 'borderRadius', theme.shape.radius),
+      fill: styleString(element, 'background', theme.colors.surface),
+      stroke: styleString(element, 'borderColor', theme.colors.border),
+      strokeWidth: styleNumber(element, 'borderWidth', theme.shape.borderWidth)
     },
     ...lines.map(
       (text, index): SnapshotNode => ({
@@ -39,8 +44,8 @@ export function renderTextSnapshot(element: Readonly<CanvasElement>): SnapshotCo
         x: 14,
         y: 26 + index * (styleNumber(element, 'fontSize', 18) + 4),
         text,
-        fill: styleString(element, 'color', '#0f172a'),
-        fontFamily: styleString(element, 'fontFamily', 'Inter, Arial, sans-serif'),
+        fill: styleString(element, 'color', theme.colors.text),
+        fontFamily: styleString(element, 'fontFamily', theme.typography.bodyFont),
         fontSize: styleNumber(element, 'fontSize', 18),
         fontWeight: Number(element.style?.fontWeight) || 400,
         maxWidth: Math.max(1, width - 28)
@@ -50,11 +55,14 @@ export function renderTextSnapshot(element: Readonly<CanvasElement>): SnapshotCo
   return { space: 'frame', layer: 'content', nodes };
 }
 
-export function renderShapeSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+export function renderShapeSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
   const { width, height } = elementSize(element, 240, 160);
   const shape = stringValue(element.data.shape, 'rect');
-  const fill = styleString(element, 'fill', styleString(element, 'background', '#ffffff'));
-  const stroke = styleString(element, 'stroke', styleString(element, 'borderColor', '#64748b'));
+  const fill = styleString(element, 'fill', styleString(element, 'background', theme.colors.surface));
+  const stroke = styleString(element, 'stroke', styleString(element, 'borderColor', theme.colors.border));
   const strokeWidth = styleNumber(element, 'strokeWidth', styleNumber(element, 'borderWidth', 2));
   const nodes: SnapshotNode[] = [];
   if (shape === 'ellipse') {
@@ -83,7 +91,7 @@ export function renderShapeSnapshot(element: Readonly<CanvasElement>): SnapshotC
       y: 0,
       width,
       height,
-      rx: styleNumber(element, 'borderRadius', 4),
+      rx: styleNumber(element, 'borderRadius', theme.shape.radius),
       fill,
       stroke,
       strokeWidth
@@ -97,7 +105,8 @@ export function renderShapeSnapshot(element: Readonly<CanvasElement>): SnapshotC
       y: height / 2 + 5,
       text: label,
       textAnchor: 'middle',
-      fill: styleString(element, 'color', '#0f172a'),
+      fill: styleString(element, 'color', theme.colors.text),
+      fontFamily: styleString(element, 'fontFamily', theme.typography.bodyFont),
       fontSize: styleNumber(element, 'fontSize', 16),
       fontWeight: 600,
       maxWidth: width * 0.72
@@ -121,13 +130,14 @@ function runtimeGeometry(runtime: Readonly<JsonObject> | null): { from: Point; t
 
 export function renderConnectorSnapshot(
   element: Readonly<CanvasElement>,
-  runtime: Readonly<JsonObject> | null
+  runtime: Readonly<JsonObject> | null,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
 ): SnapshotContribution {
   const data = connectorData(element);
   const projected = runtimeGeometry(runtime);
   const fallback = resolveConnectorEndpoints(data.from, data.to);
   const resolved = projected ?? fallback;
-  const stroke = data.stroke ?? '#2563eb';
+  const stroke = data.stroke ?? theme.colors.accent;
   const strokeWidth = data.strokeWidth ?? 2;
   const nodes: SnapshotNode[] = [
     {
@@ -157,9 +167,9 @@ export function renderConnectorSnapshot(
       width: Math.min(240, data.label.length * 7.6 + 16),
       height: 24,
       rx: 5,
-      fill: '#ffffff',
-      stroke: '#d0d7de',
-      strokeWidth: 1
+      fill: theme.colors.surface,
+      stroke: theme.colors.border,
+      strokeWidth: theme.shape.borderWidth
     });
     nodes.push({
       kind: 'text',
@@ -167,7 +177,8 @@ export function renderConnectorSnapshot(
       y: mid.y + 5,
       text: data.label,
       textAnchor: 'middle',
-      fill: '#0f172a',
+      fill: theme.colors.text,
+      fontFamily: theme.typography.bodyFont,
       fontSize: 13,
       fontWeight: 600,
       maxWidth: 220

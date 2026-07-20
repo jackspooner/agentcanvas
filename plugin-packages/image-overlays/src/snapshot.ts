@@ -1,10 +1,12 @@
 import type {
   CanvasElement,
+  CanvasThemeV1,
   JsonObject,
   PluginDiagnostic,
   SnapshotContribution,
   SnapshotNode
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import type { ResolvedBBoxData } from './contracts.js';
 import { overlayAccent, scaleBBox } from './geometry.js';
 import { normalizeInlineBBoxData, normalizePathData } from './normalize.js';
@@ -45,13 +47,23 @@ function bboxSource(element: Readonly<CanvasElement>, runtime: Readonly<JsonObje
 
 export function renderBBoxSnapshot(
   element: Readonly<CanvasElement>,
-  runtime: Readonly<JsonObject> | null
+  runtime: Readonly<JsonObject> | null,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
 ): SnapshotContribution {
   try {
     const data = bboxSource(element, runtime);
     const { width, height } = size(element);
     const nodes: SnapshotNode[] = [
-      { kind: 'rect', x: 0, y: 0, width, height, fill: data.background ?? '#f8fafc', stroke: '#d0d7de', strokeWidth: 1 }
+      {
+        kind: 'rect',
+        x: 0,
+        y: 0,
+        width,
+        height,
+        fill: data.background ?? theme.colors.surfaceMuted,
+        stroke: theme.colors.border,
+        strokeWidth: theme.shape.borderWidth
+      }
     ];
     if (typeof data.imageHandle === 'string') {
       nodes.push({
@@ -101,21 +113,33 @@ export function renderBBoxSnapshot(
   }
 }
 
-export function renderPathSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+export function renderPathSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
   try {
     const data = normalizePathData(element.data);
     const { width, height } = size(element);
     const sx = width / data.canvasWidth;
     const sy = height / data.canvasHeight;
     const children: SnapshotNode[] = [
-      { kind: 'rect', x: 0, y: 0, width, height, fill: data.background ?? '#f8fafc', stroke: '#d0d7de', strokeWidth: 1 }
+      {
+        kind: 'rect',
+        x: 0,
+        y: 0,
+        width,
+        height,
+        fill: data.background ?? theme.colors.surfaceMuted,
+        stroke: theme.colors.border,
+        strokeWidth: theme.shape.borderWidth
+      }
     ];
     data.paths.forEach((overlayPath, index) => {
       children.push({
         kind: 'path',
         d: overlayPath.d,
         fill: overlayPath.fill ?? 'transparent',
-        stroke: overlayPath.color ?? overlayAccent(index),
+        stroke: overlayPath.color ?? (index === 0 ? theme.colors.accent : overlayAccent(index)),
         strokeWidth: overlayPath.strokeWidth ?? 2,
         transform: [sx, 0, 0, sy, 0, 0]
       });
@@ -129,14 +153,15 @@ export function renderPathSnapshot(element: Readonly<CanvasElement>): SnapshotCo
           y: y - 9,
           width: 8,
           height: 8,
-          fill: overlayPath.color ?? overlayAccent(index)
+          fill: overlayPath.color ?? (index === 0 ? theme.colors.accent : overlayAccent(index))
         });
         children.push({
           kind: 'text',
           x: 24,
           y,
           text: overlayPath.label ?? overlayPath.id,
-          fill: '#334155',
+          fill: theme.colors.text,
+          fontFamily: theme.typography.bodyFont,
           fontSize: 12,
           maxWidth: Math.max(1, width - 34)
         });

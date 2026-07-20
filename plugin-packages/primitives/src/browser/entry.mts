@@ -36,20 +36,30 @@ function cardRenderer(type: 'text' | 'shape'): BrowserElementRenderer {
       );
       const update = (context: RendererContext) => {
         const element = context.element;
-        container.style.setProperty('--ac-color', cssValue(element, 'color', '#0f172a'));
-        container.style.setProperty('--ac-background', cssValue(element, 'background', '#ffffff'));
-        container.style.setProperty('--ac-border', cssValue(element, 'borderColor', '#d0d7de'));
-        container.style.setProperty('--ac-border-width', `${cssValue(element, 'borderWidth', '1')}px`);
-        container.style.setProperty('--ac-radius', `${cssValue(element, 'borderRadius', '10')}px`);
-        container.style.setProperty('--ac-fill', cssValue(element, 'fill', cssValue(element, 'background', '#ffffff')));
+        const { colors, typography, shape: shapeTokens } = context.theme;
+        container.style.setProperty('--ac-color', cssValue(element, 'color', colors.text));
+        container.style.setProperty('--ac-background', cssValue(element, 'background', colors.surface));
+        container.style.setProperty('--ac-border', cssValue(element, 'borderColor', colors.border));
+        container.style.setProperty(
+          '--ac-border-width',
+          `${cssValue(element, 'borderWidth', String(shapeTokens.borderWidth))}px`
+        );
+        container.style.setProperty(
+          '--ac-radius',
+          `${cssValue(element, 'borderRadius', String(shapeTokens.radius))}px`
+        );
+        container.style.setProperty(
+          '--ac-fill',
+          cssValue(element, 'fill', cssValue(element, 'background', colors.surface))
+        );
         container.style.setProperty(
           '--ac-stroke',
-          cssValue(element, 'stroke', cssValue(element, 'borderColor', '#64748b'))
+          cssValue(element, 'stroke', cssValue(element, 'borderColor', colors.border))
         );
         container.style.setProperty('--ac-stroke-width', `${cssValue(element, 'strokeWidth', '2')}px`);
         container.style.setProperty(
           '--ac-font',
-          `${cssValue(element, 'fontWeight', '400')} ${cssValue(element, 'fontSize', '16')}px/1.4 ${cssValue(element, 'fontFamily', 'Inter, Arial, sans-serif')}`
+          `${cssValue(element, 'fontWeight', '400')} ${cssValue(element, 'fontSize', '16')}px/1.4 ${cssValue(element, 'fontFamily', typography.bodyFont)}`
         );
         if (type === 'text') {
           container.className = 'content text';
@@ -89,14 +99,14 @@ function connectorRenderer(type: 'line' | 'arrow'): BrowserElementRenderer {
         line.setAttribute('y1', String(resolved.from.y));
         line.setAttribute('x2', String(resolved.to.x));
         line.setAttribute('y2', String(resolved.to.y));
-        line.setAttribute('stroke', data.stroke ?? '#2563eb');
+        line.setAttribute('stroke', data.stroke ?? context.theme.colors.accent);
         line.setAttribute('stroke-width', String(data.strokeWidth ?? 2));
         svg.append(line);
         if (type === 'arrow') {
           const points = arrowHead(resolved.from, resolved.to);
           const polygon = document.createElementNS(SVG_NS, 'polygon');
           polygon.setAttribute('points', points.map((point) => `${point.x},${point.y}`).join(' '));
-          polygon.setAttribute('fill', data.stroke ?? '#2563eb');
+          polygon.setAttribute('fill', data.stroke ?? context.theme.colors.accent);
           svg.append(polygon);
         }
         if (data.label) {
@@ -106,6 +116,9 @@ function connectorRenderer(type: 'line' | 'arrow'): BrowserElementRenderer {
           label.setAttribute('x', String(midpoint.x));
           label.setAttribute('y', String(midpoint.y - 8));
           label.setAttribute('text-anchor', 'middle');
+          label.setAttribute('fill', context.theme.colors.text);
+          label.setAttribute('stroke', context.theme.colors.surface);
+          label.setAttribute('font-family', context.theme.typography.bodyFont);
           label.textContent = data.label;
           svg.append(label);
         }

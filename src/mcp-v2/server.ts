@@ -1,4 +1,10 @@
-import type { JsonObject, JsonSchema, PluginInvocationContext } from '@agentcanvas/plugin-sdk';
+import {
+  CANVAS_THEME_V1_SCHEMA,
+  type CanvasThemeV1,
+  type JsonObject,
+  type JsonSchema,
+  type PluginInvocationContext
+} from '@agentcanvas/plugin-sdk';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
@@ -92,6 +98,7 @@ function canvasSchema(elementSchema: JsonSchema): JsonSchema {
       width: { type: 'number' },
       height: { type: 'number' },
       background: { oneOf: [JSON_OBJECT_SCHEMA, { type: 'null' }] },
+      theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] },
       elements: { type: 'array', items: elementSchema },
       revision: { type: 'integer', minimum: 1 },
       metadata: JSON_OBJECT_SCHEMA,
@@ -122,7 +129,8 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         properties: {
           title: { type: 'string', minLength: 1 },
           project: { type: 'string' },
-          description: { type: 'string' }
+          description: { type: 'string' },
+          theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
       outputSchema: canvas
@@ -161,6 +169,27 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'title'],
+      canvas
+    ),
+    mutationTool(
+      'canvas_set_theme',
+      'Set a complete semantic theme on a canvas',
+      {
+        canvasId: CANVAS_ID,
+        theme: CANVAS_THEME_V1_SCHEMA as JsonObject,
+        expectedRevision: { type: 'integer', minimum: 1 }
+      },
+      ['canvasId', 'theme'],
+      canvas
+    ),
+    mutationTool(
+      'canvas_clear_theme',
+      'Clear a canvas theme and restore AgentCanvas defaults',
+      {
+        canvasId: CANVAS_ID,
+        expectedRevision: { type: 'integer', minimum: 1 }
+      },
+      ['canvasId'],
       canvas
     ),
     mutationTool(
@@ -292,6 +321,14 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
         expectedRevision
       })
     );
+  }
+  if (name === 'canvas_set_theme') {
+    return json(
+      store.updateCanvasTheme(canvasId, { theme: input.theme as unknown as CanvasThemeV1, expectedRevision })
+    );
+  }
+  if (name === 'canvas_clear_theme') {
+    return json(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }));
   }
   if (name === 'canvas_upsert_element') {
     return json(

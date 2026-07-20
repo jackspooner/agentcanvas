@@ -2,6 +2,7 @@ import type {
   AgentCanvasServerPlugin,
   AssetsCapabilityV1,
   CanvasElement,
+  ImageSourcesCapabilityV1,
   JsonObject,
   PluginInvocationContext,
   PluginProcedureDescriptor,
@@ -9,6 +10,7 @@ import type {
   ServerPluginHost,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/plugin-sdk';
+import { IMAGE_SOURCES_CAPABILITY } from '@agentcanvas/plugin-sdk';
 import { ASSETS_CAPABILITY, ASSETS_CAPABILITY_VERSION, assetElementData, type AssetReference } from './contracts.js';
 import { importLegacyAsset } from './legacy.js';
 import { Assets2Capability, readAssetsPluginConfig } from './provider.js';
@@ -92,7 +94,19 @@ const plugin: AgentCanvasServerPlugin = {
     const resources = host
       .consumeCapability<SnapshotResourcesCapabilityV1>('agentcanvas.snapshot-resources', '^1.0.0')
       .get();
+    const imageSources = host.consumeCapability<ImageSourcesCapabilityV1>(IMAGE_SOURCES_CAPABILITY, '^1.0.0').get();
     const capability = new Assets2Capability(readAssetsPluginConfig(host.config, process.env), resources);
+    imageSources.registerProvider({
+      provider: 'agentcanvas.assets2',
+      validateReference: (value) => capability.validateReference(value),
+      async resolve(reference, signal) {
+        const resource = await capability.contentHandle(reference, signal);
+        if (!resource.mimeType.toLowerCase().startsWith('image/')) {
+          throw new TypeError('Assets-2 gallery sources must be images');
+        }
+        return resource;
+      }
+    });
     host.provideCapability<AssetsCapabilityV1>({
       name: ASSETS_CAPABILITY,
       version: ASSETS_CAPABILITY_VERSION,
@@ -153,7 +167,7 @@ const plugin: AgentCanvasServerPlugin = {
           };
         }
       },
-      renderSnapshot: (element, context) => renderAssetSnapshot(element, context.runtime)
+      renderSnapshot: (element, context) => renderAssetSnapshot(element, context.runtime, context.theme)
     });
     host.registerTool(placeTool(capability));
     const details = detailsDescriptor(capability);

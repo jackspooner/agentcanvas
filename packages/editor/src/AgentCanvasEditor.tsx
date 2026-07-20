@@ -129,6 +129,9 @@ function EditorSurface<TElement extends EditorElement>({
   readOnly = false,
   snapToGrid = true,
   gridSize = 10,
+  backgroundColor = '#f8fafc',
+  gridColor = '#cbd5e1',
+  showGrid = true,
   className,
   worldUnderlay,
   worldOverlay,
@@ -354,6 +357,7 @@ function EditorSurface<TElement extends EditorElement>({
     <div
       ref={container}
       className={`agentcanvas-editor${className ? ` ${className}` : ''}`}
+      style={{ background: backgroundColor }}
       tabIndex={0}
       aria-label="Canvas editor"
       onKeyDownCapture={handleKeyDown}
@@ -392,12 +396,12 @@ function EditorSurface<TElement extends EditorElement>({
         onlyRenderVisibleElements={elements.length >= 500}
         proOptions={PRO_OPTIONS}
       >
-        <Background variant={BackgroundVariant.Dots} gap={gridSize} size={1} color="#cbd5e1" />
+        {showGrid && <Background variant={BackgroundVariant.Dots} gap={gridSize} size={1} color={gridColor} />}
         <ViewportPortal>
           {bounds.mode === 'fixed' && (
             <div
               className="agentcanvas-editor-fixed-board"
-              style={{ width: bounds.width, height: bounds.height }}
+              style={{ width: bounds.width, height: bounds.height, background: backgroundColor }}
               aria-hidden="true"
             />
           )}

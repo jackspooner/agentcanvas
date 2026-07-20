@@ -11,6 +11,7 @@ import type {
   PluginDiagnostic,
   PluginInvocationContext
 } from '@agentcanvas/plugin-sdk';
+import { CANVAS_THEME_V1_SCHEMA, DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import { Hono, type Context } from 'hono';
 import { nanoid } from 'nanoid';
@@ -306,6 +307,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
             createdBy: { type: 'string', enum: ['agent', 'user', 'system'] },
             bounds: { $ref: '#/components/schemas/CanvasBounds' },
             background: { type: 'object' },
+            theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
             metadata: { type: 'object' }
           }
         }),
@@ -359,6 +361,29 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         }),
         responses: { 200: response('Renamed canvas'), ...errorResponses },
         'x-agent-notes': agentNotes(['Renames the canvas and increments its revision.'], true)
+      }
+    },
+    '/api/v1/canvases/{canvasId}/theme': {
+      patch: {
+        operationId: 'canvasSetTheme',
+        summary: 'Set or clear a canvas theme',
+        tags: ['Canvases'],
+        parameters: [canvasId],
+        requestBody: jsonBody({
+          type: 'object',
+          additionalProperties: false,
+          required: ['theme'],
+          properties: {
+            theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
+            expectedRevision: { type: 'integer', minimum: 1 },
+            actor: { type: 'string' }
+          }
+        }),
+        responses: { 200: response('Updated canvas theme'), ...errorResponses },
+        'x-agent-notes': agentNotes(
+          ['Replaces the canvas-level semantic design tokens and increments the canvas revision.'],
+          true
+        )
       }
     },
     '/api/v1/canvases/{canvasId}/elements:batch': {
@@ -563,6 +588,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     corePaths: coreOpenApiPaths(),
     additionalSchemas: {
       CanvasBounds: CANVAS_BOUNDS_SCHEMA,
+      CanvasThemeV1: CANVAS_THEME_V1_SCHEMA,
       CanvasRecord: CANVAS_RECORD_SCHEMA,
       Viewport: VIEWPORT_SCHEMA,
       ShareLink: SHARE_LINK_SCHEMA
@@ -705,6 +731,9 @@ setInterval(async () => {
   app.patch('/api/v1/canvases/:canvasId/title', async (c) =>
     c.json({ ok: true, canvas: store.renameCanvas(c.req.param('canvasId'), await c.req.json()) })
   );
+  app.patch('/api/v1/canvases/:canvasId/theme', async (c) =>
+    c.json({ ok: true, canvas: store.updateCanvasTheme(c.req.param('canvasId'), await c.req.json()) })
+  );
   app.post('/api/v1/canvases/:canvasId/elements:batch', async (c) => {
     const canvas = store.applyOperations(c.req.param('canvasId'), await c.req.json());
     const projection = await resolveCanvasProjection(canvas, registry, false, c.req.raw.signal);
@@ -738,11 +767,12 @@ setInterval(async () => {
       elements: canvas.elements,
       elementRuntime: projection.elementRuntime,
       registry,
+      theme: canvas.theme ?? DEFAULT_CANVAS_THEME,
       signal: c.req.raw.signal
     });
     const composed = composeSnapshot({
       items,
-      background: canvas.background?.color,
+      background: canvas.background?.color ?? canvas.theme?.colors.canvas,
       minimumWidth: canvas.bounds.mode === 'fixed' ? canvas.bounds.width : undefined,
       minimumHeight: canvas.bounds.mode === 'fixed' ? canvas.bounds.height : undefined
     });

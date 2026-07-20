@@ -1,4 +1,4 @@
-import type { CanvasElement, CanvasElementFramePatch, JsonObject } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';
 
 export const DEFAULT_CANVAS_WIDTH = 1600;
 export const DEFAULT_CANVAS_HEIGHT = 1000;
@@ -23,6 +23,7 @@ export interface CanvasRecord {
   width?: number;
   height?: number;
   background?: CanvasBackground | null;
+  theme?: CanvasThemeV1 | null;
   elements: CanvasElement[];
   revision: number;
   metadata?: JsonObject;
@@ -90,6 +91,7 @@ export interface CreateCanvasInput {
   width?: number;
   height?: number;
   background?: CanvasBackground | null;
+  theme?: CanvasThemeV1 | null;
   metadata?: JsonObject;
 }
 
@@ -105,10 +107,16 @@ export interface RenameCanvasInput {
   actor?: string;
 }
 
+export interface UpdateCanvasThemeInput {
+  theme: CanvasThemeV1 | null;
+  expectedRevision?: number;
+  actor?: string;
+}
+
 export interface CreateShareLinkInput {
   mode?: 'read';
   label?: string | null;
   expiresAt?: string | null;
 }
 
-export type { CanvasElement, CanvasElementFramePatch, JsonObject } from '@agentcanvas/plugin-sdk';
+export type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';

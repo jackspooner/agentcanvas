@@ -1,10 +1,12 @@
 import type {
   CanvasElement,
+  CanvasThemeV1,
   ElementTypeDescriptor,
   JsonObject,
   PluginDiagnostic,
   SnapshotContribution
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import type { SnapshotRenderItem } from './compositor.js';
 
 export interface SnapshotDescriptorRegistry {
@@ -18,6 +20,7 @@ export interface CollectSnapshotItemsOptions {
   registry: SnapshotDescriptorRegistry;
   signal?: AbortSignal;
   rendererTimeoutMs?: number;
+  theme?: Readonly<CanvasThemeV1>;
 }
 
 function safeFailureDiagnostic(
@@ -41,6 +44,7 @@ async function renderWithDeadline(
   renderer: NonNullable<ElementTypeDescriptor['renderSnapshot']>,
   element: Readonly<CanvasElement>,
   runtime: Readonly<JsonObject> | null,
+  theme: Readonly<CanvasThemeV1>,
   canvasId: string,
   parentSignal: AbortSignal | undefined,
   timeoutMs: number
@@ -52,7 +56,7 @@ async function renderWithDeadline(
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
-      Promise.resolve(renderer(element, { signal: controller.signal, canvasId, runtime })),
+      Promise.resolve(renderer(element, { signal: controller.signal, canvasId, runtime, theme })),
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           controller.abort(new Error('snapshot renderer timeout'));
@@ -90,6 +94,7 @@ export async function collectSnapshotItems(
           descriptor.renderSnapshot,
           element,
           options.elementRuntime?.[element.id] ?? null,
+          options.theme ?? DEFAULT_CANVAS_THEME,
           options.canvasId,
           options.signal,
           timeoutMs

@@ -8,6 +8,7 @@ import type {
   PluginToolDescriptor,
   ServerPluginHost
 } from '@agentcanvas/extension-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/extension-sdk';
 import { assertContributionRegistrations, assertPluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it } from 'vitest';
 import plugin, { importLegacy, renderSnapshot } from '../src/server.mjs';
@@ -61,6 +62,13 @@ describe('__DISPLAY_NAME__ server plugin', () => {
     expect(importLegacy(legacy)).toEqual(importLegacy(legacy));
     const element = importLegacy(legacy).element;
     expect(element.type).toBe('__PLUGIN_ID__/hello-card');
-    expect(renderSnapshot(element).nodes.map((node) => node.kind)).toEqual(['rect', 'text', 'text']);
+    expect(
+      renderSnapshot(element, {
+        signal: new AbortController().signal,
+        canvasId: 'canvas',
+        runtime: null,
+        theme: DEFAULT_CANVAS_THEME
+      }).nodes.map((node) => node.kind)
+    ).toEqual(['rect', 'text', 'text']);
   });
 });

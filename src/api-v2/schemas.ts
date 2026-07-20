@@ -1,4 +1,4 @@
-import type { JsonObject, JsonSchema } from '@agentcanvas/plugin-sdk';
+import { CANVAS_THEME_V1_SCHEMA, type JsonObject, type JsonSchema } from '@agentcanvas/plugin-sdk';
 
 const nullableNumber: JsonObject = { type: ['number', 'null'] };
 const nullableBoolean: JsonObject = { type: ['boolean', 'null'] };
@@ -150,6 +150,7 @@ export const CANVAS_RECORD_SCHEMA: JsonSchema = {
     width: { type: 'number' },
     height: { type: 'number' },
     background: { oneOf: [JSON_OBJECT_SCHEMA, { type: 'null' }] },
+    theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] },
     elements: { type: 'array', items: { $ref: '#/components/schemas/CanvasElement' } },
     revision: { type: 'integer', minimum: 1 },
     metadata: JSON_OBJECT_SCHEMA,

@@ -46,6 +46,9 @@ export interface AgentCanvasEditorProps<TElement extends EditorElement> {
   readOnly?: boolean;
   snapToGrid?: boolean;
   gridSize?: number;
+  backgroundColor?: string;
+  gridColor?: string;
+  showGrid?: boolean;
   className?: string;
   worldUnderlay?: ReactNode;
   worldOverlay?: ReactNode;

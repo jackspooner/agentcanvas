@@ -11,6 +11,8 @@ v0.3.0-alpha.1 with its three default extensions.
 AgentCanvas has no user-account layer. It binds to loopback by default.
 Extensions are trusted executable dependencies.
 
+An empty database is initialized at physical schema 3 / document schema 2. Existing v0.1 or physical/document 2/2 databases require the offline migration described in [Upgrading](upgrading.md) before the current host starts.
+
 ## Install dependencies
 
 Clone or enter the AgentCanvas repository and install its dependencies:
@@ -44,7 +46,7 @@ The default runtime set is:
 - `agentcanvas.markdown`
 - `agentcanvas.table`
 
-Filesystem images, Assets-2, image overlays, video, and GLB viewing are built into `dist/plugin-catalog/` but are not activated by `--defaults`.
+Filesystem images, Assets-2, Gallery, image overlays, video, and GLB viewing are built into `dist/plugin-catalog/` but are not activated by `--defaults`. AgentCanvas core requires no media provider.
 
 Folder presence is the only activation state. There is no `agentcanvas.config.mjs` and no enabled-plugin list.
 
@@ -56,6 +58,9 @@ npm run dev
 ```
 
 Open [http://127.0.0.1:23003/](http://127.0.0.1:23003/).
+
+`npm run dev` is the simplest foreground launcher and is sufficient for a
+local installation. AgentCanvas requires no process manager.
 
 The service starts only after plugin discovery, activation, registry freezing, exact database-version checks, and contract generation all succeed.
 
@@ -99,6 +104,14 @@ npm run plugins:install -- dist/plugin-catalog/agentcanvas.filesystem-images
 
 Edit `plugins/agentcanvas.filesystem-images/plugin.config.json` and add one or more absolute, administrator-controlled roots. Canvas nodes and MCP calls use only a root ID plus a slash-separated relative path. The service account needs read access to each root.
 
+To combine several images into one carousel node, also install the provider-neutral Gallery extension:
+
+```bash
+npm run plugins:install -- dist/plugin-catalog/agentcanvas.gallery
+```
+
+Gallery is optional and works with filesystem images, Assets-2, or both. Its stored items identify the provider and keep the provider-owned durable reference nested under `reference`.
+
 For durable Assets-2 references:
 
 ```bash
@@ -109,11 +122,33 @@ Start a compatible [Assets-2](https://github.com/jackspooner/Assets-2) service, 
 
 ## Existing databases
 
-- An empty database is initialized transactionally at v0.2.
-- An exact v0.2 database opens normally.
+- An empty database is initialized transactionally at physical/document version 3/2.
+- An exact physical/document 3/2 database opens normally.
+- A physical/document 2/2 database requires the offline canvas-theme migration.
 - A v0.1 database does not migrate during startup; use the [offline migration guide](v0.1-to-v0.2-migration.md).
 - A newer or contradictory database fails explicitly.
 
-## Production service
+## Long-running operation
 
-The repository includes a Windows service-manager template under `service/`. Adapt its paths and service names to your installation and use the built browser output. Run AgentCanvas as a dedicated least-privilege account rather than an administrator or `LocalSystem`, grant filesystem extensions only the roots they need, and replace extensions only while the service is stopped. See [Operations](operations.md).
+After `npm run build`, a supervisor-neutral runtime command is:
+
+```bash
+node --import tsx src/server.ts
+```
+
+Run it from the repository root with the environment documented in
+`.env.example`. Any process supervisor is optional and deployment-owned. If one
+is used, configure it to:
+
+- keep the repository root as the working directory;
+- pass the required environment without exposing secrets in command arguments;
+- run under a dedicated least-privilege account;
+- preserve the configured database and logs across code updates;
+- stop AgentCanvas before extension replacement or offline migration; and
+- restart the process after a new build or extension-set change.
+
+AgentCanvas does not require Servy, systemd, Docker, or any other specific
+supervisor. Tool-specific examples under `service/` are optional examples for
+operators who already use those tools; they are not the public installation
+path. See [Operations](operations.md) for lifecycle requirements and
+[Upgrading](upgrading.md) before updating an existing installation.

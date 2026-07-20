@@ -1,4 +1,5 @@
 import type { BrowserPluginHost, RendererContext } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { describe, expect, it } from 'vitest';
 import plugin from '../src/browser/entry.mjs';
 
@@ -25,7 +26,7 @@ describe('table browser renderer', () => {
       readOnly: false,
       selected: false,
       signal: new AbortController().signal,
-      theme: {},
+      theme: DEFAULT_CANVAS_THEME,
       geometry: { getElementFrame: () => null, resolveAnchor: () => null },
       overlays: { open: () => ({ update() {}, close() {} }) },
       reportDiagnostic() {}

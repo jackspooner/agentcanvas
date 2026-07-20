@@ -7,14 +7,14 @@ describe('database version contract', () => {
   it('creates a complete v0.2 schema transactionally for an empty database', () => {
     const db = new DatabaseSync(':memory:');
     initializeEmptyV2Database(db, '0.2.0', '2026-07-13T00:00:00.000Z');
-    expect(inspectDatabaseVersion(db)).toEqual({ kind: 'v2', physicalVersion: 2, documentVersion: 2 });
+    expect(inspectDatabaseVersion(db)).toEqual({ kind: 'v2', physicalVersion: 3, documentVersion: 2 });
     expect(
       db.prepare('SELECT physical_version, document_version FROM agent_canvas_installation_metadata').get()
     ).toEqual({
-      physical_version: 2,
+      physical_version: 3,
       document_version: 2
     });
-    expect((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version).toBe(2);
+    expect((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version).toBe(3);
     db.close();
   });
 

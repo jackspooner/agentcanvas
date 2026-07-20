@@ -54,13 +54,13 @@ The default service binds to `127.0.0.1:23003`. Non-loopback binding requires ex
 
 ## Optional media-source boundary
 
-The host requires no media capability. `agentcanvas.assets2` optionally provides `agentcanvas.assets@1.0.0` and verifies Assets-2 identity and capabilities for consumers that declare it. `agentcanvas.filesystem-images` independently resolves `rootId + relative path` references below configured real roots.
+The host requires no media extension. It provides the singleton `agentcanvas.image-sources@1.0.0` registry so provider extensions can register reference validation and opaque image resolution. `agentcanvas.assets2` and `agentcanvas.filesystem-images` register independent providers; `agentcanvas.gallery` consumes the shared registry without depending on either storage implementation. Assets-2 also optionally provides `agentcanvas.assets@1.0.0` for extensions that need its broader metadata and content contract.
 
 Both sources deliver browser and snapshot bytes through opaque content handles. The host broker applies MIME, byte, TTL, and checksum controls; filesystem policy additionally rejects absolute paths, traversal, symlink escapes, unsupported types, and oversized files.
 
 ## Persistence
 
-V0.2 uses physical schema version 2 and document version 2. Tables cover canvases, events, share links, document-versioned idempotency, viewports, configuration, installation metadata, host migration runs, plugin migration runs, and plugin KV.
+V0.2 uses physical schema version 3 and document version 2. Physical version 3 adds first-class `theme_json` storage without changing element document envelopes. Tables cover canvases, events, share links, document-versioned idempotency, viewports, configuration, installation metadata, host migration runs, plugin migration runs, and plugin KV.
 
 Historical v0.1 event bodies are audit records and remain document version 1 after migration. Current canvas documents are canonical version 2 envelopes.
 

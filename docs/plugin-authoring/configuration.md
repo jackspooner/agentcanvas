@@ -58,7 +58,7 @@ Do not mutate this object or treat it as a live-reload surface. Configuration ch
 
 `environment` declares names only. It does not provide values or automatically copy them into `host.config`.
 
-Plugin server code may read its documented environment variable. Deployment mechanisms such as `.env` or Servy own the value.
+Extension server code may read its documented environment variable. Deployment mechanisms such as `.env`, a shell, a container runtime, or an optional process supervisor own the value. AgentCanvas does not require a specific supervisor.
 
 Never place secrets in:
 

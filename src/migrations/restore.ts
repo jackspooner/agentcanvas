@@ -18,7 +18,15 @@ export interface RestoreMigrationResult {
   backupPath: string;
   manifestPath: string;
   failedDatabasePath: string | null;
-  restoredVersion: 1;
+  restoredVersion: 1 | 2;
+  restoredPhysicalVersion: number;
+  restoredDocumentVersion: 1 | 2;
+}
+
+interface RestorableBackupState {
+  sourceVersion: 1 | 2;
+  physicalVersion: number;
+  documentVersion: 1 | 2;
 }
 
 function restoreTimestamp(date: Date): string {
@@ -30,12 +38,27 @@ function failedDatabasePath(databasePath: string, now: Date): string {
   return path.join(parsed.dir, `${parsed.name}.failed-v0.2-${restoreTimestamp(now)}${parsed.ext || '.sqlite'}`);
 }
 
-function assertInspectionMatchesManifest(backupPath: string, expectedCounts: MigrationCounts): void {
+function assertInspectionMatchesManifest(
+  backupPath: string,
+  sourceVersion: number,
+  targetVersion: number,
+  expectedCounts: MigrationCounts
+): RestorableBackupState {
   const inspection = inspectMigrationDatabase(backupPath);
-  if (!inspection.canApply || inspection.sourceVersion !== 1) {
-    throw new Error(
-      `backup is not a valid v0.1 database: ${inspection.issues.map((issue) => issue.message).join('; ')}`
-    );
+  const isLegacyMigrationSource =
+    sourceVersion === 1 && targetVersion === 2 && inspection.canApply && inspection.sourceVersion === 1;
+  const isThemeMigrationSource =
+    sourceVersion === 2 &&
+    targetVersion === 2 &&
+    inspection.canApply &&
+    inspection.sourceVersion === 2 &&
+    inspection.versions.physicalVersion === 2 &&
+    inspection.versions.documentVersions.length === 1 &&
+    inspection.versions.documentVersions[0] === 2;
+  if (!isLegacyMigrationSource && !isThemeMigrationSource) {
+    const details =
+      inspection.issues.map((issue) => issue.message).join('; ') || 'version state does not match manifest';
+    throw new Error(`backup is not a supported migration source (${sourceVersion} -> ${targetVersion}): ${details}`);
   }
   for (const field of ['canvases', 'elements', 'shareLinks', 'events', 'idempotencyRows'] as const) {
     if (inspection.counts[field] !== expectedCounts[field]) {
@@ -44,6 +67,11 @@ function assertInspectionMatchesManifest(backupPath: string, expectedCounts: Mig
       );
     }
   }
+  return {
+    sourceVersion: inspection.sourceVersion as 1 | 2,
+    physicalVersion: inspection.versions.physicalVersion,
+    documentVersion: inspection.sourceVersion as 1 | 2
+  };
 }
 
 function verifyExclusiveAccess(databasePath: string): void {
@@ -75,7 +103,7 @@ function moveSidecars(databasePath: string, failedPath: string): Array<{ from: s
 }
 
 /**
- * Restores a manifest-verified v0.1 SQLite backup through a staged database and atomic final rename.
+ * Restores a supported manifest-verified SQLite migration backup through a staged database and atomic final rename.
  * The current database is first retained as a consistent native SQLite backup for post-failure investigation.
  */
 export async function restoreMigration(input: RestoreMigrationInput): Promise<RestoreMigrationResult> {
@@ -96,7 +124,12 @@ export async function restoreMigration(input: RestoreMigrationInput): Promise<Re
   if (!manifestVerification.ok) {
     throw new Error(`backup manifest verification failed: ${manifestVerification.errors.join('; ')}`);
   }
-  assertInspectionMatchesManifest(backupPath, manifest.counts);
+  const backupState = assertInspectionMatchesManifest(
+    backupPath,
+    manifest.sourceVersion,
+    manifest.targetVersion,
+    manifest.counts
+  );
 
   const now = input.now ?? new Date();
   const stagePath = path.join(
@@ -114,7 +147,7 @@ export async function restoreMigration(input: RestoreMigrationInput): Promise<Re
   } finally {
     backupDb.close();
   }
-  assertInspectionMatchesManifest(stagePath, manifest.counts);
+  assertInspectionMatchesManifest(stagePath, manifest.sourceVersion, manifest.targetVersion, manifest.counts);
 
   if (failedPath) {
     verifyExclusiveAccess(databasePath);
@@ -134,11 +167,27 @@ export async function restoreMigration(input: RestoreMigrationInput): Promise<Re
     throw new Error('atomic database restore failed; the original database remains in place', { cause: error });
   }
 
-  const restored = inspectMigrationDatabase(databasePath);
-  if (!restored.canApply || restored.sourceVersion !== 1) {
-    throw new Error(
-      'restored database failed final v0.1 verification; the preserved failed database remains available'
-    );
+  const restoredState = assertInspectionMatchesManifest(
+    databasePath,
+    manifest.sourceVersion,
+    manifest.targetVersion,
+    manifest.counts
+  );
+  if (
+    restoredState.sourceVersion !== backupState.sourceVersion ||
+    restoredState.physicalVersion !== backupState.physicalVersion ||
+    restoredState.documentVersion !== backupState.documentVersion
+  ) {
+    throw new Error('restored database version differs from the verified backup');
   }
-  return { ok: true, databasePath, backupPath, manifestPath, failedDatabasePath: failedPath, restoredVersion: 1 };
+  return {
+    ok: true,
+    databasePath,
+    backupPath,
+    manifestPath,
+    failedDatabasePath: failedPath,
+    restoredVersion: restoredState.sourceVersion,
+    restoredPhysicalVersion: restoredState.physicalVersion,
+    restoredDocumentVersion: restoredState.documentVersion
+  };
 }

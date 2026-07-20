@@ -1,4 +1,5 @@
 import type { RendererContext } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createVideoRenderer } from '../src/browser/entry.mjs';
 
@@ -16,7 +17,7 @@ function context(runtime: RendererContext['runtime']): RendererContext {
     readOnly: false,
     selected: false,
     signal: new AbortController().signal,
-    theme: {},
+    theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update() {}, close() {} }) },
     reportDiagnostic: vi.fn()

@@ -15,6 +15,27 @@ data/                   SQLite database, migration backups, and service logs
 
 Only immediate non-hidden directories under `plugins/` are discovered. Discovery is non-recursive. `node_modules`, hidden staging directories, symlink roots, and directories elsewhere are not active plugins.
 
+## Process lifecycle
+
+AgentCanvas has no required process manager. After dependencies and the browser
+bundle are built, the process-manager-neutral runtime command is:
+
+```bash
+node --import tsx src/server.ts
+```
+
+Run it from the repository root. An optional supervisor owns process startup,
+shutdown, environment injection, logging, and restart policy; those mechanisms
+are not part of the AgentCanvas runtime contract. Whatever launches the
+process must preserve the configured database and extension directories and
+must support a clean stop before extension replacement, disable, restore, or
+offline migration.
+
+Use [Upgrading](upgrading.md) for the complete source-update sequence. Do not
+treat a source pull by itself as a deployed update: dependencies, built browser
+assets, extension distributions, migration state, and the running process must
+also be reconciled.
+
 ## Build and inspect the catalog
 
 ```bash
@@ -64,7 +85,7 @@ The command moves the runtime folder to a timestamped directory under `plugins-d
 
 Removing an optional plugin does not delete its stored elements. Reads preserve canonical envelopes and add diagnostics. Generic frame and metadata changes, deletion, and clear remain available; data/style replacement and new writes for that type fail with `plugin_unavailable`.
 
-`agentcanvas.assets2` and `agentcanvas.filesystem-images` are independent optional image sources. Disable either while AgentCanvas is stopped; stored nodes remain intact and show missing-extension diagnostics until their owner is reinstalled.
+`agentcanvas.assets2` and `agentcanvas.filesystem-images` are independent optional image sources registered with the host image-source registry. `agentcanvas.gallery` can use either provider. Disable extensions only while AgentCanvas is stopped; stored image and gallery nodes remain intact and show missing-provider or missing-extension diagnostics until their owner is reinstalled.
 
 ## Least-privilege deployment
 
@@ -73,7 +94,7 @@ Plugins are trusted executable dependencies: server entries execute in the Agent
 - Run AgentCanvas as a dedicated non-administrator operating-system account, never as `root`, an administrator, or `LocalSystem`.
 - Grant read access to the application, active plugin, and built asset directories.
 - Grant write access only to the configured database/data directory and the deployment's explicit log directory.
-- Limit outbound network access to required providers such as the configured Assets-2 service.
+- Limit outbound network access to provider endpoints explicitly required by installed extensions, such as an optional configured Assets-2 service.
 - Review source, manifest permissions, packaged files, and dependency licenses before installing a plugin.
 - Stop the service for plugin installation, replacement, or disable, and restart it so the frozen registry is rebuilt.
 
@@ -119,7 +140,7 @@ npm run migrate -- verify --database <path> --plugins <plugins-path>
 npm run migrate -- restore --database <path> --backup <backup-path>
 ```
 
-These commands run from the repository checkout. After `npm ci`, `npm exec -- agentcanvas migrate <command> ...` is equivalent. The service must be stopped for apply and restore. Keep the verified backup and sidecar manifest until an explicit retention decision. See [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).
+These commands run from the repository checkout. After `npm ci`, `npm exec -- agentcanvas migrate <command> ...` is equivalent. The service must be stopped for apply and restore. Empty databases initialize at physical/document version 3/2. Both v0.1 databases and physical/document 2/2 databases require an offline migration; the latter adds first-class theme storage without changing document version 2. Restore verifies and accepts the manifest-backed backup from either migration. Keep the backup and sidecar manifest until an explicit retention decision. See [Upgrading](upgrading.md) and [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).
 
 ## Operational acceptance
 

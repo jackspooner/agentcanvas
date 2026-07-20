@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { ServerPluginHost, SnapshotResourcesCapabilityV1 } from '@agentcanvas/plugin-sdk';
+import type {
+  ImageSourcesCapabilityV1,
+  ServerPluginHost,
+  SnapshotResourcesCapabilityV1
+} from '@agentcanvas/plugin-sdk';
 import { validatePluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it, vi } from 'vitest';
 import plugin from '../src/server.mjs';
@@ -24,15 +28,27 @@ describe('filesystem images plugin', () => {
       details: vi.fn(),
       load: vi.fn()
     };
+    const imageSources: ImageSourcesCapabilityV1 = {
+      registerProvider: vi.fn(),
+      hasProvider: vi.fn(),
+      listProviders: vi.fn(),
+      validateReference: vi.fn(),
+      resolve: vi.fn()
+    };
     const host = {
       config: { roots: [], contentMaxBytes: 67108864, resourceTtlMs: 3600000 },
       registerElementType: (value: { name: string }) => elements.push(value.name),
       registerTool: (value: { name: string }) => tools.push(value.name),
-      consumeCapability: () => ({ get: () => resources })
+      consumeCapability: (name: string) => ({
+        get: () => (name === 'agentcanvas.image-sources' ? imageSources : resources)
+      })
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
     expect(elements).toEqual(['image']);
     expect(tools).toEqual(['place', 'list-roots']);
+    expect(imageSources.registerProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'agentcanvas.filesystem-images' })
+    );
   });
 
   it('uses the expected fit mode in snapshots', () => {

@@ -137,10 +137,19 @@ function bboxData(context: RendererContext): ResolvedBBoxData {
   return normalizeInlineBBoxData(source) as ResolvedBBoxData;
 }
 
+function applyTheme(card: HTMLElement, context: RendererContext): void {
+  card.style.background = context.theme.colors.surface;
+  card.style.color = context.theme.colors.text;
+  card.style.borderColor = context.theme.colors.border;
+  card.style.borderRadius = `${context.theme.shape.radius}px`;
+  card.style.fontFamily = context.theme.typography.bodyFont;
+}
+
 function renderBBox(root: ShadowRoot, context: RendererContext): void {
   const data = bboxData(context);
   const { card, stage, actions } = cardShell();
-  stage.style.background = data.background ?? '#f8fafc';
+  applyTheme(card, context);
+  stage.style.background = data.background ?? context.theme.colors.surfaceMuted;
   const svg = svgElement('svg') as SVGSVGElement;
   attributes(svg, { viewBox: `0 0 ${data.canvasWidth} ${data.canvasHeight}`, role: 'img' });
   svg.setAttribute('aria-label', data.caption ?? data.alt ?? context.element.id);
@@ -174,7 +183,7 @@ function renderBBox(root: ShadowRoot, context: RendererContext): void {
         'font-weight': 700,
         'text-anchor': scaled.textAnchor,
         'paint-order': 'stroke',
-        stroke: '#ffffff',
+        stroke: context.theme.colors.surface,
         'stroke-width': 5
       });
       text.textContent = box.label ?? box.id;
@@ -216,7 +225,8 @@ function renderBBox(root: ShadowRoot, context: RendererContext): void {
 function renderPath(root: ShadowRoot, context: RendererContext): void {
   const data = normalizePathData(context.element.data);
   const { card, stage, actions } = cardShell();
-  stage.style.background = data.background ?? '#f8fafc';
+  applyTheme(card, context);
+  stage.style.background = data.background ?? context.theme.colors.surfaceMuted;
   const svg = svgElement('svg') as SVGSVGElement;
   attributes(svg, { viewBox: `0 0 ${data.canvasWidth} ${data.canvasHeight}`, role: 'img' });
   svg.setAttribute('aria-label', data.caption ?? data.alt ?? context.element.id);
@@ -225,7 +235,7 @@ function renderPath(root: ShadowRoot, context: RendererContext): void {
     attributes(path, {
       d: overlayPath.d,
       fill: overlayPath.fill ?? 'transparent',
-      stroke: overlayPath.color ?? overlayAccent(index),
+      stroke: overlayPath.color ?? (index === 0 ? context.theme.colors.accent : overlayAccent(index)),
       'stroke-width': overlayPath.strokeWidth ?? Math.max(2, Math.round(data.canvasWidth / 512)),
       'stroke-linejoin': 'round',
       'stroke-linecap': 'round',
@@ -242,7 +252,7 @@ function renderPath(root: ShadowRoot, context: RendererContext): void {
       const item = document.createElement('li');
       const swatch = document.createElement('span');
       swatch.className = 'swatch';
-      swatch.style.background = overlayPath.color ?? overlayAccent(index);
+      swatch.style.background = overlayPath.color ?? (index === 0 ? context.theme.colors.accent : overlayAccent(index));
       const label = document.createElement('span');
       label.textContent = overlayPath.label ?? overlayPath.id;
       item.append(swatch, label);

@@ -8,6 +8,10 @@
     "url": "git+https://github.com/jackspooner/AgentCanvas.git",
     "directory": "packages/extension-testkit"
   },
+  "bugs": {
+    "url": "https://github.com/jackspooner/AgentCanvas/issues"
+  },
+  "homepage": "https://github.com/jackspooner/AgentCanvas#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

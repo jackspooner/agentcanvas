@@ -8,13 +8,13 @@ import type {
 import { assetElementData, fitToObjectFit, type AssetReference } from '../contracts.js';
 
 const styles = `
-  :host{display:block;width:100%;height:100%;box-sizing:border-box;color:#0f172a;font:13px/1.35 system-ui,sans-serif}
+  :host{display:block;width:100%;height:100%;box-sizing:border-box;color:var(--asset-color,#0f172a);font:13px/1.35 var(--asset-font,system-ui,sans-serif)}
   .frame{position:relative;box-sizing:border-box;width:100%;height:100%;margin:0;overflow:hidden;border:var(--asset-border-width,1px) solid var(--asset-border,#cbd5e1);border-radius:var(--asset-radius,8px);background:var(--asset-background,#f8fafc)}
   img{display:block;width:100%;height:100%;object-position:center;background:var(--asset-background,#f8fafc)}
-  .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:#64748b;background:#f8fafc}.placeholder strong{color:#475569}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:rgba(255,255,255,.92);color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  button{position:absolute;top:8px;right:8px;border:1px solid #cbd5e1;border-radius:6px;background:rgba(255,255,255,.94);padding:5px 8px;color:#334155;font:600 11px system-ui,sans-serif;cursor:pointer}
-  button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+  .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:var(--asset-muted,#64748b);background:var(--asset-background,#f8fafc)}.placeholder strong{color:var(--asset-color,#475569)}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:var(--asset-surface,#fff);color:var(--asset-color,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  button{position:absolute;top:8px;right:8px;border:1px solid var(--asset-border,#cbd5e1);border-radius:6px;background:var(--asset-surface,#fff);padding:5px 8px;color:var(--asset-color,#334155);font:600 11px var(--asset-font,system-ui,sans-serif);cursor:pointer}
+  button:focus-visible{outline:2px solid var(--asset-accent,#2563eb);outline-offset:2px}
 `;
 
 function text(value: unknown, fallback = 'not recorded'): string {
@@ -223,21 +223,30 @@ const plugin: AgentCanvasBrowserPlugin = {
           caption.textContent = data.caption ?? '';
           detailsButton.setAttribute('aria-label', `Open asset details for ${label}`);
           const styleData = context.element.style ?? {};
+          const { colors, typography, shape } = context.theme;
           frame.style.setProperty(
             '--asset-background',
-            typeof styleData.background === 'string' ? styleData.background : '#f8fafc'
+            typeof styleData.background === 'string' ? styleData.background : colors.surfaceMuted
           );
           frame.style.setProperty(
             '--asset-border',
-            typeof styleData.borderColor === 'string' ? styleData.borderColor : '#cbd5e1'
+            typeof styleData.borderColor === 'string' ? styleData.borderColor : colors.border
           );
           frame.style.setProperty(
             '--asset-border-width',
-            `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : 1}px`
+            `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : shape.borderWidth}px`
           );
           frame.style.setProperty(
             '--asset-radius',
-            `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : 8}px`
+            `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : shape.radius}px`
+          );
+          frame.style.setProperty('--asset-surface', colors.surface);
+          frame.style.setProperty('--asset-color', typeof styleData.color === 'string' ? styleData.color : colors.text);
+          frame.style.setProperty('--asset-muted', colors.textMuted);
+          frame.style.setProperty('--asset-accent', colors.accent);
+          frame.style.setProperty(
+            '--asset-font',
+            typeof styleData.fontFamily === 'string' ? styleData.fontFamily : typography.bodyFont
           );
           await load(context);
         };

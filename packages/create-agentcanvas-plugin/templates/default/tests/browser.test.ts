@@ -4,6 +4,7 @@ import type {
   CanvasElement,
   RendererContext
 } from '@agentcanvas/extension-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/extension-sdk';
 import { describe, expect, it } from 'vitest';
 import plugin from '../src/browser/entry.mjs';
 
@@ -32,7 +33,7 @@ describe('__DISPLAY_NAME__ browser renderer', () => {
       readOnly: false,
       selected: false,
       signal: new AbortController().signal,
-      theme: {},
+      theme: DEFAULT_CANVAS_THEME,
       geometry: { getElementFrame: () => null, resolveAnchor: () => null },
       overlays: { open: () => ({ update() {}, close() {} }) },
       reportDiagnostic() {}

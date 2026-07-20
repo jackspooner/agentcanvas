@@ -18,16 +18,15 @@
 - Missing optional plugins must preserve canonical envelopes. They may not silently normalize, delete, or downgrade stored data.
 - Plugin activation changes require a restart. Invalid visible plugin folders fail startup explicitly.
 
-## Required Assets-2 capability
+## Optional media capabilities
 
-Assets-2 remains required, but its integration is supplied by the required `agentcanvas.assets2` plugin through `agentcanvas.assets@^1.0.0`.
+AgentCanvas core has no required media extension or Windows service dependency.
 
-- AgentCanvas SQLite owns documents, layout, revisions, viewports, and share links.
-- Assets-2 owns durable media identity, metadata, and bytes.
-- The plugin verifies `/health`, exact `asset-service` identity, and `asset_crud` plus `asset_refs` before AgentCanvas listens.
-- Runtime `/health` returns 503 when Assets-2 is unavailable, and `/whoami` safely reports provider identity/capabilities.
-- Keep the Servy dependency on `Workspace2Assets2`.
-- Do not add media storage or a media-disabled fallback to the kernel.
+- The host owns `agentcanvas.image-sources@1.0.0`, a registry for provider-neutral image references and opaque image resources.
+- `agentcanvas.assets2` and `agentcanvas.filesystem-images` register independent providers in that registry.
+- `agentcanvas.gallery` consumes the registry and must not import or encode either provider's private implementation.
+- AgentCanvas SQLite owns documents, layout, revisions, viewports, share links, and stable provider reference envelopes. Source extensions own media identity and bytes.
+- Missing optional media extensions preserve canonical elements and return explicit diagnostics. Do not add implicit provider fallbacks to the kernel.
 
 ## Contracts and migrations
 

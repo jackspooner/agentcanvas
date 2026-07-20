@@ -97,7 +97,7 @@ AgentCanvas never silently deletes, downgrades, or converts the element to a gen
 
 Capabilities are singleton providers with semantic versions. Consumers declare a required range in the manifest and may consume only that declaration.
 
-AgentCanvas core has no required extension capability. `agentcanvas.assets2` optionally provides `agentcanvas.assets@1.0.0` for extensions that work with durable Assets-2 references. `agentcanvas.filesystem-images` is independent: it reads raster files only from configured allowlisted roots and delivers them through the host resource broker.
+AgentCanvas core has no required media extension. The host provides `agentcanvas.image-sources@1.0.0`, a registry that accepts multiple provider adapters. `agentcanvas.assets2` and `agentcanvas.filesystem-images` register independent reference validators and opaque-image resolvers. `agentcanvas.gallery` consumes the registry without depending on a specific storage provider. Assets-2 separately provides `agentcanvas.assets@1.0.0` for extensions that need its broader durable asset contract.
 
 ## Trust and security
 
@@ -122,6 +122,7 @@ Built but optional by default:
 
 - `agentcanvas.filesystem-images`
 - `agentcanvas.assets2`
+- `agentcanvas.gallery`
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
 - `agentcanvas.glb-viewer`

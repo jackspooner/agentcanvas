@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DatabaseSync } from 'node:sqlite';
-import { ResourceBroker } from '../resources/broker.js';
+import type { ResourceBroker } from '../resources/broker.js';
 import { activatePlugins, type FrozenPluginRegistry } from './registry.js';
 import { discoverPlugins } from './discovery.js';
 import { orderPlugins } from './ordering.js';
@@ -11,6 +11,7 @@ import {
   type RuntimePluginDiagnostics
 } from './services.js';
 import { AGENTCANVAS_HOST_API_VERSION } from '../version.js';
+import { createHostCapabilitySet, HOST_CAPABILITY_VERSIONS } from './host-capabilities.js';
 
 export { AGENTCANVAS_HOST_API_VERSION } from '../version.js';
 
@@ -35,33 +36,27 @@ export async function loadPluginRuntime(input: {
 }): Promise<LoadedPluginRuntime> {
   const pluginsRoot = path.resolve(input.pluginsRoot ?? defaultPluginsRoot());
   const discovered = await discoverPlugins({ pluginsRoot });
-  const resources = new ResourceBroker();
-  const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, {
-    'agentcanvas.snapshot-resources': '1.0.0'
-  });
+  const host = createHostCapabilitySet();
+  const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   const services = createPluginRuntimeServices(input.db);
-  const registry = await activatePlugins(ordered, services, [
-    { name: 'agentcanvas.snapshot-resources', version: '1.0.0', value: resources }
-  ]);
-  return { registry, diagnostics: services.diagnosticsStore, pluginsRoot, resources };
+  const registry = await activatePlugins(ordered, services, host.providers);
+  host.imageSources.seal();
+  return { registry, diagnostics: services.diagnosticsStore, pluginsRoot, resources: host.resources };
 }
 
 export async function preparePluginRuntime(pluginsRoot = defaultPluginsRoot()): Promise<PreparedPluginRuntime> {
   const resolvedRoot = path.resolve(pluginsRoot);
   const discovered = await discoverPlugins({ pluginsRoot: resolvedRoot });
-  const resources = new ResourceBroker();
-  const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, {
-    'agentcanvas.snapshot-resources': '1.0.0'
-  });
+  const host = createHostCapabilitySet();
+  const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   const services = createDeferredPluginRuntimeServices();
-  const registry = await activatePlugins(ordered, services, [
-    { name: 'agentcanvas.snapshot-resources', version: '1.0.0', value: resources }
-  ]);
+  const registry = await activatePlugins(ordered, services, host.providers);
+  host.imageSources.seal();
   return {
     registry,
     diagnostics: services.diagnosticsStore,
     pluginsRoot: resolvedRoot,
-    resources,
+    resources: host.resources,
     bindDatabase: services.bindDatabase
   };
 }

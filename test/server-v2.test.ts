@@ -5,6 +5,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createMcpV2Server } from '../src/mcp-v2/server';
 import { createV2App, createV2Runtime } from '../src/server-v2';
+import { TEST_CANVAS_THEME } from './fixtures/canvas-theme';
 
 const roots: string[] = [];
 
@@ -120,6 +121,14 @@ describe('v0.2 assembled runtime', () => {
     });
     expect(mutated.status).toBe(200);
 
+    const themed = await app.request(`/api/v1/canvases/${canvasId}/theme`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ theme: TEST_CANVAS_THEME, expectedRevision: 2, actor: 'test' })
+    });
+    expect(themed.status).toBe(200);
+    expect(await themed.json()).toMatchObject({ canvas: { revision: 3, theme: { name: 'Forest report' } } });
+
     const procedure = await app.request('/api/v1/plugins/fixture.cards/procedures/echo', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -133,7 +142,9 @@ describe('v0.2 assembled runtime', () => {
     expect(JSON.stringify(snapshot)).not.toContain('data:');
     const content = await app.request(snapshot.snapshot.url);
     expect(content.headers.get('content-type')).toBe('image/svg+xml');
-    expect(await content.text()).toContain('Hello plugin');
+    const snapshotSvg = await content.text();
+    expect(snapshotSvg).toContain('Hello plugin');
+    expect(snapshotSvg).toContain('fill="#f0fdf4"');
 
     const openapi = await (await app.request('/openapi.json')).json();
     expect(openapi.paths['/api/v1/plugins/fixture.cards/procedures/echo']).toBeDefined();
@@ -155,15 +166,31 @@ describe('v0.2 assembled runtime', () => {
     const listedTools = await client.listTools();
     expect(listedTools.tools.map((tool) => tool.name)).toEqual(mcp.tools.map((tool) => tool.name));
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_rename');
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_set_theme');
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_clear_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_upsert_element');
+    const clearThemeCall = await client.callTool({
+      name: 'canvas_clear_theme',
+      arguments: { canvasId, expectedRevision: 3 }
+    });
+    expect(clearThemeCall.structuredContent).toMatchObject({ id: canvasId, revision: 4, theme: null });
+    const setThemeCall = await client.callTool({
+      name: 'canvas_set_theme',
+      arguments: { canvasId, theme: TEST_CANVAS_THEME, expectedRevision: 4 }
+    });
+    expect(setThemeCall.structuredContent).toMatchObject({
+      id: canvasId,
+      revision: 5,
+      theme: { name: 'Forest report' }
+    });
     const renameCall = await client.callTool({
       name: 'canvas_rename',
-      arguments: { canvasId, title: 'Renamed by agent', expectedRevision: 2 }
+      arguments: { canvasId, title: 'Renamed by agent', expectedRevision: 5 }
     });
     expect(renameCall.structuredContent).toMatchObject({
       id: canvasId,
       title: 'Renamed by agent',
-      revision: 3
+      revision: 6
     });
     const pluginCall = await client.callTool({ name: 'canvas_list_plugins', arguments: {} });
     expect(pluginCall.structuredContent).toMatchObject({ plugins: [{ id: 'fixture.cards' }] });

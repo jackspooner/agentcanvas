@@ -37,7 +37,7 @@ export function createVideoRenderer(): BrowserElementRenderer {
     mount(root, initial) {
       const style = document.createElement('style');
       style.textContent =
-        ':host{display:block;width:100%;height:100%}.frame{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid #334155;border-radius:8px;background:#0f172a}.media{display:block;width:100%;height:100%;object-fit:contain;background:#000}.caption{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:8px 10px;background:#0f172acc;color:#fff;font:600 13px/1.3 Inter,Arial,sans-serif;pointer-events:none}.missing{display:grid;place-items:center;width:100%;height:100%;color:#cbd5e1;font:600 13px Inter,Arial,sans-serif}';
+        ':host{display:block;width:100%;height:100%}.frame{position:relative;width:100%;height:100%;overflow:hidden;border:var(--video-border-width,1px) solid var(--video-border,#334155);border-radius:var(--video-radius,8px);background:var(--video-background,#0f172a)}.media{display:block;width:100%;height:100%;object-fit:contain;background:#000}.caption{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:8px 10px;background:var(--video-caption-background,#0f172a);color:var(--video-caption-color,#fff);font:600 13px/1.3 var(--video-font,Inter,Arial,sans-serif);pointer-events:none}.missing{display:grid;place-items:center;width:100%;height:100%;color:var(--video-muted,#cbd5e1);font:600 13px var(--video-font,Inter,Arial,sans-serif)}';
       const frame = document.createElement('div');
       frame.className = 'frame';
       const video = document.createElement('video');
@@ -72,6 +72,30 @@ export function createVideoRenderer(): BrowserElementRenderer {
         const requestedGeneration = generation;
         release();
         if (disposed) return;
+        const styleData = context.element.style ?? {};
+        frame.style.setProperty(
+          '--video-background',
+          typeof styleData.background === 'string' ? styleData.background : context.theme.colors.surfaceMuted
+        );
+        frame.style.setProperty(
+          '--video-border',
+          typeof styleData.borderColor === 'string' ? styleData.borderColor : context.theme.colors.border
+        );
+        frame.style.setProperty(
+          '--video-border-width',
+          `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : context.theme.shape.borderWidth}px`
+        );
+        frame.style.setProperty(
+          '--video-radius',
+          `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : context.theme.shape.radius}px`
+        );
+        frame.style.setProperty('--video-caption-background', context.theme.colors.surface);
+        frame.style.setProperty(
+          '--video-caption-color',
+          typeof styleData.color === 'string' ? styleData.color : context.theme.colors.text
+        );
+        frame.style.setProperty('--video-muted', context.theme.colors.textMuted);
+        frame.style.setProperty('--video-font', context.theme.typography.bodyFont);
         caption.textContent = typeof context.element.data.caption === 'string' ? context.element.data.caption : '';
         caption.hidden = !caption.textContent;
         video.controls = context.element.data.controls === true;

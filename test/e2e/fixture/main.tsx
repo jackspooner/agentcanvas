@@ -10,6 +10,7 @@ import {
   loadBrowserPluginRegistry
 } from '../../../src/web/plugins/catalog';
 import type { CanvasDocument } from '../../../src/web/v2-types';
+import { TEST_CANVAS_THEME } from '../../fixtures/canvas-theme';
 import '../../../src/web/styles.css';
 import './fixture.css';
 
@@ -106,6 +107,29 @@ const optionalElements: CanvasElement[] = [
     showLabels: true,
     caption: 'Paths'
   }),
+  element('gallery-1', 'agentcanvas.gallery/gallery', -650, 100, 300, 200, {
+    items: [
+      {
+        id: 'first',
+        source: { provider: 'agentcanvas.assets2', reference: assetRef },
+        alt: 'First gallery image',
+        caption: 'First slide'
+      },
+      {
+        id: 'second',
+        source: { provider: 'agentcanvas.assets2', reference: assetRef },
+        alt: 'Second gallery image',
+        caption: 'Second slide'
+      }
+    ],
+    presentation: 'carousel',
+    fit: 'contain',
+    initialIndex: 0,
+    autoplay: false,
+    intervalMs: 5000,
+    showControls: true,
+    showIndicators: true
+  }),
   element('fail-1', 'fixture.fail/card', 490, 100, 190, 110, { label: 'This renderer fails' })
 ];
 
@@ -137,6 +161,22 @@ const runtime: Record<string, JsonObject> = {
   'glb-1': {
     source: { handle: 'model-handle', url: '/fixture-resources/model.glb', mimeType: 'model/gltf-binary' },
     poster: { handle: 'model-poster-handle', url: '/fixture-resources/poster.svg', mimeType: 'image/svg+xml' }
+  },
+  'gallery-1': {
+    items: [
+      {
+        id: 'first',
+        contentHandle: 'gallery-first',
+        contentUrl: '/api/v1/resources/gallery-first/content',
+        mimeType: 'image/svg+xml'
+      },
+      {
+        id: 'second',
+        contentHandle: 'gallery-second',
+        contentUrl: '/api/v1/resources/gallery-second/content',
+        mimeType: 'image/svg+xml'
+      }
+    ]
   }
 };
 
@@ -160,6 +200,7 @@ function initialCanvas(): CanvasDocument {
     createdAt: now,
     updatedAt: now,
     bounds: { mode: 'unlimited' },
+    theme: TEST_CANVAS_THEME,
     elements,
     revision: 1,
     metadata: {},

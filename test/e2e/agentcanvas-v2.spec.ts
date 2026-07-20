@@ -32,7 +32,7 @@ async function persistedElement(page: Page, id: string): Promise<PersistedElemen
 async function openFixture(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('12 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -60,6 +60,7 @@ test('loads the registry catalog and browser modules from same-origin build-hash
     'agentcanvas.markdown',
     'agentcanvas.table',
     'agentcanvas.assets2',
+    'agentcanvas.gallery',
     'agentcanvas.image-overlays',
     'agentcanvas.video',
     'agentcanvas.glb-viewer',
@@ -91,11 +92,36 @@ test('renders default and optional elements while isolating one failing browser 
   await expect(page.locator('[data-element-id="bbox-1"] .plugin-renderer-surface svg')).toBeVisible();
   await expect(page.locator('[data-element-id="path-1"] .plugin-renderer-surface svg')).toBeVisible();
   await expect(page.locator('[data-element-id="video-1"] video')).toHaveAttribute('src', /^blob:/);
+  await expect(page.locator('[data-element-id="gallery-1"] img')).toHaveAttribute('alt', 'First gallery image');
 
   const failedCard = page.locator('[data-element-id="fail-1"] [role="status"]');
   await expect(failedCard).toContainText('Renderer error');
   await expect(failedCard).toContainText('The browser renderer for fixture.fail/card failed.');
   await expect(page.locator('[data-element-id="text-1"] .content')).toBeVisible();
+});
+
+test('applies one canvas theme to the board and extension defaults', async ({ page }) => {
+  await openFixture(page);
+  await expect(page.locator('.agentcanvas-editor')).toHaveCSS('background-color', 'rgb(240, 253, 244)');
+  const table = page.locator('[data-element-id="table-1"]');
+  await expect(table.locator('th').first()).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect(table.locator('th').first()).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(table.locator('.frame')).toHaveCSS('border-color', 'rgb(134, 239, 172)');
+  await expect(table.locator('.frame')).toHaveCSS('border-width', '2px');
+});
+
+test('navigates a gallery without mutating its canonical canvas state', async ({ page }) => {
+  await openFixture(page);
+  const revisionBefore = await page.getByTestId('canvas-revision').textContent();
+  const before = JSON.stringify(await persistedElement(page, 'gallery-1'));
+  const gallery = page.locator('[data-element-id="gallery-1"]');
+  await expect(gallery.locator('img')).toHaveAttribute('alt', 'First gallery image');
+  await expect(gallery.getByText('1 / 2', { exact: true })).toBeVisible();
+  await gallery.getByRole('button', { name: 'Next image' }).click();
+  await expect(gallery.locator('img')).toHaveAttribute('alt', 'Second gallery image');
+  await expect(gallery.getByText('2 / 2', { exact: true })).toBeVisible();
+  expect(JSON.stringify(await persistedElement(page, 'gallery-1'))).toBe(before);
+  expect(await page.getByTestId('canvas-revision').textContent()).toBe(revisionBefore);
 });
 
 test('updates a Shadow DOM renderer without remounting its surface or root', async ({ page }) => {
@@ -146,6 +172,19 @@ test('uses the host drag handle but leaves composed-path interactive media alone
   await page.mouse.up();
   expect(await persistedElement(page, 'video-1')).toMatchObject({ x: originalVideo.x, y: originalVideo.y });
   expect(await page.locator('.viewport-status').textContent()).toBe(viewportBefore);
+});
+
+test('zooms the canvas when the wheel is over non-interactive node content', async ({ page }) => {
+  await openFixture(page);
+
+  const statusBefore = await page.locator('.viewport-status').textContent();
+  const text = page.locator('[data-element-id="text-1"] .content');
+  const textBox = await text.boundingBox();
+  if (!textBox) throw new Error('Text renderer has no bounding box');
+  await page.mouse.move(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
+  await page.mouse.wheel(0, -240);
+
+  await expect.poll(async () => page.locator('.viewport-status').textContent()).not.toBe(statusBefore);
 });
 
 test('uses canonical commands for duplicate, delete, undo, and redo', async ({ page }) => {
@@ -294,14 +333,14 @@ test('preserves optional-plugin data while missing and restores rendering withou
   const before = JSON.stringify(await persistedElement(page, 'video-1'));
 
   await page.goto('/?canvas=all&video=missing');
-  await expect(page.getByTestId('registry-count')).toHaveText('11 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('12 renderers');
   const missingCard = page.locator('[data-element-id="video-1"] [role="status"]');
   await expect(missingCard).toContainText('Plugin unavailable');
   await expect(missingCard).toContainText('No active browser renderer is available for agentcanvas.video/video.');
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('12 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
   await expect(page.locator('[data-element-id="video-1"] video')).toHaveAttribute('src', /^blob:/);
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 });

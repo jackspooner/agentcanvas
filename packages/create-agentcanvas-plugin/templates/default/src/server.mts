@@ -3,7 +3,8 @@ import type {
   CanvasElement,
   JsonObject,
   LegacyElementImportResult,
-  SnapshotContribution
+  SnapshotContribution,
+  SnapshotRendererContext
 } from '@agentcanvas/extension-sdk';
 import {
   addHelloCardInputSchema,
@@ -38,7 +39,7 @@ function configInteger(config: Readonly<JsonObject>, name: string): number {
   return value as number;
 }
 
-function renderSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+function renderSnapshot(element: Readonly<CanvasElement>, context: SnapshotRendererContext): SnapshotContribution {
   const style = element.style ?? {};
   const data = element.data;
   const width = element.width ?? 320;
@@ -53,9 +54,9 @@ function renderSnapshot(element: Readonly<CanvasElement>): SnapshotContribution 
         y: 0,
         width,
         height,
-        rx: 12,
-        fill: typeof style.backgroundColor === 'string' ? style.backgroundColor : '#ffffff',
-        stroke: typeof style.accentColor === 'string' ? style.accentColor : '#2563eb',
+        rx: context.theme.shape.radius,
+        fill: typeof style.backgroundColor === 'string' ? style.backgroundColor : context.theme.colors.surface,
+        stroke: typeof style.accentColor === 'string' ? style.accentColor : context.theme.colors.accent,
         strokeWidth: 4
       },
       {
@@ -63,7 +64,8 @@ function renderSnapshot(element: Readonly<CanvasElement>): SnapshotContribution 
         x: 20,
         y: 42,
         text: stringField(data.title, 'title'),
-        fill: typeof style.textColor === 'string' ? style.textColor : '#111827',
+        fill: typeof style.textColor === 'string' ? style.textColor : context.theme.colors.text,
+        fontFamily: context.theme.typography.headingFont,
         fontSize: 24,
         fontWeight: 700,
         maxWidth: width - 40
@@ -73,7 +75,8 @@ function renderSnapshot(element: Readonly<CanvasElement>): SnapshotContribution 
         x: 20,
         y: 78,
         text: stringField(data.message, 'message'),
-        fill: typeof style.textColor === 'string' ? style.textColor : '#374151',
+        fill: typeof style.textColor === 'string' ? style.textColor : context.theme.colors.textMuted,
+        fontFamily: context.theme.typography.bodyFont,
         fontSize: 16,
         maxWidth: width - 40
       }

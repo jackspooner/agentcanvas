@@ -1,4 +1,5 @@
 import type { AgentCanvasConfiguration } from '../configuration';
+import type { CanvasThemeV1 } from '@agentcanvas/plugin-sdk';
 import type { CanvasBounds, CanvasOperation, CanvasViewport, CanvasViewportState } from '../contracts';
 import type { CanvasDocument, CanvasProjection } from './v2-types';
 
@@ -98,6 +99,22 @@ export async function updateCanvasBounds(
       body: JSON.stringify({ bounds, expectedRevision, actor: 'web-ui' })
     }),
     'failed to update canvas bounds'
+  );
+  return body.canvas as CanvasDocument;
+}
+
+export async function updateCanvasTheme(
+  canvasId: string,
+  theme: CanvasThemeV1 | null,
+  expectedRevision?: number
+): Promise<CanvasDocument> {
+  const body = await jsonResponse(
+    await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/theme`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ theme, expectedRevision, actor: 'web-ui' })
+    }),
+    'failed to update canvas theme'
   );
   return body.canvas as CanvasDocument;
 }

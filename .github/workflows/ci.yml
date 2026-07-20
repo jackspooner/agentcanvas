@@ -81,6 +81,9 @@ jobs:
       - name: Verify plugins
         run: npm run plugins:verify
 
+      - name: Verify extension package artifacts
+        run: npm run check:extension-packages
+
       - name: Verify public release contents
         run: npm run check:release
 
@@ -101,6 +104,9 @@ jobs:
           npm publish --dry-run --workspace @agentcanvas/plugin-sdk
           npm publish --dry-run --workspace @agentcanvas/plugin-testkit
           npm publish --dry-run --workspace create-agentcanvas-plugin
+          npm publish --dry-run --tag next --workspace @agentcanvas/extension-sdk
+          npm publish --dry-run --tag next --workspace @agentcanvas/extension-testkit
+          npm publish --dry-run --tag next --workspace create-agentcanvas-extension
 
       - name: Check patch whitespace
         run: git diff --check

@@ -4,6 +4,7 @@ import type {
   CanvasElement,
   PluginDiagnostic
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import plugin from '../src/browser/entry.mjs';
 
@@ -38,7 +39,7 @@ function context(value: CanvasElement, signal: AbortSignal, diagnostics: PluginD
     readOnly: false,
     selected: false,
     signal,
-    theme: {},
+    theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update: vi.fn(), close: vi.fn() }) },
     reportDiagnostic: (diagnostic: PluginDiagnostic) => diagnostics.push(diagnostic)

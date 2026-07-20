@@ -13,10 +13,12 @@ import type {
   BrowserCommandContext,
   BrowserOwnCanvasOperation,
   CanvasElement,
+  CanvasThemeV1,
   JsonObject,
   PluginDiagnostic,
   RendererGeometryService
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import type { CanvasOperation } from '../../contracts';
@@ -49,15 +51,9 @@ interface PluginRendererSurfaceProps {
   overlays: DomRendererOverlayService;
   readOnly: boolean;
   selected: boolean;
+  theme: Readonly<CanvasThemeV1>;
   reportDiagnostic(diagnostic: PluginDiagnostic): void;
 }
-
-const THEME = Object.freeze({
-  '--agentcanvas-foreground': '#0f172a',
-  '--agentcanvas-background': '#ffffff',
-  '--agentcanvas-border': '#cbd5e1',
-  '--agentcanvas-accent': '#2563eb'
-});
 
 function PluginRendererSurface(props: PluginRendererSurfaceProps) {
   const outer = useRef<HTMLDivElement | null>(null);
@@ -68,7 +64,7 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
       runtime: props.runtime,
       readOnly: props.readOnly,
       selected: props.selected,
-      theme: THEME,
+      theme: props.theme,
       geometry: props.geometry,
       overlays: props.overlays,
       reportDiagnostic: props.reportDiagnostic
@@ -80,7 +76,8 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
       props.readOnly,
       props.reportDiagnostic,
       props.runtime,
-      props.selected
+      props.selected,
+      props.theme
     ]
   );
 
@@ -104,10 +101,10 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
       ref={outer}
       className="plugin-renderer-surface"
       onPointerDownCapture={(event) => {
-        if (isPluginInteractiveEvent(event.nativeEvent)) event.stopPropagation();
+        if (isPluginInteractiveEvent(event.nativeEvent, event.currentTarget)) event.stopPropagation();
       }}
       onWheelCapture={(event) => {
-        if (isPluginInteractiveEvent(event.nativeEvent)) event.stopPropagation();
+        if (isPluginInteractiveEvent(event.nativeEvent, event.currentTarget)) event.stopPropagation();
       }}
     />
   );
@@ -222,6 +219,7 @@ export function CanvasView({
   onCanvasOperations,
   onCanvasBoundsChange
 }: CanvasViewProps) {
+  const theme = canvas.theme ?? DEFAULT_CANVAS_THEME;
   const [viewport, setViewport] = useState(() => coerceViewport(initialViewport));
   const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
   const [gridSnapEnabled, setGridSnapEnabled] = useState(true);
@@ -787,6 +785,7 @@ export function CanvasView({
           overlays={overlays}
           readOnly={readOnly}
           selected={selectedIds.includes(element.id)}
+          theme={theme}
           reportDiagnostic={reportDiagnostic}
         />
       </div>
@@ -850,6 +849,9 @@ export function CanvasView({
           selectedElementIds={selectedIds}
           readOnly={readOnly}
           snapToGrid={gridSnapEnabled}
+          backgroundColor={canvas.background?.color ?? theme.colors.canvas}
+          gridColor={theme.colors.border}
+          showGrid={canvas.background?.grid !== false}
           renderElement={({ element, selected }) => (
             <PluginRendererSurface
               element={element}
@@ -859,6 +861,7 @@ export function CanvasView({
               overlays={overlays}
               readOnly={readOnly}
               selected={selected}
+              theme={theme}
               reportDiagnostic={reportDiagnostic}
             />
           )}

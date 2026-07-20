@@ -13,6 +13,7 @@
     "hostApi": "^1.0.0",
     "plugins": {},
     "capabilities": {
+      "agentcanvas.image-sources": "^1.0.0",
       "agentcanvas.snapshot-resources": "^1.0.0"
     }
   },

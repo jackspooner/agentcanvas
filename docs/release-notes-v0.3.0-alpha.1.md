@@ -44,3 +44,7 @@ plugin API v1 runtime contracts.
 - Added `agentcanvas.filesystem-images` for PNG, JPEG, WebP, GIF, and AVIF files below administrator-allowlisted roots.
 - Persisted filesystem nodes use `rootId + relative path`; browser and snapshot bytes still flow through same-origin opaque resource handles.
 - Reduced the clean default set to primitives, Markdown, and table while retaining both image sources in the built catalog.
+- Added the optional `agentcanvas.gallery` extension with accessible local carousel navigation, six agent tools, deterministic cover snapshots, and provider-neutral image references.
+- Added the host-owned `agentcanvas.image-sources@1.0.0` registry; Assets-2 and filesystem images now register independent adapters so Gallery does not depend on either storage provider.
+- Added first-class per-canvas `CanvasThemeV1` state, validated agent/HTTP theme mutations, shared browser and snapshot theme contexts, and semantic theme adoption across all first-party extensions.
+- Added the backup-backed offline physical schema 2-to-3 migration for `theme_json`; document envelopes remain version 2.

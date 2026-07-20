@@ -326,7 +326,7 @@ const plugin: AgentCanvasServerPlugin = {
           return { runtime: {}, diagnostics: [issue] };
         }
       },
-      renderSnapshot: (element, context) => renderBBoxSnapshot(element, context.runtime)
+      renderSnapshot: (element, context) => renderBBoxSnapshot(element, context.runtime, context.theme)
     });
     host.registerElementType({
       name: 'path',
@@ -352,7 +352,7 @@ const plugin: AgentCanvasServerPlugin = {
         title: typeof element.data.caption === 'string' ? element.data.caption : 'Path overlay',
         detail: `${Array.isArray(element.data.paths) ? element.data.paths.length : 0} paths`
       }),
-      renderSnapshot: (element) => renderPathSnapshot(element)
+      renderSnapshot: (element, context) => renderPathSnapshot(element, context.theme)
     });
 
     host.registerTool(

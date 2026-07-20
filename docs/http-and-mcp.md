@@ -17,7 +17,7 @@ The owning schemas live in the frozen registry. Plugins register JSON Schema 202
 | Area | Routes |
 |---|---|
 | Health and identity | `GET /health`, `GET /whoami` |
-| Canvas documents | `GET/POST /api/v1/canvases`, `GET/PATCH /api/v1/canvases/{canvasId}`, `PATCH .../title` |
+| Canvas documents | `GET/POST /api/v1/canvases`, `GET/PATCH /api/v1/canvases/{canvasId}`, `PATCH .../title`, `PATCH .../theme` |
 | Elements | `POST /api/v1/canvases/{canvasId}/elements:batch` |
 | Viewports | `GET/POST .../viewport`, `POST .../viewport/focus` |
 | Sharing | `GET/POST .../share-links`, `DELETE .../share-links/{shareLinkId}`, `GET /api/v1/share/{token}` |
@@ -150,6 +150,8 @@ The kernel registers:
 - `canvas_list`
 - `canvas_get`
 - `canvas_rename`
+- `canvas_set_theme`
+- `canvas_clear_theme`
 - `canvas_upsert_element`
 - `canvas_patch_element_frame`
 - `canvas_replace_element_data`

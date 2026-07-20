@@ -161,7 +161,7 @@ function hashRows(rows: unknown[]): string {
 
 function preservationFingerprints(db: DatabaseSync): Record<string, string> {
   return {
-    canvases: hashRows(stableRows(db, 'canvases', ['elements_json', 'document_version'])),
+    canvases: hashRows(stableRows(db, 'canvases', ['elements_json', 'document_version', 'theme_json'])),
     events: hashRows(stableRows(db, 'canvas_events', ['document_version'])),
     shares: hashRows(stableRows(db, 'canvas_share_links')),
     viewports: hashRows(stableRows(db, 'canvas_viewports')),
@@ -177,6 +177,7 @@ function assertPreserved(before: Record<string, string>, after: Record<string, s
 
 function createV2Schema(db: DatabaseSync): void {
   addColumnIfMissing(db, 'canvases', 'document_version', 'INTEGER NOT NULL DEFAULT 2');
+  addColumnIfMissing(db, 'canvases', 'theme_json', 'TEXT');
   addColumnIfMissing(db, 'canvas_events', 'document_version', 'INTEGER NOT NULL DEFAULT 2');
   db.exec(`
     CREATE TABLE agent_canvas_installation_metadata (
@@ -365,9 +366,9 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
     replaceIdempotencyTable(db);
     db.prepare(
       `INSERT INTO agent_canvas_installation_metadata
-       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 2, 2, ?, ?)`
+       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 3, 2, ?, ?)`
     ).run(createdAt, input.toolVersion);
-    db.exec('PRAGMA user_version = 2;');
+    db.exec('PRAGMA user_version = 3;');
 
     const provisionalSummary = {
       sourceVersion: 1,
@@ -386,7 +387,7 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
       `INSERT INTO agent_canvas_migration_runs
        (id, migration_id, source_physical_version, target_physical_version, source_document_version,
         target_document_version, started_at, completed_at, backup_path, backup_sha256, summary_json)
-       VALUES (?, ?, ?, 2, 1, 2, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, 3, 1, 2, ?, ?, ?, ?, ?)`
     ).run(
       migrationRunId,
       MIGRATION_ID,

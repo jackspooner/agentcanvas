@@ -24,7 +24,7 @@ const plugin: AgentCanvasServerPlugin = {
             .replace(/^#+\s*/u, '')
             .slice(0, 80) || 'Markdown'
       }),
-      renderSnapshot: (element) => renderMarkdownSnapshot(element)
+      renderSnapshot: (element, context) => renderMarkdownSnapshot(element, context.theme)
     });
     host.registerTool({
       name: 'add-document',

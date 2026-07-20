@@ -1,4 +1,4 @@
-export const PHYSICAL_SCHEMA_VERSION = 2;
+export const PHYSICAL_SCHEMA_VERSION = 3;
 export const DOCUMENT_SCHEMA_VERSION = 2;
 
 export const V2_SCHEMA_SQL = `
@@ -15,6 +15,7 @@ CREATE TABLE canvases (
   height INTEGER NOT NULL,
   bounds_json TEXT,
   background_json TEXT,
+  theme_json TEXT,
   elements_json TEXT NOT NULL,
   revision INTEGER NOT NULL,
   metadata_json TEXT,

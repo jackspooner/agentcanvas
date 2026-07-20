@@ -1,4 +1,5 @@
-import type { CanvasElement, SnapshotContribution, SnapshotNode } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasThemeV1, SnapshotContribution, SnapshotNode } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { tableData } from './data.js';
 
 function styleString(element: Readonly<CanvasElement>, key: string, fallback: string): string {
@@ -9,12 +10,15 @@ function styleNumber(element: Readonly<CanvasElement>, key: string, fallback: nu
   return typeof element.style?.[key] === 'number' ? Number(element.style[key]) : fallback;
 }
 
-export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+export function renderTableSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
   const { columns, rows, caption } = tableData(element);
   const width = typeof element.width === 'number' ? element.width : 520;
   const height = typeof element.height === 'number' ? element.height : 220;
-  const border = styleString(element, 'borderColor', '#cbd5e1');
-  const borderWidth = styleNumber(element, 'borderWidth', 1);
+  const border = styleString(element, 'borderColor', theme.colors.border);
+  const borderWidth = styleNumber(element, 'borderWidth', theme.shape.borderWidth);
   const fontSize = styleNumber(element, 'fontSize', 13);
   const captionHeight = caption ? 34 : 0;
   const rowHeight = 30;
@@ -28,8 +32,8 @@ export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotC
       y: 0,
       width,
       height,
-      rx: styleNumber(element, 'borderRadius', 8),
-      fill: styleString(element, 'background', '#ffffff'),
+      rx: styleNumber(element, 'borderRadius', theme.shape.radius),
+      fill: styleString(element, 'background', theme.colors.surface),
       stroke: border,
       strokeWidth: borderWidth
     }
@@ -40,8 +44,8 @@ export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotC
       x: 12,
       y: 22,
       text: caption,
-      fill: styleString(element, 'captionColor', '#334155'),
-      fontFamily: styleString(element, 'fontFamily', 'Inter, Arial, sans-serif'),
+      fill: styleString(element, 'captionColor', theme.colors.textMuted),
+      fontFamily: styleString(element, 'fontFamily', theme.typography.bodyFont),
       fontSize: fontSize + 1,
       fontWeight: 700,
       maxWidth: width - 24
@@ -53,7 +57,7 @@ export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotC
     y: startY,
     width,
     height: rowHeight,
-    fill: styleString(element, 'headerBackground', '#f8fafc'),
+    fill: styleString(element, 'headerBackground', theme.colors.highlight),
     stroke: border,
     strokeWidth: borderWidth
   });
@@ -74,8 +78,8 @@ export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotC
       x: x + 8,
       y: startY + 20,
       text: columns[column] ?? '',
-      fill: styleString(element, 'headerColor', '#0f172a'),
-      fontFamily: styleString(element, 'fontFamily', 'Inter, Arial, sans-serif'),
+      fill: styleString(element, 'headerColor', theme.colors.highlightText),
+      fontFamily: styleString(element, 'fontFamily', theme.typography.bodyFont),
       fontSize,
       fontWeight: 700,
       maxWidth: Math.max(1, cellWidth - 16)
@@ -90,8 +94,8 @@ export function renderTableSnapshot(element: Readonly<CanvasElement>): SnapshotC
         x: column * cellWidth + 8,
         y: y + 20,
         text: row[column] ?? '',
-        fill: styleString(element, 'color', '#0f172a'),
-        fontFamily: styleString(element, 'fontFamily', 'Inter, Arial, sans-serif'),
+        fill: styleString(element, 'color', theme.colors.text),
+        fontFamily: styleString(element, 'fontFamily', theme.typography.bodyFont),
         fontSize,
         fontWeight: 400,
         maxWidth: Math.max(1, cellWidth - 16)

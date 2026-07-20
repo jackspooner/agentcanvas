@@ -36,7 +36,7 @@
 
 - Performance and accessibility verification.
 - OpenAPI, README, author docs, migration notes, and release notes.
-- Servy restart and live browser acceptance.
+- Process-manager-neutral startup documentation and live browser acceptance.
 
 ## Acceptance matrix
 
@@ -76,7 +76,7 @@ git diff --check
 
 After repository gates pass:
 
-1. Restart the Servy-managed AgentCanvas service.
+1. Restart the AgentCanvas process using the reference deployment's supervisor.
 2. Verify `/health`, `/whoami`, and `/openapi.json`.
 3. Open the index, an editable canvas, and a read-only share.
 4. Exercise selection, movement, resize, undo/redo, interactive extension
@@ -97,7 +97,7 @@ The `v0.3.0-alpha.1` implementation completed all five delivery waves:
   lifecycle, and 500-element visible culling;
 - an external generated extension passes type checking, conformance tests,
   packing, and host verification outside the repository workspace;
-- the Servy-managed Workspace2 service reports `v0.3.0-alpha.1`, the stable
+- the reference Workspace2 deployment reports `v0.3.0-alpha.1`, the stable
   plugin API `1.0.0`, its exact active extension set, and optional provider
   status without making core readiness provider-dependent;
 - live SQLite-backed browser acceptance verified movement, resize, undo, redo,

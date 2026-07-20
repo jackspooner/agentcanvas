@@ -1,4 +1,5 @@
-import type { CanvasElement, SnapshotContribution, SnapshotNode } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasThemeV1, SnapshotContribution, SnapshotNode } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { projectMarkdown } from './markdown.js';
 
 function styleString(element: Readonly<CanvasElement>, key: string, fallback: string): string {
@@ -21,7 +22,10 @@ function styleFontWeight(element: Readonly<CanvasElement>): number {
   return 400;
 }
 
-export function renderMarkdownSnapshot(element: Readonly<CanvasElement>): SnapshotContribution {
+export function renderMarkdownSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
   const width = typeof element.width === 'number' ? element.width : 360;
   const height = typeof element.height === 'number' ? element.height : 240;
   const baseSize = styleNumber(element, 'fontSize', 14);
@@ -38,10 +42,10 @@ export function renderMarkdownSnapshot(element: Readonly<CanvasElement>): Snapsh
       y: 0,
       width,
       height,
-      rx: styleNumber(element, 'borderRadius', 10),
-      fill: styleString(element, 'background', '#ffffff'),
-      stroke: shorthand?.[2] ?? styleString(element, 'borderColor', '#d0d7de'),
-      strokeWidth: shorthand ? Number(shorthand[1]) : styleNumber(element, 'borderWidth', 1)
+      rx: styleNumber(element, 'borderRadius', theme.shape.radius),
+      fill: styleString(element, 'background', theme.colors.surface),
+      stroke: shorthand?.[2] ?? styleString(element, 'borderColor', theme.colors.border),
+      strokeWidth: shorthand ? Number(shorthand[1]) : styleNumber(element, 'borderWidth', theme.shape.borderWidth)
     }
   ];
   let y = padding + 10;
@@ -54,11 +58,13 @@ export function renderMarkdownSnapshot(element: Readonly<CanvasElement>): Snapsh
       x: padding,
       y,
       text: line.text,
-      fill: styleString(element, 'color', '#0f172a'),
+      fill: styleString(element, 'color', theme.colors.text),
       fontFamily:
         line.role === 'code'
-          ? 'ui-monospace, monospace'
-          : styleString(element, 'fontFamily', 'Inter, Arial, sans-serif'),
+          ? theme.typography.monoFont
+          : line.role === 'heading'
+            ? theme.typography.headingFont
+            : styleString(element, 'fontFamily', theme.typography.bodyFont),
       fontSize,
       fontWeight: line.role === 'heading' ? 700 : styleFontWeight(element),
       maxWidth: Math.max(1, width - padding * 2)

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { CanvasElement, CanvasElementFramePatch, JsonObject } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';
 import { isJsonObject } from '@agentcanvas/plugin-sdk';
 import { nanoid } from 'nanoid';
 import { loadConfig, type AgentCanvasConfig } from '../config.js';
@@ -21,7 +21,8 @@ import type {
   CreateShareLinkInput,
   RenameCanvasInput,
   ShareLinkRecord,
-  UpdateCanvasBoundsInput
+  UpdateCanvasBoundsInput,
+  UpdateCanvasThemeInput
 } from '../contracts.js';
 import { DEFAULT_CANVAS_HEIGHT, DEFAULT_CANVAS_WIDTH } from '../contracts.js';
 import { CanvasError } from '../errors.js';
@@ -30,6 +31,7 @@ import { defaultViewport, normalizeCanvasBounds, normalizeViewportInput, validat
 import { readAgentCanvasConfiguration, writeAgentCanvasConfiguration } from './configuration.js';
 import { initializeEmptyV2Database, inspectDatabaseVersion, requireV2Database } from './version.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
+import { normalizeCanvasTheme } from '../theme.js';
 
 export interface V2CanvasRecord {
   id: string;
@@ -44,6 +46,7 @@ export interface V2CanvasRecord {
   width?: number;
   height?: number;
   background?: CanvasBackground | null;
+  theme?: CanvasThemeV1 | null;
   elements: CanvasElement[];
   revision: number;
   metadata?: JsonObject;
@@ -83,6 +86,7 @@ interface CanvasRow {
   height: number;
   bounds_json: string | null;
   background_json: string | null;
+  theme_json: string | null;
   elements_json: string;
   revision: number;
   metadata_json: string | null;
@@ -186,6 +190,7 @@ export class V2SqliteCanvasStore {
     const metadata = input.metadata ?? {};
     if (!isJsonObject(metadata))
       throw new CanvasError('validation_error', 'canvas metadata must be JSON', 'validation', 400);
+    const theme = input.theme === undefined || input.theme === null ? null : normalizeCanvasTheme(input.theme);
     const canvas: V2CanvasRecord = {
       id: `canvas_${nanoid(12)}`,
       title,
@@ -198,6 +203,7 @@ export class V2SqliteCanvasStore {
       bounds,
       ...(bounds.mode === 'fixed' ? { width: bounds.width, height: bounds.height } : {}),
       background: input.background ?? null,
+      theme,
       elements: [],
       revision: 1,
       metadata: structuredClone(metadata) as JsonObject,
@@ -206,8 +212,8 @@ export class V2SqliteCanvasStore {
     this.db
       .prepare(`INSERT INTO canvases
         (id,title,description,project,conversation_id,created_by,created_at,updated_at,width,height,bounds_json,
-         background_json,elements_json,revision,metadata_json,document_version)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,2)`)
+         background_json,theme_json,elements_json,revision,metadata_json,document_version)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,2)`)
       .run(
         canvas.id,
         canvas.title,
@@ -221,6 +227,7 @@ export class V2SqliteCanvasStore {
         storageHeight,
         serialize(bounds),
         serialize(canvas.background),
+        serialize(canvas.theme),
         '[]',
         1,
         serialize(canvas.metadata)
@@ -305,6 +312,29 @@ export class V2SqliteCanvasStore {
       .run(title, revision, updatedAt, canvasId);
     this.recordEvent(canvasId, revision, { op: 'renameCanvas', title }, updatedAt, input.actor);
     return { ...canvas, title, revision, updatedAt };
+  }
+
+  updateCanvasTheme(canvasId: string, input: UpdateCanvasThemeInput): V2CanvasRecord {
+    const canvas = this.getCanvas(canvasId);
+    if (!input || !Object.hasOwn(input, 'theme')) {
+      throw new CanvasError('validation_error', 'canvas theme is required and may be null', 'validation', 400);
+    }
+    checkRevision(input.expectedRevision, canvas.revision);
+    const theme = input.theme === null ? null : normalizeCanvasTheme(input.theme);
+    if (JSON.stringify(theme) === JSON.stringify(canvas.theme ?? null)) return canvas;
+    const revision = canvas.revision + 1;
+    const updatedAt = timestamp();
+    this.db
+      .prepare('UPDATE canvases SET theme_json=?, revision=?, updated_at=? WHERE id=?')
+      .run(serialize(theme), revision, updatedAt, canvasId);
+    this.recordEvent(
+      canvasId,
+      revision,
+      { op: 'setTheme', theme: theme as unknown as JsonObject | null },
+      updatedAt,
+      input.actor
+    );
+    return { ...canvas, theme, revision, updatedAt };
   }
 
   applyOperations(canvasId: string, request: V2CanvasBatchRequest): V2CanvasRecord {
@@ -601,6 +631,20 @@ export class V2SqliteCanvasStore {
     if (!isJsonObject(metadata)) {
       throw new CanvasError('stored_canvas_invalid', `canvas ${row.id} metadata is invalid`, 'storage', 500);
     }
+    const rawTheme = parse<unknown>(row.theme_json, null);
+    let theme: CanvasThemeV1 | null = null;
+    if (rawTheme !== null) {
+      try {
+        theme = normalizeCanvasTheme(rawTheme);
+      } catch (error) {
+        throw new CanvasError(
+          'stored_canvas_invalid',
+          `canvas ${row.id} theme is invalid: ${error instanceof Error ? error.message : String(error)}`,
+          'storage',
+          500
+        );
+      }
+    }
     return {
       id: row.id,
       title: row.title,
@@ -613,6 +657,7 @@ export class V2SqliteCanvasStore {
       bounds,
       ...(bounds.mode === 'fixed' ? { width: bounds.width, height: bounds.height } : {}),
       background: parse(row.background_json, null),
+      theme,
       elements,
       revision: row.revision,
       metadata,

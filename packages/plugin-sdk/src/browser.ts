@@ -2,6 +2,7 @@ import type { PluginDiagnostic } from './diagnostics.js';
 import type { CanvasElement } from './element.js';
 import type { ElementType } from './identifiers.js';
 import type { JsonObject } from './json.js';
+import type { CanvasThemeV1 } from './theme.js';
 
 export type BrowserRendererPlacement = 'node' | 'world-underlay' | 'world-overlay';
 
@@ -61,7 +62,7 @@ export interface RendererContext {
   readOnly: boolean;
   selected: boolean;
   signal: AbortSignal;
-  theme: Readonly<Record<string, string>>;
+  theme: Readonly<CanvasThemeV1>;
   geometry: RendererGeometryService;
   overlays: RendererOverlayService;
   reportDiagnostic(diagnostic: PluginDiagnostic): void;

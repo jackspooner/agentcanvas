@@ -2,11 +2,11 @@ import type {
   AgentCanvasBrowserPlugin,
   BrowserCommandDescriptor,
   BrowserElementRenderer,
-  CanvasElement,
   RendererContext
 } from '@agentcanvas/extension-sdk';
 
-function render(container: HTMLElement, element: Readonly<CanvasElement>, readOnly: boolean): void {
+function render(container: HTMLElement, context: RendererContext): void {
+  const { element, readOnly, theme } = context;
   const data = element.data;
   const style = element.style ?? {};
   const title = typeof data.title === 'string' ? data.title : 'Invalid card';
@@ -19,6 +19,14 @@ function render(container: HTMLElement, element: Readonly<CanvasElement>, readOn
   container.append(heading, body);
   container.dataset.readOnly = String(readOnly);
   container.style.setProperty('--card-accent', typeof style.accentColor === 'string' ? style.accentColor : '#2563eb');
+  container.style.setProperty(
+    '--card-background',
+    typeof style.backgroundColor === 'string' ? style.backgroundColor : theme.colors.surface
+  );
+  container.style.setProperty('--card-text', typeof style.textColor === 'string' ? style.textColor : theme.colors.text);
+  container.style.setProperty('--card-radius', `${theme.shape.radius}px`);
+  container.style.setProperty('--card-heading-font', theme.typography.headingFont);
+  container.style.setProperty('--card-body-font', theme.typography.bodyFont);
 }
 
 export const renderer: BrowserElementRenderer = {
@@ -29,16 +37,16 @@ export const renderer: BrowserElementRenderer = {
     const style = document.createElement('style');
     style.textContent = `
       :host { display: block; width: 100%; height: 100%; }
-      article { box-sizing: border-box; height: 100%; padding: 18px; border: 4px solid var(--card-accent); border-radius: 12px; background: white; color: #111827; overflow: hidden; }
-      strong { display: block; font: 700 24px/1.2 system-ui, sans-serif; }
-      p { margin: 12px 0 0; white-space: pre-wrap; font: 16px/1.45 system-ui, sans-serif; }
+      article { box-sizing: border-box; height: 100%; padding: 18px; border: 4px solid var(--card-accent); border-radius: var(--card-radius); background: var(--card-background); color: var(--card-text); overflow: hidden; }
+      strong { display: block; font: 700 24px/1.2 var(--card-heading-font); }
+      p { margin: 12px 0 0; white-space: pre-wrap; font: 16px/1.45 var(--card-body-font); }
     `;
     const container = document.createElement('article');
     root.append(style, container);
-    render(container, context.element, context.readOnly);
+    render(container, context);
     return {
       update(next) {
-        render(container, next.element, next.readOnly);
+        render(container, next);
       },
       dispose() {
         root.replaceChildren();

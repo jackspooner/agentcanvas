@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes are provided for the current `0.2.x` release line. Older development snapshots and pre-0.2 document formats are not supported runtime versions.
+Security fixes are provided for the current `0.3.x` prerelease line. Older development snapshots and pre-0.2 document formats are not supported runtime versions.
 
 ## Reporting a vulnerability
 
@@ -29,9 +29,9 @@ Review a plugin and its transitive dependencies before copying it into `plugins/
 
 ## Assets and binary data
 
-AgentCanvas stores durable media through Assets-2 references and serves binary content through bounded opaque resource handles. Reports, logs, diagnostics, OpenAPI examples, and plugin output must not contain full base64 payloads, data URLs, arbitrary local paths, authorization headers, or private asset bytes.
+AgentCanvas stores provider-neutral media references and serves binary content through bounded opaque resource handles. Reports, logs, diagnostics, OpenAPI examples, and extension output must not contain full base64 payloads, data URLs, arbitrary local paths, authorization headers, or private media bytes.
 
-The Assets-2 service is a required local dependency. Keep it on a trusted loopback boundary and apply the same authentication requirement before exposing it beyond the host.
+No media provider is required by AgentCanvas core. Assets-2 and allowlisted filesystem images are independent optional image-source extensions. When Assets-2 is installed, keep that service on a trusted loopback boundary and apply the same authentication requirement before exposing it beyond the host.
 
 ## Secrets and configuration
 

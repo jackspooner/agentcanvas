@@ -91,7 +91,7 @@ const descriptors: ElementTypeDescriptor[] = [
     browser: true,
     snapshot: 'supported',
     summarize: (element) => ({ title: String(element.data.text ?? '').slice(0, 80) || 'Text' }),
-    renderSnapshot: (element) => renderTextSnapshot(element)
+    renderSnapshot: (element, context) => renderTextSnapshot(element, context.theme)
   },
   {
     name: 'shape',
@@ -102,7 +102,7 @@ const descriptors: ElementTypeDescriptor[] = [
     browser: true,
     snapshot: 'supported',
     summarize: (element) => ({ title: String(element.data.label ?? element.data.shape ?? 'Shape') }),
-    renderSnapshot: (element) => renderShapeSnapshot(element)
+    renderSnapshot: (element, context) => renderShapeSnapshot(element, context.theme)
   },
   ...(['line', 'arrow'] as const).map(
     (name): ElementTypeDescriptor => ({
@@ -154,7 +154,7 @@ const descriptors: ElementTypeDescriptor[] = [
           }))
         };
       },
-      renderSnapshot: (element, context) => renderConnectorSnapshot(element, context.runtime)
+      renderSnapshot: (element, context) => renderConnectorSnapshot(element, context.runtime, context.theme)
     })
   )
 ];

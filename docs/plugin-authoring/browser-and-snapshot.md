@@ -6,7 +6,10 @@ Browser plugins are framework-neutral. They must not import the host React runti
 
 The host owns the outer frame, transforms, selection, drag handle, locking, opacity, z-order, read-only behavior, and error boundary. It mounts the renderer into a ShadowRoot and calls `update` without unnecessary remounts. The renderer owns only its content and must release media, event listeners, handles, and asynchronous work in `dispose`.
 
-Use the `RendererContext` abort signal, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
+Use the `RendererContext` abort signal, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. `theme` is a complete `CanvasThemeV1`, including when the canvas has no persisted theme. Map semantic roles to its tokens and keep explicit element styles as overrides. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
+
+Snapshot renderers receive the identical resolved theme in `SnapshotRendererContext`. Browser and snapshot
+output must not maintain separate color or typography defaults.
 
 Browser bundles execute same-origin code. Shadow DOM isolates styling and lifecycle, not security.
 

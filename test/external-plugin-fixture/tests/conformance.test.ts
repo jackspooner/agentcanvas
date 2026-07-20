@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { BrowserPluginHost, PluginManifest, ServerPluginHost } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { assertContributionRegistrations, assertPluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it } from 'vitest';
 import browserPlugin from '../src/browser/entry.mjs';
@@ -62,7 +63,7 @@ describe('external plugin fixture', () => {
       readOnly: false,
       selected: false,
       signal: new AbortController().signal,
-      theme: {},
+      theme: DEFAULT_CANVAS_THEME,
       geometry: { getElementFrame: () => null, resolveAnchor: () => null },
       overlays: { open: () => ({ update() {}, close() {} }) },
       reportDiagnostic() {}

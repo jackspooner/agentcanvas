@@ -5,6 +5,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const required = [
   'docs/README.md',
   'docs/getting-started.md',
+  'docs/upgrading.md',
   'docs/plugins.md',
   'docs/operations.md',
   'docs/http-and-mcp.md',
@@ -55,6 +56,9 @@ const files = [
   path.join(root, 'packages', 'plugin-sdk', 'README.md'),
   path.join(root, 'packages', 'plugin-testkit', 'README.md'),
   path.join(root, 'packages', 'create-agentcanvas-plugin', 'README.md'),
+  path.join(root, 'packages', 'extension-sdk', 'README.md'),
+  path.join(root, 'packages', 'extension-testkit', 'README.md'),
+  path.join(root, 'packages', 'create-agentcanvas-extension', 'README.md'),
   ...markdownFiles(path.join(root, 'docs'))
 ];
 const markdownByFile = new Map(files.map((file) => [file, fs.readFileSync(file, 'utf8')]));
@@ -92,7 +96,13 @@ const currentDocs = [
   'docs/plugin-architecture-and-migration.md',
   'docs/release-notes-v0.2.0.md'
 ];
-const stalePatterns = [/pre-cutover/i, /live database remains v0\.1/i, /does not claim.*migrat/i];
+const stalePatterns = [
+  /pre-cutover/i,
+  /live database remains v0\.1/i,
+  /does not claim.*migrat/i,
+  /Assets-2 service is a required local dependency/i,
+  /fails startup unless Assets-2/i
+];
 for (const relative of currentDocs) {
   const contents = fs.readFileSync(path.join(root, relative), 'utf8');
   for (const pattern of stalePatterns) {

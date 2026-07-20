@@ -55,7 +55,7 @@ export function createModelRenderer(): BrowserElementRenderer {
     mount(root, initial) {
       const style = document.createElement('style');
       style.textContent =
-        ':host{display:block;width:100%;height:100%}.frame{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid #94a3b8;border-radius:8px;background:#e2e8f0}.viewer{display:block;width:100%;height:100%;background:transparent}.caption{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:8px 10px;background:#0f172acc;color:#fff;font:600 13px/1.3 Inter,Arial,sans-serif;pointer-events:none}';
+        ':host{display:block;width:100%;height:100%}.frame{position:relative;width:100%;height:100%;overflow:hidden;border:var(--model-border-width,1px) solid var(--model-border,#94a3b8);border-radius:var(--model-radius,8px);background:var(--model-background,#e2e8f0)}.viewer{display:block;width:100%;height:100%;background:transparent}.caption{position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:8px 10px;background:var(--model-caption-background,#fff);color:var(--model-caption-color,#0f172a);font:600 13px/1.3 var(--model-font,Inter,Arial,sans-serif);pointer-events:none}';
       const frame = document.createElement('div');
       frame.className = 'frame';
       const caption = document.createElement('div');
@@ -88,6 +88,29 @@ export function createModelRenderer(): BrowserElementRenderer {
         const requestedGeneration = generation;
         release();
         if (disposed) return;
+        const styleData = context.element.style ?? {};
+        frame.style.setProperty(
+          '--model-background',
+          typeof styleData.background === 'string' ? styleData.background : context.theme.colors.surfaceMuted
+        );
+        frame.style.setProperty(
+          '--model-border',
+          typeof styleData.borderColor === 'string' ? styleData.borderColor : context.theme.colors.border
+        );
+        frame.style.setProperty(
+          '--model-border-width',
+          `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : context.theme.shape.borderWidth}px`
+        );
+        frame.style.setProperty(
+          '--model-radius',
+          `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : context.theme.shape.radius}px`
+        );
+        frame.style.setProperty('--model-caption-background', context.theme.colors.surface);
+        frame.style.setProperty(
+          '--model-caption-color',
+          typeof styleData.color === 'string' ? styleData.color : context.theme.colors.text
+        );
+        frame.style.setProperty('--model-font', context.theme.typography.bodyFont);
         const source = resource(context.runtime, 'source');
         const poster = resource(context.runtime, 'poster');
         if (!source) {

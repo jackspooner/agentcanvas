@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import type {
   AssetsCapabilityV1,
   CapabilityProvider,
+  ImageSourcesCapabilityV1,
   ServerPluginHost,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/plugin-sdk';
@@ -31,7 +32,10 @@ describe('Assets-2 plugin', () => {
   it('ships a conforming manifest that requires the shared resource broker', () => {
     const manifest = JSON.parse(readFileSync(resolve('agentcanvas.plugin.json'), 'utf8'));
     expect(validatePluginManifestStructure(manifest)).toEqual({ ok: true, issues: [] });
-    expect(manifest.requires.capabilities).toEqual({ 'agentcanvas.snapshot-resources': '^1.0.0' });
+    expect(manifest.requires.capabilities).toEqual({
+      'agentcanvas.image-sources': '^1.0.0',
+      'agentcanvas.snapshot-resources': '^1.0.0'
+    });
     expect(manifest.provides.capabilities).toEqual({ 'agentcanvas.assets': '1.0.0' });
     expect(manifest.configuration.environment).toEqual([
       'ASSETS_BASE_URL',
@@ -53,6 +57,13 @@ describe('Assets-2 plugin', () => {
       details: vi.fn(),
       load: vi.fn()
     };
+    const imageSources: ImageSourcesCapabilityV1 = {
+      registerProvider: vi.fn(),
+      hasProvider: vi.fn(),
+      listProviders: vi.fn(),
+      validateReference: vi.fn(),
+      resolve: vi.fn()
+    };
     const host = {
       config,
       kv: {},
@@ -62,7 +73,9 @@ describe('Assets-2 plugin', () => {
       registerProcedure: (value: { name: string }) => procedures.push(value.name),
       registerMigration: (value: { name: string }) => migrations.push(value.name),
       provideCapability: (value: CapabilityProvider<unknown>) => capabilities.push(value),
-      consumeCapability: () => ({ get: () => resources })
+      consumeCapability: (name: string) => ({
+        get: () => (name === 'agentcanvas.image-sources' ? imageSources : resources)
+      })
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
     expect(elements).toEqual(['asset']);
@@ -72,6 +85,9 @@ describe('Assets-2 plugin', () => {
     expect(capabilities.map(({ name, version }) => ({ name, version }))).toEqual([
       { name: 'agentcanvas.assets', version: '1.0.0' }
     ]);
+    expect(imageSources.registerProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'agentcanvas.assets2' })
+    );
   });
 
   it('imports legacy assets and audits response-only URL removal', () => {

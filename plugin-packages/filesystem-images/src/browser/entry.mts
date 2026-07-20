@@ -2,11 +2,11 @@ import type { AgentCanvasBrowserPlugin, BrowserPluginHost, JsonObject, RendererC
 import { fileSystemImageData, fitToObjectFit } from '../contracts.js';
 
 const styles = `
-  :host{display:block;width:100%;height:100%;box-sizing:border-box;color:#0f172a;font:13px/1.35 system-ui,sans-serif}
+  :host{display:block;width:100%;height:100%;box-sizing:border-box;color:var(--image-color,#0f172a);font:13px/1.35 var(--image-font,system-ui,sans-serif)}
   .frame{position:relative;box-sizing:border-box;width:100%;height:100%;margin:0;overflow:hidden;border:var(--image-border-width,1px) solid var(--image-border,#cbd5e1);border-radius:var(--image-radius,8px);background:var(--image-background,#f8fafc)}
   img{display:block;width:100%;height:100%;object-position:center;background:var(--image-background,#f8fafc)}
-  .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:#64748b;background:#f8fafc}.placeholder strong{color:#475569}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:rgba(255,255,255,.92);color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:var(--image-muted,#64748b);background:var(--image-background,#f8fafc)}.placeholder strong{color:var(--image-color,#475569)}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:var(--image-surface,#fff);color:var(--image-color,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 `;
 
 function resourceUrl(runtime: Readonly<JsonObject>): string | null {
@@ -109,22 +109,27 @@ const plugin: AgentCanvasBrowserPlugin = {
           image.style.objectFit = fitToObjectFit(data.fit);
           caption.textContent = data.caption ?? '';
           const styleData = context.element.style ?? {};
+          const { colors, typography, shape } = context.theme;
           frame.style.setProperty(
             '--image-background',
-            typeof styleData.background === 'string' ? styleData.background : '#f8fafc'
+            typeof styleData.background === 'string' ? styleData.background : colors.surfaceMuted
           );
           frame.style.setProperty(
             '--image-border',
-            typeof styleData.borderColor === 'string' ? styleData.borderColor : '#cbd5e1'
+            typeof styleData.borderColor === 'string' ? styleData.borderColor : colors.border
           );
           frame.style.setProperty(
             '--image-border-width',
-            `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : 1}px`
+            `${typeof styleData.borderWidth === 'number' ? styleData.borderWidth : shape.borderWidth}px`
           );
           frame.style.setProperty(
             '--image-radius',
-            `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : 8}px`
+            `${typeof styleData.borderRadius === 'number' ? styleData.borderRadius : shape.radius}px`
           );
+          frame.style.setProperty('--image-surface', colors.surface);
+          frame.style.setProperty('--image-color', colors.text);
+          frame.style.setProperty('--image-muted', colors.textMuted);
+          frame.style.setProperty('--image-font', typography.bodyFont);
           await load(context);
         };
 

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { inspectDatabaseVersion } from '../store/version';
 import { analyzeLegacyElement } from './legacy';
+import { intendedCanvasThemeSchemaBackupPath } from './theme-schema';
 import type {
   DatabaseVersionState,
   GroupBlocker,
@@ -82,7 +83,12 @@ export function inspectMigrationDatabase(
   try {
     const versions = versionState(db);
     const databaseVersion = inspectDatabaseVersion(db);
-    const sourceVersion = databaseVersion.kind === 'v1' ? 1 : databaseVersion.kind === 'v2' ? 2 : null;
+    const sourceVersion =
+      databaseVersion.kind === 'v1'
+        ? 1
+        : databaseVersion.kind === 'v2' || databaseVersion.kind === 'v2-theme-migration-required'
+          ? 2
+          : null;
     const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(
       (row) => Object.values(row)[0] ?? 'unknown'
     );
@@ -221,7 +227,11 @@ export function inspectMigrationDatabase(
 
     return {
       databasePath: absolutePath,
-      intendedBackupPath: options.intendedBackupPath ?? intendedMigrationBackupPath(absolutePath, options.now),
+      intendedBackupPath:
+        options.intendedBackupPath ??
+        (databaseVersion.kind === 'v2-theme-migration-required'
+          ? intendedCanvasThemeSchemaBackupPath(absolutePath, undefined, options.now ?? new Date())
+          : intendedMigrationBackupPath(absolutePath, options.now)),
       generatedAt,
       sourceVersion,
       targetVersion: 2,
@@ -239,7 +249,9 @@ export function inspectMigrationDatabase(
       runtimeFieldsToStrip,
       groupBlockers,
       issues,
-      canApply: sourceVersion === 1 && !issues.some((issue) => issue.severity === 'blocker')
+      canApply:
+        (sourceVersion === 1 || databaseVersion.kind === 'v2-theme-migration-required') &&
+        !issues.some((issue) => issue.severity === 'blocker')
     };
   } finally {
     db.close();

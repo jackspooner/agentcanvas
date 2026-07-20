@@ -1,12 +1,14 @@
 import type {
   AgentCanvasServerPlugin,
   CanvasElement,
+  ImageSourcesCapabilityV1,
   JsonObject,
   PluginInvocationContext,
   PluginToolDescriptor,
   ServerPluginHost,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/plugin-sdk';
+import { IMAGE_SOURCES_CAPABILITY } from '@agentcanvas/plugin-sdk';
 import { fileSystemImageData } from './contracts.js';
 import { FileSystemImageSourceResolver, normalizeRelativeImagePath, readFileSystemImagesConfig } from './filesystem.js';
 import {
@@ -73,10 +75,16 @@ const plugin: AgentCanvasServerPlugin = {
     const resources = host
       .consumeCapability<SnapshotResourcesCapabilityV1>('agentcanvas.snapshot-resources', '^1.0.0')
       .get();
+    const imageSources = host.consumeCapability<ImageSourcesCapabilityV1>(IMAGE_SOURCES_CAPABILITY, '^1.0.0').get();
     const sourceResolver = await FileSystemImageSourceResolver.create(
       readFileSystemImagesConfig(host.config),
       resources
     );
+    imageSources.registerProvider({
+      provider: 'agentcanvas.filesystem-images',
+      validateReference: (value) => sourceResolver.validateSource(value) as unknown as JsonObject,
+      resolve: (reference, signal) => sourceResolver.resource(reference, signal)
+    });
     host.registerElementType({
       name: 'image',
       schemaVersion: 1,
@@ -134,7 +142,7 @@ const plugin: AgentCanvasServerPlugin = {
           };
         }
       },
-      renderSnapshot: (element, context) => renderFileSystemImageSnapshot(element, context.runtime)
+      renderSnapshot: (element, context) => renderFileSystemImageSnapshot(element, context.runtime, context.theme)
     });
     host.registerTool(placeTool(sourceResolver));
     host.registerTool({

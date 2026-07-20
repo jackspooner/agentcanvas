@@ -1,8 +1,9 @@
 import path from 'node:path';
 import type { JsonValue, NamespacedPluginKv, PluginDiagnostics } from '@agentcanvas/plugin-sdk';
 import { isJsonValue } from '@agentcanvas/plugin-sdk';
-import { ResourceBroker } from '../resources/broker.js';
 import { AGENTCANVAS_HOST_API_VERSION, defaultPluginsRoot } from './bootstrap.js';
+import { createHostCapabilitySet, HOST_CAPABILITY_VERSIONS } from './host-capabilities.js';
+import type { ResourceBroker } from '../resources/broker.js';
 import { discoverPlugins } from './discovery.js';
 import { orderPlugins } from './ordering.js';
 import { activatePlugins, type FrozenPluginRegistry, type PluginRuntimeServices } from './registry.js';
@@ -48,12 +49,9 @@ export async function loadOfflinePluginRegistry(
     const missing = options.pluginIds.filter((id) => !present.has(id));
     if (missing.length) throw new Error(`offline plugin registry is missing: ${missing.join(', ')}`);
   }
-  const resources = new ResourceBroker();
-  const ordered = orderPlugins(selected, AGENTCANVAS_HOST_API_VERSION, {
-    'agentcanvas.snapshot-resources': '1.0.0'
-  });
-  const registry = await activatePlugins(ordered, offlineServices(), [
-    { name: 'agentcanvas.snapshot-resources', version: '1.0.0', value: resources }
-  ]);
-  return { registry, resources };
+  const host = createHostCapabilitySet();
+  const ordered = orderPlugins(selected, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
+  const registry = await activatePlugins(ordered, offlineServices(), host.providers);
+  host.imageSources.seal();
+  return { registry, resources: host.resources };
 }

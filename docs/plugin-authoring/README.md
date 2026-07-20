@@ -76,7 +76,7 @@ Adding, removing, or replacing a plugin requires a restart. Invalid visible fold
 - Plugin installation is an intentional filesystem operation. Remote loading, browser upload, hot reload, and network installation are outside plugin API v1.
 - A declared `plugin.config.json` is required and strictly validated. It receives no implicit defaults. Keep secrets in manifest-declared environment variables, never in config files.
 - Removing an optional plugin preserves its canonical element envelopes. Generic frame and metadata operations remain available, while data changes and rendering return explicit missing-plugin diagnostics.
-- AgentCanvas core requires no media capability. Extensions that consume Assets-2 declare `agentcanvas.assets@^1.0.0`; independent sources can instead use the host resource broker.
+- AgentCanvas core requires no media extension. Provider-neutral image consumers declare `agentcanvas.image-sources@^1.0.0`; image-source extensions register adapters with that host-owned registry. Extensions that need Assets-2-specific metadata or JSON content declare `agentcanvas.assets@^1.0.0` instead.
 
 ## Contract ownership
 

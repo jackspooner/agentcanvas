@@ -40,6 +40,7 @@ The source packages exist under `plugin-packages/`. Building the catalog does no
 | `agentcanvas.table` | yes | `table` | `add-table` | — | — |
 | `agentcanvas.filesystem-images` | optional | `image` | `place`, `list-roots` | — | allowlisted local raster files through snapshot resources |
 | `agentcanvas.assets2` | optional | `asset` | `place`, `get-details` | `details` | provides `agentcanvas.assets@1.0.0` |
+| `agentcanvas.gallery` | optional | `gallery` | `create`, `append-items`, `remove-item`, `reorder-items`, `set-cover`, `update-settings` | — | provider-neutral images through `agentcanvas.image-sources@1.0.0` |
 | `agentcanvas.image-overlays` | optional | `bbox`, `path` | `add-bbox`, `add-path`, `export-png`, `export-mask-zip` | `export-png`, `export-mask-zip` | requires Assets and snapshot resources |
 | `agentcanvas.video` | optional | `video` | `place` | — | requires Assets |
 | `agentcanvas.glb-viewer` | optional | `model` | `place` | — | requires Assets |

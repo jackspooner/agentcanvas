@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import type { JsonObject, PluginMigrationDescriptor } from '@agentcanvas/plugin-sdk';
 import {
   applyMigration,
+  applyCanvasThemeSchemaMigration,
   applyPluginSchemaMigrations,
   inspectMigrationDatabase,
   LEGACY_TYPE_DEFINITIONS,
@@ -86,6 +87,13 @@ async function run(): Promise<number> {
           databasePath,
           backupDir,
           registry,
+          toolVersion: AGENTCANVAS_VERSION
+        });
+      }
+      if (state.kind === 'v2-theme-migration-required') {
+        return applyCanvasThemeSchemaMigration({
+          databasePath,
+          backupDir,
           toolVersion: AGENTCANVAS_VERSION
         });
       }

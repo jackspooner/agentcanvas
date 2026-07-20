@@ -1,4 +1,5 @@
 import type { BrowserElementRenderer, CanvasElement, PluginDiagnostic, RendererContext } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { describe, expect, it, vi } from 'vitest';
 import { isPluginInteractiveEvent } from '../src/web/plugins/interaction.js';
 import { type RendererContextInput, ShadowRendererHost } from '../src/web/plugins/renderer-host.js';
@@ -22,7 +23,7 @@ function context(value: CanvasElement, diagnostics: PluginDiagnostic[] = []): Re
     runtime: null,
     readOnly: false,
     selected: false,
-    theme: {},
+    theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update() {}, close() {} }) },
     reportDiagnostic: (diagnostic) => diagnostics.push(diagnostic)
@@ -165,5 +166,22 @@ describe('plugin interaction routing', () => {
     const event = new Event('pointerdown', { bubbles: true, composed: true });
     control.addEventListener('pointerdown', (received) => expect(isPluginInteractiveEvent(received)).toBe(true));
     control.dispatchEvent(event);
+  });
+
+  it('ignores focusable editor chrome above the renderer host', () => {
+    const flowNode = document.createElement('div');
+    flowNode.tabIndex = 0;
+    const frame = document.createElement('div');
+    const root = frame.attachShadow({ mode: 'open' });
+    const plain = document.createElement('div');
+    root.append(plain);
+    flowNode.append(frame);
+    document.body.append(flowNode);
+
+    frame.addEventListener('wheel', (received) => {
+      expect(isPluginInteractiveEvent(received)).toBe(true);
+      expect(isPluginInteractiveEvent(received, frame)).toBe(false);
+    });
+    plain.dispatchEvent(new WheelEvent('wheel', { bubbles: true, composed: true }));
   });
 });

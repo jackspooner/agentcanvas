@@ -37,7 +37,7 @@ const plugin: AgentCanvasServerPlugin = {
         title: typeof element.data.caption === 'string' && element.data.caption ? element.data.caption : 'Table',
         detail: `${Array.isArray(element.data.rows) ? element.data.rows.length : 0} rows`
       }),
-      renderSnapshot: (element) => renderTableSnapshot(element)
+      renderSnapshot: (element, context) => renderTableSnapshot(element, context.theme)
     });
     host.registerTool({
       name: 'add-table',

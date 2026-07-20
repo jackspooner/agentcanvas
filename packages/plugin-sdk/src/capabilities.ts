@@ -51,3 +51,28 @@ export interface AssetsCapabilityV1 {
     retryable?: boolean;
   }>;
 }
+
+export const IMAGE_SOURCES_CAPABILITY = 'agentcanvas.image-sources' as const;
+export const IMAGE_SOURCES_CAPABILITY_VERSION = '1.0.0' as const;
+
+/** A stable image identity whose provider-specific payload is owned by an image-source extension. */
+export interface ImageSourceReference {
+  provider: string;
+  reference: JsonObject;
+}
+
+/** Adapter registered by an image-source extension with the host image-source registry. */
+export interface ImageSourceProviderV1 {
+  provider: string;
+  validateReference(value: unknown): JsonObject;
+  resolve(reference: Readonly<JsonObject>, signal: AbortSignal): Promise<OpaqueResourceHandle>;
+}
+
+/** Host-owned registry that lets elements consume images without depending on a storage provider. */
+export interface ImageSourcesCapabilityV1 {
+  registerProvider(provider: ImageSourceProviderV1): void;
+  hasProvider(provider: string): boolean;
+  listProviders(): readonly string[];
+  validateReference(value: unknown): ImageSourceReference;
+  resolve(value: unknown, signal: AbortSignal): Promise<OpaqueResourceHandle>;
+}

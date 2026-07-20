@@ -22,6 +22,12 @@ interface AgentCanvasServerPlugin {
 
 `ServerPluginHost` exposes registration for element types, tools, procedures, migrations, and capabilities; consumption of declared capabilities; validated read-only config; plugin-namespaced KV; and scoped diagnostics.
 
+The public `ImageSourcesCapabilityV1` is the provider-neutral image boundary. Source extensions call `registerProvider`; consumers call `validateReference` and `resolve` with `{ provider, reference }` envelopes. Resolvers return only `OpaqueResourceHandle` values, and the host rejects non-image MIME types. The registry deliberately supports several providers inside one host capability because capability names themselves remain singleton-owned.
+
+`CanvasThemeV1` is the stable semantic design-token contract. `RendererContext.theme` and
+`SnapshotRendererContext.theme` expose the same complete resolved theme. The SDK helpers `themedString` and
+`themedNumber` implement explicit element style first, then theme token resolution.
+
 ## Element descriptor
 
 An `ElementTypeDescriptor` declares:

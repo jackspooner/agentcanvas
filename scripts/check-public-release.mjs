@@ -56,10 +56,42 @@ const browserTestCommand = rootManifest.scripts?.['test:e2e'];
 if (typeof browserTestCommand !== 'string' || !browserTestCommand.startsWith('npm run build:packages && ')) {
   failures.push('test:e2e must build public packages before the source-based browser fixture starts.');
 }
+if (rootManifest.scripts?.['check:extension-packages'] !== 'node scripts/verify-extension-package-artifacts.mjs') {
+  failures.push('check:extension-packages must verify the packed extension authoring toolchain.');
+}
 
 const readme = read('README.md');
 if (!readme.includes('https://github.com/jackspooner/Assets-2')) {
   failures.push('README must link to the public Assets-2 installation source.');
+}
+if (!/No media service is required\./.test(readme)) {
+  failures.push('README must state that AgentCanvas core requires no media service.');
+}
+if (!/physical\/document version 3\/2/.test(readme)) {
+  failures.push('README must state the current physical/document database version.');
+}
+
+const securityPolicy = read('SECURITY.md');
+const releaseChecklist = read('PUBLIC_RELEASE_CHECKLIST.md');
+if (/Assets-2 service is a required local dependency/i.test(`${securityPolicy}\n${releaseChecklist}`)) {
+  failures.push('Current security and release documentation must not describe Assets-2 as required.');
+}
+if (!/physical schema 3 \/ document schema 2/.test(releaseChecklist)) {
+  failures.push('Release checklist must state the current physical/document database contract.');
+}
+
+const ciWorkflow = read('.github/workflows/ci.yml');
+for (const workspace of [
+  '@agentcanvas/extension-sdk',
+  '@agentcanvas/extension-testkit',
+  'create-agentcanvas-extension'
+]) {
+  if (!ciWorkflow.includes(`npm publish --dry-run --tag next --workspace ${workspace}`)) {
+    failures.push(`CI must dry-run the prerelease package ${workspace} with the next tag.`);
+  }
+}
+if (!ciWorkflow.includes('npm run check:extension-packages')) {
+  failures.push('CI must independently install and exercise packed extension packages.');
 }
 
 const migrationGuide = read('docs/v0.1-to-v0.2-migration.md');
@@ -107,7 +139,14 @@ const repositoryUrls = new Set([
   'https://github.com/jackspooner/AgentCanvas.git',
   'git+https://github.com/jackspooner/AgentCanvas.git'
 ]);
-for (const packageDirectory of ['plugin-sdk', 'plugin-testkit', 'create-agentcanvas-plugin']) {
+for (const packageDirectory of [
+  'plugin-sdk',
+  'plugin-testkit',
+  'create-agentcanvas-plugin',
+  'extension-sdk',
+  'extension-testkit',
+  'create-agentcanvas-extension'
+]) {
   const base = `packages/${packageDirectory}`;
   const manifest = readJson(`${base}/package.json`);
   requireFile(`${base}/README.md`);
@@ -124,10 +163,12 @@ for (const packageDirectory of ['plugin-sdk', 'plugin-testkit', 'create-agentcan
   if (/\]\(\.\.\//.test(packageReadme)) failures.push(`${manifest.name ?? base} README contains package-breaking relative links.`);
 }
 
-const scaffolder = readJson('packages/create-agentcanvas-plugin/package.json');
-const scaffoldBin = scaffolder.bin?.['create-agentcanvas-plugin'];
-if (typeof scaffoldBin !== 'string' || scaffoldBin.startsWith('./')) {
-  failures.push('create-agentcanvas-plugin bin path must be a normalized package-relative path.');
+for (const scaffolderName of ['create-agentcanvas-plugin', 'create-agentcanvas-extension']) {
+  const scaffolder = readJson(`packages/${scaffolderName}/package.json`);
+  const scaffoldBin = scaffolder.bin?.[scaffolderName];
+  if (typeof scaffoldBin !== 'string' || scaffoldBin.startsWith('./')) {
+    failures.push(`${scaffolderName} bin path must be a normalized package-relative path.`);
+  }
 }
 
 for (const pluginDirectory of [

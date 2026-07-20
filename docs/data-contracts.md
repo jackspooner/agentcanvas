@@ -17,6 +17,13 @@ Every current element has `id`, namespaced `type`, positive integer `schemaVersi
 
 JSON rejects `undefined`, functions, symbols, `BigInt`, non-finite numbers, unsafe integers, arrays where objects are required, and objects with non-plain prototypes.
 
+## Canvas theme
+
+A canvas may store one `CanvasThemeV1` under its first-class `theme` field. The theme contains semantic colors,
+local font stacks, border width, and radius. It is revisioned independently of element operations through the
+theme mutation surface. Explicit element styles override theme tokens without rewriting the theme or other
+elements. See [Canvas themes](canvas-themes.md).
+
 ## Mutation operations
 
 | Operation | Owner required | Mutable fields |
@@ -55,9 +62,10 @@ The broker returns a flat opaque handle containing `handle`, `url`, `mimeType`, 
 
 ## Database versions
 
-- Empty database: initialized transactionally at physical/document version 2.
+- Empty database: initialized transactionally at physical/document version 3/2.
 - v0.1 database: startup fails with `database_migration_required`.
-- exact v0.2: opens normally.
+- physical/document version 2/2: startup requires the offline canvas-theme schema migration.
+- exact physical/document version 3/2: opens normally.
 - newer or contradictory version metadata: startup fails explicitly.
 
 See [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).

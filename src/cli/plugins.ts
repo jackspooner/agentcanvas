@@ -2,10 +2,14 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { discoverPluginDirectory, discoverPlugins, orderPlugins } from '../plugin-runtime/index.js';
+import {
+  discoverPluginDirectory,
+  discoverPlugins,
+  HOST_CAPABILITY_VERSIONS,
+  orderPlugins
+} from '../plugin-runtime/index.js';
 import { AGENTCANVAS_HOST_API_VERSION } from '../version.js';
 
-const HOST_CAPABILITIES = { 'agentcanvas.snapshot-resources': '1.0.0' } as const;
 const DEFAULT_PLUGIN_IDS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
 
 export async function assertAgentCanvasStopped(
@@ -106,7 +110,7 @@ export async function buildPluginCatalog(root = installationRoot()): Promise<rea
     built.push(plugin.manifest.id);
   }
   const catalog = await discoverPlugins({ pluginsRoot: catalogRoot });
-  orderPlugins(catalog, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITIES);
+  orderPlugins(catalog, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   return Object.freeze(built.sort());
 }
 
@@ -117,7 +121,7 @@ export async function installPluginDistribution(sourcePath: string, root = insta
   const destination = path.join(pluginsRoot, plugin.manifest.id);
   assertDirectChild(pluginsRoot, destination);
   await copyDistribution(source, destination);
-  orderPlugins(await discoverPlugins({ pluginsRoot }), AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITIES);
+  orderPlugins(await discoverPlugins({ pluginsRoot }), AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   return plugin.manifest.id;
 }
 
@@ -145,7 +149,7 @@ export async function materializeDefaultPlugins(root = installationRoot()): Prom
     await copyDistribution(source, existing);
     installed.push(id);
   }
-  orderPlugins(await discoverPlugins({ pluginsRoot }), AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITIES);
+  orderPlugins(await discoverPlugins({ pluginsRoot }), AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   return Object.freeze(installed);
 }
 
@@ -173,8 +177,8 @@ export async function verifyPlugins(root = installationRoot()): Promise<{
   const catalogRoot = path.join(root, 'dist', 'plugin-catalog');
   const active = await discoverPlugins({ pluginsRoot });
   const catalog = await discoverPlugins({ pluginsRoot: catalogRoot });
-  orderPlugins(active, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITIES);
-  orderPlugins(catalog, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITIES);
+  orderPlugins(active, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
+  orderPlugins(catalog, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
   return {
     active: Object.freeze(active.map((plugin) => `${plugin.manifest.id}@${plugin.manifest.version}`)),
     catalog: Object.freeze(catalog.map((plugin) => `${plugin.manifest.id}@${plugin.manifest.version}`))

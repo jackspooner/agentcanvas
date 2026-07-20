@@ -26,6 +26,16 @@ The host owns the stable `CanvasElement` envelope. A plugin owns only the JSON d
 for its registered element types. Runtime provider results belong in the read projection, never in persisted
 element data.
 
+Provider-neutral image consumers use the host-owned `agentcanvas.image-sources@1.0.0` capability. Source extensions register strict provider adapters; consuming extensions persist `{ provider, reference }` envelopes and receive only opaque same-origin image resource handles.
+
+## Canvas themes
+
+`CanvasThemeV1` is the semantic canvas-wide design contract. Browser renderers receive it as
+`RendererContext.theme`; snapshot renderers receive the same resolved value as `SnapshotRendererContext.theme`.
+Use `themedString` and `themedNumber` so explicit element styles override theme tokens. Extensions should map
+roles such as surface, text, border, accent, highlight, typography, and radius consistently rather than
+maintaining separate browser and snapshot defaults.
+
 ## Documentation
 
 - [Plugin authoring overview](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/README.md)

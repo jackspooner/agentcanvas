@@ -2,6 +2,7 @@ import type { PluginDiagnostic, PluginDiagnostics } from './diagnostics.js';
 import type { CanvasElement, ElementDefaultFrame } from './element.js';
 import type { JsonObject, JsonSchema, JsonValue } from './json.js';
 import type { SnapshotContribution } from './snapshot.js';
+import type { CanvasThemeV1 } from './theme.js';
 
 export interface PluginValidationIssue {
   path: string;
@@ -51,6 +52,7 @@ export interface SnapshotRendererContext {
   signal: AbortSignal;
   canvasId: string;
   runtime: Readonly<JsonObject> | null;
+  theme: Readonly<CanvasThemeV1>;
 }
 
 export interface ElementSchemaMigration {

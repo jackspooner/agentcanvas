@@ -91,7 +91,7 @@ const plugin: AgentCanvasServerPlugin = {
           };
         }
       },
-      renderSnapshot: (element, context) => renderVideoSnapshot(element, context.runtime)
+      renderSnapshot: (element, context) => renderVideoSnapshot(element, context.runtime, context.theme)
     });
     host.registerTool({
       name: 'place',

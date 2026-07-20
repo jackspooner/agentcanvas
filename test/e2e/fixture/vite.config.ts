@@ -12,6 +12,7 @@ const browserEntries = new Map([
   ['agentcanvas.markdown', 'plugin-packages/markdown/src/browser/entry.mts'],
   ['agentcanvas.table', 'plugin-packages/table/src/browser/entry.mts'],
   ['agentcanvas.assets2', 'plugin-packages/assets2/src/browser/entry.mts'],
+  ['agentcanvas.gallery', 'plugin-packages/gallery/src/browser/entry.mts'],
   ['agentcanvas.image-overlays', 'plugin-packages/image-overlays/src/browser/entry.mts'],
   ['agentcanvas.video', 'plugin-packages/video/src/browser/entry.mts'],
   ['agentcanvas.glb-viewer', 'plugin-packages/glb-viewer/src/browser/entry.ts'],
@@ -29,6 +30,7 @@ const declarations = new Map<string, Array<{ type: string; schemaVersion: number
   ['agentcanvas.markdown', [{ type: 'agentcanvas.markdown/document', schemaVersion: 1 }]],
   ['agentcanvas.table', [{ type: 'agentcanvas.table/table', schemaVersion: 1 }]],
   ['agentcanvas.assets2', [{ type: 'agentcanvas.assets2/asset', schemaVersion: 1 }]],
+  ['agentcanvas.gallery', [{ type: 'agentcanvas.gallery/gallery', schemaVersion: 1 }]],
   [
     'agentcanvas.image-overlays',
     [
@@ -135,6 +137,22 @@ function fixtureApi(): Plugin {
             response,
             'image/svg+xml',
             '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#dbeafe"/><text x="160" y="96" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#1e3a8a">Fixture poster</text></svg>'
+          );
+          return;
+        }
+        if (pathname === '/api/v1/resources/gallery-first/content') {
+          sendBytes(
+            response,
+            'image/svg+xml',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="286"><rect width="480" height="286" fill="#dbeafe"/><text x="240" y="151" text-anchor="middle" font-family="sans-serif" font-size="30" fill="#1e3a8a">First gallery image</text></svg>'
+          );
+          return;
+        }
+        if (pathname === '/api/v1/resources/gallery-second/content') {
+          sendBytes(
+            response,
+            'image/svg+xml',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="286"><rect width="480" height="286" fill="#dcfce7"/><text x="240" y="151" text-anchor="middle" font-family="sans-serif" font-size="30" fill="#166534">Second gallery image</text></svg>'
           );
           return;
         }

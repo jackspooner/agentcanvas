@@ -23,7 +23,8 @@ current selection.
 
 Interactive extension content MUST remain operable. Pointer and wheel events
 originating from controls marked interactive are not treated as canvas
-gestures.
+gestures. Focusable editor chrome outside the extension renderer does not make
+plain node content interactive.
 
 ## Resize
 

@@ -10,7 +10,8 @@ interface VersionMetadataRow {
 export type DatabaseVersionState =
   | { kind: 'empty' }
   | { kind: 'v1'; physicalVersion: number; documentVersion: 1 }
-  | { kind: 'v2'; physicalVersion: 2; documentVersion: 2 }
+  | { kind: 'v2-theme-migration-required'; physicalVersion: 2; documentVersion: 2 }
+  | { kind: 'v2'; physicalVersion: 3; documentVersion: 2 }
   | { kind: 'newer'; physicalVersion: number; documentVersion: number }
   | { kind: 'contradictory'; message: string };
 
@@ -64,8 +65,11 @@ export function inspectDatabaseVersion(db: DatabaseSync): DatabaseVersionState {
       documentVersion: metadata.document_version
     };
   }
+  if (physicalVersion === 2 && metadata.document_version === 2) {
+    return { kind: 'v2-theme-migration-required', physicalVersion: 2, documentVersion: 2 };
+  }
   if (physicalVersion === PHYSICAL_SCHEMA_VERSION && metadata.document_version === DOCUMENT_SCHEMA_VERSION) {
-    return { kind: 'v2', physicalVersion: 2, documentVersion: 2 };
+    return { kind: 'v2', physicalVersion: 3, documentVersion: 2 };
   }
   return {
     kind: 'contradictory',
@@ -85,7 +89,7 @@ export function initializeEmptyV2Database(
     db.exec(V2_SCHEMA_SQL);
     db.prepare(
       `INSERT INTO agent_canvas_installation_metadata
-       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 2, 2, ?, ?)`
+       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 3, 2, ?, ?)`
     ).run(timestamp, toolVersion);
     db.exec(`PRAGMA user_version = ${PHYSICAL_SCHEMA_VERSION}; COMMIT;`);
   } catch (error) {
@@ -101,6 +105,15 @@ export function requireV2Database(db: DatabaseSync): void {
     throw new CanvasError(
       'database_migration_required',
       'AgentCanvas v0.1 database detected; run: agentcanvas migrate apply --database <path>',
+      'storage',
+      503,
+      false
+    );
+  }
+  if (state.kind === 'v2-theme-migration-required') {
+    throw new CanvasError(
+      'database_migration_required',
+      'AgentCanvas theme schema migration is required; run: agentcanvas migrate apply --database <path>',
       'storage',
       503,
       false

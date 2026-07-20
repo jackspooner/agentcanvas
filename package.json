@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "build:packages": "npm run build --workspace @agentcanvas/plugin-sdk && npm run build --workspace @agentcanvas/plugin-testkit && npm run build --workspace @agentcanvas/extension-sdk && npm run build --workspace @agentcanvas/extension-testkit && npm run build --workspace @agentcanvas/core && npm run build --workspace @agentcanvas/editor && npm run build --workspace create-agentcanvas-plugin && npm run build --workspace create-agentcanvas-extension",
-    "build:plugins": "npm run build --workspace @agentcanvas/plugin-assets2 && npm run build --workspace @agentcanvas/plugin-filesystem-images && npm run build --workspace @agentcanvas/plugin-glb-viewer && npm run build --workspace @agentcanvas/plugin-image-overlays && npm run build --workspace @agentcanvas/plugin-markdown && npm run build --workspace @agentcanvas/plugin-primitives && npm run build --workspace @agentcanvas/plugin-table && npm run build --workspace @agentcanvas/plugin-video",
+    "build:plugins": "npm run build --workspace @agentcanvas/plugin-assets2 && npm run build --workspace @agentcanvas/plugin-filesystem-images && npm run build --workspace @agentcanvas/plugin-gallery && npm run build --workspace @agentcanvas/plugin-glb-viewer && npm run build --workspace @agentcanvas/plugin-image-overlays && npm run build --workspace @agentcanvas/plugin-markdown && npm run build --workspace @agentcanvas/plugin-primitives && npm run build --workspace @agentcanvas/plugin-table && npm run build --workspace @agentcanvas/plugin-video",
     "test:packages": "npm run test --workspaces --if-present",
     "check:packages": "npm run check --workspaces --if-present",
     "dev": "npm run build:packages && tsx src/server.ts",
@@ -51,6 +51,7 @@
     "generate:openapi": "tsx src/cli/openapi.ts generate",
     "check:openapi": "tsx src/cli/openapi.ts check",
     "check:docs": "node scripts/check-docs.mjs",
+    "check:extension-packages": "node scripts/verify-extension-package-artifacts.mjs",
     "check:plugin-licenses": "node scripts/verify-plugin-distribution-licenses.mjs",
     "check:release": "node scripts/check-public-release.mjs && npm run check:plugin-licenses",
     "test": "npm run build:packages && npm run check:packages && npm run test:packages && npm run test:external-plugin && vitest run",

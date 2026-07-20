@@ -1,4 +1,4 @@
-import type { CanvasElement, JsonObject, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasThemeV1, JsonObject, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
 import type { CanvasBackground, CanvasBounds, CanvasViewport, CanvasViewportState } from '../contracts';
 
 export interface CanvasDocument {
@@ -14,6 +14,7 @@ export interface CanvasDocument {
   width?: number;
   height?: number;
   background?: CanvasBackground | null;
+  theme?: CanvasThemeV1 | null;
   elements: CanvasElement[];
   revision: number;
   metadata?: JsonObject;

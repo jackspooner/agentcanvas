@@ -21,17 +21,18 @@ const plugin: AgentCanvasBrowserPlugin = {
         frame.className = 'frame';
         root.replaceChildren(style, frame);
         const update = (context: RendererContext) => {
+          const { colors, typography, shape } = context.theme;
           for (const [property, key, fallback] of [
-            ['--ac-border', 'borderColor', '#cbd5e1'],
-            ['--ac-border-width', 'borderWidth', '1'],
-            ['--ac-radius', 'borderRadius', '8'],
-            ['--ac-background', 'background', '#ffffff'],
-            ['--ac-color', 'color', '#0f172a'],
+            ['--ac-border', 'borderColor', colors.border],
+            ['--ac-border-width', 'borderWidth', String(shape.borderWidth)],
+            ['--ac-radius', 'borderRadius', String(shape.radius)],
+            ['--ac-background', 'background', colors.surface],
+            ['--ac-color', 'color', colors.text],
             ['--ac-font-size', 'fontSize', '13'],
-            ['--ac-font-family', 'fontFamily', 'Inter, Arial, sans-serif'],
-            ['--ac-header-background', 'headerBackground', '#f8fafc'],
-            ['--ac-header-color', 'headerColor', '#0f172a'],
-            ['--ac-caption', 'captionColor', '#334155']
+            ['--ac-font-family', 'fontFamily', typography.bodyFont],
+            ['--ac-header-background', 'headerBackground', colors.highlight],
+            ['--ac-header-color', 'headerColor', colors.highlightText],
+            ['--ac-caption', 'captionColor', colors.textMuted]
           ] as const)
             frame.style.setProperty(
               property,

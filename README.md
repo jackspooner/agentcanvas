@@ -17,7 +17,7 @@ dependencies; they are not sandboxed.
 
 ## Documentation
 
-Start at the [documentation home](docs/README.md). It provides separate paths for installation, operations, HTTP/MCP use, architecture, troubleshooting, database migration, and plugin creation.
+Start at the [documentation home](docs/README.md). It provides separate paths for installation, upgrades, operations, HTTP/MCP use, architecture, troubleshooting, database migration, and extension creation.
 
 The [v0.3 specification set](docs/specs/README.md) records the product,
 interaction, architecture, extension SDK, delivery, and acceptance contracts
@@ -32,9 +32,11 @@ model.
 ## Requirements
 
 - Node.js 24 or newer and npm 11 or newer.
-- An empty v0.2 database, or a v0.1 database migrated with the offline CLI before startup.
+- An empty database, which AgentCanvas initializes at physical schema 3 / document schema 2, or an older database upgraded with the offline CLI before startup.
 
 No media service is required. Local files and [Assets-2](https://github.com/jackspooner/Assets-2) are independently installable image-source extensions.
+No process manager is required. AgentCanvas can run directly from the checkout
+and does not depend on Servy, systemd, Docker, or any other supervisor.
 
 ## Quick start
 
@@ -56,6 +58,19 @@ curl http://127.0.0.1:23003/openapi.json
 ```
 
 `/health` reports AgentCanvas core readiness. When the optional Assets-2 extension is installed, its current readiness is reported under `dependencies.assets` without making the core host unavailable.
+
+For a long-running installation, run the already-built application from the
+repository root under any supervisor that can set the working directory,
+environment, restart policy, and log destinations:
+
+```bash
+node --import tsx src/server.ts
+```
+
+AgentCanvas does not require or select the supervisor. Optional deployment
+examples under `service/` apply only to operators who already use those tools.
+See [Getting started](docs/getting-started.md), [Operations](docs/operations.md),
+and [Upgrading](docs/upgrading.md).
 
 ## Extensions
 
@@ -108,11 +123,39 @@ The catalog also builds these optional plugins without activating them by defaul
 
 - `agentcanvas.filesystem-images`
 - `agentcanvas.assets2`
+- `agentcanvas.gallery`
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
 - `agentcanvas.glb-viewer`
 
 Removing an optional plugin preserves canonical stored envelopes. Reads show an explicit diagnostic; frame and metadata edits, deletion, and clear remain available. Reinstalling a compatible plugin restores validation and rendering without rewriting the document.
+
+## Canvas themes
+
+Agents can assign one validated semantic theme to a canvas instead of repeating colors, fonts, borders, and
+radii on every element. Theme-aware extensions inherit canvas surfaces, text, highlights, accents, and shape
+tokens while explicit element styles remain authoritative. Use `canvas_set_theme` and `canvas_clear_theme`, or
+`PATCH /api/v1/canvases/{canvasId}/theme`. Browser and snapshot output share the same theme. See
+[Canvas themes](docs/canvas-themes.md).
+
+### Media galleries
+
+`agentcanvas.gallery` presents from 1 through 50 images in one accessible carousel node. Install it with either image-source extension:
+
+```bash
+npm run plugins:install -- dist/plugin-catalog/agentcanvas.gallery
+```
+
+Gallery items use a stable provider envelope. For example, an allowlisted filesystem item stores:
+
+```json
+{
+  "provider": "agentcanvas.filesystem-images",
+  "reference": { "rootId": "pictures", "path": "products/mug.png" }
+}
+```
+
+Assets-2 items use `provider: "agentcanvas.assets2"` with the normal durable asset reference under `reference`. Agent tools are exposed as `agentcanvas_gallery__create`, `agentcanvas_gallery__append_items`, `agentcanvas_gallery__remove_item`, `agentcanvas_gallery__reorder_items`, `agentcanvas_gallery__set_cover`, and `agentcanvas_gallery__update_settings`. Slide navigation is browser-local; the persisted `initialIndex` controls the initial slide and deterministic snapshot cover.
 
 ## Extension authoring
 
@@ -171,9 +214,9 @@ npm run migrate -- restore --database <path> --backup <backup-path>
 
 After `npm ci`, the equivalent local-bin form is `npm exec -- agentcanvas migrate <command> ...`. The repository wrapper above is the canonical clone-and-run form and does not require a globally installed executable.
 
-`apply` uses the SQLite backup API, writes and verifies a SHA-256 sidecar manifest, transforms documents transactionally through plugin-owned importers, preserves historical events, and commits only after target validation, integrity, and foreign-key checks. It also applies pending installed-plugin element-schema migrations for an existing v0.2 database. Migration refuses databases containing the removed `group` type or unknown legacy fields/types.
+`apply` uses the SQLite backup API, writes and verifies a SHA-256 sidecar manifest, transforms documents transactionally through plugin-owned importers, preserves historical events, and commits only after target validation, integrity, and foreign-key checks. It upgrades v0.1 databases directly to physical/document version 3/2, upgrades physical/document 2/2 databases to 3/2 for first-class theme storage, and applies pending installed-extension element-schema migrations. Migration refuses databases containing the removed `group` type or unknown legacy fields/types. `restore` accepts the verified backup produced by either host migration.
 
-See [v0.1 to v0.2 migration](docs/v0.1-to-v0.2-migration.md).
+See [Upgrading](docs/upgrading.md) and [v0.1 to v0.2 migration](docs/v0.1-to-v0.2-migration.md).
 
 ## HTTP, OpenAPI, and MCP
 
@@ -254,7 +297,7 @@ AgentCanvas refuses a non-loopback bind unless `AGENT_CANVAS_ALLOW_REMOTE=true`.
 
 The optional filesystem-images extension is configured in its installed `plugin.config.json`; it deliberately does not accept arbitrary absolute paths from canvas documents or MCP calls.
 
-Run AgentCanvas under a dedicated least-privilege operating-system account that can read the installation/plugin directories and write only the configured database, data, and log locations. Do not run it as an administrator, root, or `LocalSystem`. The supplied Windows templates use passwordless per-service virtual accounts. Because plugins execute trusted Node.js and same-origin browser code, the service account's filesystem and network permissions are the effective security boundary.
+For a long-running deployment, run AgentCanvas under a dedicated least-privilege operating-system account that can read the installation/extension directories and write only the configured database, data, and log locations. Do not run it as an administrator, root, or `LocalSystem`. Because extensions execute trusted Node.js and same-origin browser code, the runtime account's filesystem and network permissions are the effective security boundary. Optional supervisor examples are not prerequisites or part of the AgentCanvas runtime contract.
 
 ## Repository layout
 
@@ -264,7 +307,7 @@ plugin-packages/             first-party plugin sources
 dist/plugin-catalog/         built plugin distributions
 plugins/                     active generated runtime plugins
 src/plugin-runtime/          discovery, validation, activation, capabilities
-src/store/                   v0.2 SQLite store and version checks
+src/store/                   current SQLite store and version checks
 src/migrations/              offline migration and restore
 src/snapshot-runtime/        safe scene validation and SVG composition
 src/mcp-v2/                  registry-derived HTTP and stdio MCP

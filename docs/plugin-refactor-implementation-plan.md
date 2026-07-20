@@ -107,7 +107,7 @@ Normal startup creates a complete v0.2 schema only for an empty database. Older,
 2. Integrate registry-driven storage, `/api/v1`, OpenAPI, HTTP/stdio MCP parity, browser runtime, snapshot compositor, and resources.
 3. Extract primitives, Markdown, table, Assets-2, and image overlays; remove legacy dispatch only after parity tests.
 4. Extract video and GLB; add catalog/materialization tooling, testkit, scaffolder, starter, and external-plugin proof.
-5. Run migration rehearsal, adversarial security tests, Playwright browser/visual tests, documentation/OpenAPI review, then the Servy-managed live cutover with rollback on any failed acceptance check.
+5. Run migration rehearsal, adversarial security tests, Playwright browser/visual tests, documentation/OpenAPI review, then the reference deployment's supervised live cutover with rollback on any failed acceptance check.
 
 The primary agent owns root dependencies/lockfile, shared contracts, central entrypoints, service configuration, documentation, and live cutover. Subagents receive disjoint new directories and report shared-file integration requirements to the primary agent.
 
@@ -117,7 +117,7 @@ The primary agent owns root dependencies/lockfile, shared contracts, central ent
 - Folder presence is the only active-plugin state.
 - A standalone external plugin installs and appears across browser, snapshot, HTTP procedure, MCP, and OpenAPI without rebuilding AgentCanvas.
 - Missing optional plugins preserve data and reinstall restores behavior without document mutation.
-- Required Assets-2 startup/health/whoami/Servy behavior remains synchronized.
+- Reference-deployment startup, health, and identity behavior remains synchronized without making its process supervisor part of the public runtime contract.
 - Migration and restore are rehearsed against a copy, then the target database passes its archived preflight-count, preservation-fingerprint, and integrity checks.
 - Unit, integration, security, packaging, Playwright, build, lint, formatting, OpenAPI freshness, MCP, browser, and live smoke gates pass.
 - README, `.env.example`, AGENTS, architecture, data contracts, migration guide, plugin author guide, OpenAPI, service template, and release notes agree with runtime behavior.

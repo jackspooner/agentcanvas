@@ -19,11 +19,13 @@ The public distribution is the GitHub source repository. The root application re
 | I want to… | Start here |
 |---|---|
 | Install or run AgentCanvas | [Getting started](getting-started.md) |
+| Upgrade an existing installation | [Upgrading](upgrading.md) |
 | Operate the service or manage extensions | [Operations](operations.md) |
 | Use the HTTP API or MCP tools | [HTTP and MCP](http-and-mcp.md) |
 | Understand the system | [Architecture](architecture.md) |
 | Understand how extensions load | [How extensions load](plugins.md) |
 | Understand persisted data | [Data contracts](data-contracts.md) |
+| Create or apply a canvas theme | [Canvas themes](canvas-themes.md) |
 | Create an extension | [Extension authoring](plugin-authoring/README.md) |
 | Follow a complete extension example | [Build your first extension](plugin-authoring/tutorial.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |
@@ -53,6 +55,7 @@ runtime](plugin-snapshot-runtime.md).
 ## Operator and API documentation
 
 - [Getting started](getting-started.md): prerequisites, installation, default plugins, first start, and verification.
+- [Upgrading](upgrading.md): process-manager-neutral source updates, builds, extension replacement, migrations, restart, and verification.
 - [Operations](operations.md): source/catalog/runtime layout, install/disable/replace procedures, service lifecycle, backups, and health checks.
 - [HTTP and MCP](http-and-mcp.md): current routes, discovery, mutation operations, MCP transports, and contract ownership.
 - [Troubleshooting](troubleshooting.md): startup, plugin, browser, Assets-2, database, and MCP failure guides.
@@ -65,6 +68,7 @@ Runtime `GET /openapi.json` is authoritative for the exact active plugin set. Th
 - [Architecture](architecture.md)
 - [Plugin architecture and migration](plugin-architecture-and-migration.md)
 - [Data contracts](data-contracts.md)
+- [Canvas themes](canvas-themes.md)
 - [Functionality and first-party plugin inventory](plugin-functionality-inventory.md)
 - [HTTP/MCP v0.1 to v0.2 mapping](http-mcp-v0.2-mapping.md)
 

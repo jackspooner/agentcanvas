@@ -211,6 +211,7 @@ function checkSchema(db: DatabaseSync, errors: string[]): void {
   ];
   for (const table of requiredTables) if (!hasTable(db, table)) errors.push(`required v0.2 table is missing: ${table}`);
   if (!tableColumns(db, 'canvases').includes('document_version')) errors.push('canvases.document_version is missing');
+  if (!tableColumns(db, 'canvases').includes('theme_json')) errors.push('canvases.theme_json is missing');
   if (!tableColumns(db, 'canvas_events').includes('document_version'))
     errors.push('canvas_events.document_version is missing');
   if (!tableColumns(db, 'canvas_idempotency_keys').includes('document_version')) {
@@ -255,7 +256,7 @@ export function verifyMigrationConnection(
   const errors: string[] = [];
   checkSchema(db, errors);
   const physicalVersion = Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version);
-  if (physicalVersion !== 2) errors.push(`physical database version must be 2, found ${physicalVersion}`);
+  if (physicalVersion !== 3) errors.push(`physical database version must be 3, found ${physicalVersion}`);
 
   const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(
     (row) => Object.values(row)[0] ?? 'unknown'
@@ -279,12 +280,12 @@ export function verifyMigrationConnection(
   if (tableColumns(db, 'canvas_events').includes('document_version')) {
     const invalid = Number(
       (
-        db.prepare('SELECT COUNT(*) AS count FROM canvas_events WHERE document_version <> 1').get() as {
+        db.prepare('SELECT COUNT(*) AS count FROM canvas_events WHERE document_version NOT IN (1, 2)').get() as {
           count: number | bigint;
         }
       ).count
     );
-    if (invalid > 0) errors.push(`${invalid} historical event(s) are not marked document version 1`);
+    if (invalid > 0) errors.push(`${invalid} event(s) use an unsupported document version`);
   }
 
   const typeCounts = countElements(db, errors, options.validateElement);
@@ -311,8 +312,8 @@ export function verifyMigrationConnection(
     const row = db
       .prepare('SELECT physical_version, document_version FROM agent_canvas_installation_metadata WHERE id = 1')
       .get() as { physical_version: number; document_version: number } | undefined;
-    if (!row || row.physical_version !== 2 || row.document_version !== 2) {
-      errors.push('installation metadata does not declare physical/document version 2');
+    if (!row || row.physical_version !== 3 || row.document_version !== 2) {
+      errors.push('installation metadata does not declare physical/document version 3/2');
     }
   }
   if (hasTable(db, 'agent_canvas_migration_runs') && tableCount(db, 'agent_canvas_migration_runs') < 1) {

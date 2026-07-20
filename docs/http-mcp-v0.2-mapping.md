@@ -14,6 +14,7 @@ After upgrading, restart AgentCanvas and reload or reconnect every MCP client so
 | `/api/canvases` | `/api/v1/canvases` | GET/POST |
 | `/api/canvases/:canvasId` | `/api/v1/canvases/:canvasId` | GET; PATCH updates bounds |
 | `/api/canvases/:canvasId/title` | `/api/v1/canvases/:canvasId/title` | PATCH |
+| none | `/api/v1/canvases/:canvasId/theme` | PATCH complete `CanvasThemeV1` or `null` |
 | `/api/canvases/:canvasId/elements:batch` | `/api/v1/canvases/:canvasId/elements:batch` | operation names changed |
 | v0.1 screenshot route/result | `/api/v1/canvases/:canvasId/snapshot` | returns opaque SVG resource handle, not inline data URL |
 | v0.1 share-link routes | `/api/v1/canvases/:canvasId/share-links` | POST/GET/DELETE child route |
@@ -47,6 +48,7 @@ Type or schema-version changes require migration or delete plus upsert.
 | `canvas_list` | `canvas_list` |
 | `canvas_get` | `canvas_get` |
 | rename | `canvas_rename` |
+| none | `canvas_set_theme`, `canvas_clear_theme` |
 | generic add/update | `canvas_upsert_element`, `canvas_patch_element_frame`, `canvas_replace_element_data`, `canvas_replace_element_metadata` |
 | `canvas_delete_element` | `canvas_delete_element` |
 | `canvas_clear` | `canvas_clear` |
@@ -65,6 +67,10 @@ Type or schema-version changes require migration or delete plus upsert.
 | `canvas_add_table` | `agentcanvas_table__add_table` |
 | `canvas_place_asset` | `agentcanvas_assets2__place` |
 | asset detail workflow | `agentcanvas_assets2__get_details` or Assets `details` HTTP procedure |
+| create image gallery | `agentcanvas_gallery__create` |
+| edit gallery items | `agentcanvas_gallery__append_items`, `agentcanvas_gallery__remove_item`, or `agentcanvas_gallery__reorder_items` |
+| choose gallery cover | `agentcanvas_gallery__set_cover` |
+| change gallery presentation | `agentcanvas_gallery__update_settings` |
 | `canvas_add_bbox_overlay` | `agentcanvas_image_overlays__add_bbox` |
 | `canvas_add_bbox_overlay_from_asset` | `agentcanvas_image_overlays__add_bbox` with `layoutAssetRef` |
 | `canvas_add_path_overlay` | `agentcanvas_image_overlays__add_path` |

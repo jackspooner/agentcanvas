@@ -2227,6 +2227,16 @@
                   "project": {
                     "type": "string"
                   },
+                  "theme": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/CanvasThemeV1"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "title": {
                     "minLength": 1,
                     "type": "string"
@@ -2966,6 +2976,110 @@
           "retry": "Retry only when the returned error marks retryable=true.",
           "sideEffects": [
             "Creates an expiring in-memory resource handle."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/theme": {
+      "patch": {
+        "operationId": "canvasSetTheme",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "actor": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "theme": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/CanvasThemeV1"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "theme"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated canvas theme"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Revision or idempotency conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Set or clear a canvas theme",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
+          "retry": "Retry only when the returned error marks retryable=true.",
+          "sideEffects": [
+            "Replaces the canvas-level semantic design tokens and increments the canvas revision."
           ]
         }
       }
