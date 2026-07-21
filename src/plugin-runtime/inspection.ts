@@ -6,6 +6,17 @@ export interface InspectableCanvas {
   elements: readonly CanvasElement[];
 }
 
+export interface CanvasInspectionSummary {
+  errorCount: number;
+  warningCount: number;
+  infoCount: number;
+}
+
+export interface CanvasInspection {
+  diagnostics: PluginDiagnostic[];
+  summary: CanvasInspectionSummary;
+}
+
 /**
  * Runs plugin-owned, read-only quality checks against persisted element data.
  * These diagnostics are advisory: schema and invariant enforcement remains in
@@ -73,4 +84,17 @@ export function inspectCanvasElements(canvas: InspectableCanvas, registry: Froze
     }
   }
   return diagnostics;
+}
+
+/** Returns the diagnostics and severity counts used by both mutation responses and explicit inspection. */
+export function inspectCanvas(canvas: InspectableCanvas, registry: FrozenPluginRegistry): CanvasInspection {
+  const diagnostics = inspectCanvasElements(canvas, registry);
+  return {
+    diagnostics,
+    summary: {
+      errorCount: diagnostics.filter((item) => item.severity === 'error').length,
+      warningCount: diagnostics.filter((item) => item.severity === 'warning').length,
+      infoCount: diagnostics.filter((item) => item.severity === 'info').length
+    }
+  };
 }

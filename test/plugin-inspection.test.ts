@@ -1,6 +1,6 @@
 import type { CanvasElement, ElementTypeDescriptor } from '@agentcanvas/plugin-sdk';
 import { describe, expect, it } from 'vitest';
-import { inspectCanvasElements } from '../src/plugin-runtime/inspection.js';
+import { inspectCanvas, inspectCanvasElements } from '../src/plugin-runtime/inspection.js';
 import type { FrozenPluginRegistry } from '../src/plugin-runtime/registry.js';
 
 const descriptor = {} as ElementTypeDescriptor;
@@ -44,5 +44,14 @@ describe('plugin-owned canvas inspection', () => {
       registry
     );
     expect(intentional).toEqual([]);
+  });
+
+  it('summarizes diagnostic severities for mutation responses', () => {
+    expect(
+      inspectCanvas({ id: 'canvas_1', elements: [element('first', 0, 0), element('second', 80, 70)] }, registry)
+    ).toMatchObject({
+      diagnostics: [expect.objectContaining({ code: 'element_frames_overlap' })],
+      summary: { errorCount: 0, warningCount: 1, infoCount: 0 }
+    });
   });
 });

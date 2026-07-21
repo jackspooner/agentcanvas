@@ -21,8 +21,8 @@ import {
   type CoreJsonSchemaTool,
   type McpJsonSchemaTool
 } from '../api-v2/index.js';
-import type { BrowserPluginCatalog, FrozenPluginRegistry } from '../plugin-runtime/index.js';
-import { createPluginCanvasOperations, inspectCanvasElements } from '../plugin-runtime/index.js';
+import type { BrowserPluginCatalog, FrozenPluginRegistry, InspectableCanvas } from '../plugin-runtime/index.js';
+import { createPluginCanvasOperations, inspectCanvas } from '../plugin-runtime/index.js';
 import type { V2SqliteCanvasStore } from '../store/v2.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 import { AGENTCANVAS_AGENT_GUIDANCE, AGENTCANVAS_MCP_INSTRUCTIONS } from './agent-guidance.js';
@@ -36,6 +36,17 @@ export interface McpV2Runtime {
 
 const CANVAS_ID = { type: 'string', minLength: 1 };
 const ELEMENT_ID = { type: 'string', minLength: 1 };
+
+const INSPECTION_SUMMARY_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['errorCount', 'warningCount', 'infoCount'],
+  properties: {
+    errorCount: { type: 'integer', minimum: 0 },
+    warningCount: { type: 'integer', minimum: 0 },
+    infoCount: { type: 'integer', minimum: 0 }
+  }
+};
 
 const FRAME_SCHEMA: JsonSchema = {
   type: 'object',
@@ -53,7 +64,7 @@ const FRAME_SCHEMA: JsonSchema = {
   }
 };
 
-function canvasSchema(elementSchema: JsonSchema): JsonSchema {
+function canvasSchema(elementSchema: JsonSchema, includeInspection = false): JsonSchema {
   return {
     type: 'object',
     additionalProperties: false,
@@ -66,7 +77,8 @@ function canvasSchema(elementSchema: JsonSchema): JsonSchema {
       'bounds',
       'elements',
       'revision',
-      'documentVersion'
+      'documentVersion',
+      ...(includeInspection ? ['diagnostics', 'inspectionSummary'] : [])
     ],
     properties: {
       id: CANVAS_ID,
@@ -104,7 +116,13 @@ function canvasSchema(elementSchema: JsonSchema): JsonSchema {
       elements: { type: 'array', items: elementSchema },
       revision: { type: 'integer', minimum: 1 },
       metadata: JSON_OBJECT_SCHEMA,
-      documentVersion: { const: 2 }
+      documentVersion: { const: 2 },
+      ...(includeInspection
+        ? {
+            diagnostics: { type: 'array', items: PLUGIN_DIAGNOSTIC_SCHEMA },
+            inspectionSummary: INSPECTION_SUMMARY_SCHEMA
+          }
+        : {})
     }
   };
 }
@@ -113,6 +131,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
   const elementCatalog = createRegistryElementSchemas(registry);
   const elementSchema: JsonSchema = { oneOf: Object.values(elementCatalog.schemas) };
   const canvas = canvasSchema(elementSchema);
+  const inspectedCanvas = canvasSchema(elementSchema, true);
   const canvasList: JsonSchema = {
     type: 'object',
     additionalProperties: false,
@@ -166,7 +185,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
           theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
-      outputSchema: canvas
+      outputSchema: inspectedCanvas
     },
     {
       name: 'canvas_list',
@@ -191,7 +210,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         required: ['canvasId'],
         properties: { canvasId: CANVAS_ID }
       },
-      outputSchema: canvas,
+      outputSchema: inspectedCanvas,
       annotations: { readOnlyHint: true }
     },
     {
@@ -213,16 +232,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
           canvasId: CANVAS_ID,
           revision: { type: 'integer', minimum: 1 },
           diagnostics: { type: 'array', items: PLUGIN_DIAGNOSTIC_SCHEMA },
-          summary: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['errorCount', 'warningCount', 'infoCount'],
-            properties: {
-              errorCount: { type: 'integer', minimum: 0 },
-              warningCount: { type: 'integer', minimum: 0 },
-              infoCount: { type: 'integer', minimum: 0 }
-            }
-          }
+          summary: INSPECTION_SUMMARY_SCHEMA
         }
       },
       annotations: { readOnlyHint: true }
@@ -236,7 +246,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'title'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_set_theme',
@@ -247,7 +257,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'theme'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_clear_theme',
@@ -257,7 +267,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_upsert_element',
@@ -268,7 +278,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'element'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_patch_element_frame',
@@ -280,7 +290,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'elementId', 'frame'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_replace_element_data',
@@ -293,7 +303,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'elementId', 'data'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_replace_element_metadata',
@@ -305,7 +315,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'elementId', 'metadata'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_delete_element',
@@ -316,7 +326,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId', 'elementId'],
-      canvas
+      inspectedCanvas
     ),
     mutationTool(
       'canvas_clear',
@@ -326,7 +336,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: { type: 'integer', minimum: 1 }
       },
       ['canvasId'],
-      canvas
+      inspectedCanvas
     ),
     {
       name: 'canvas_list_plugins',
@@ -363,7 +373,7 @@ function mutationTool(
   return {
     name,
     title: description,
-    description,
+    description: `${description}. The returned canvas includes post-mutation diagnostics and severity counts; repair unintended warnings before continuing.`,
     inputSchema: { type: 'object', additionalProperties: false, required, properties },
     outputSchema,
     annotations: { readOnlyHint: false, idempotentHint: false }
@@ -372,6 +382,15 @@ function mutationTool(
 
 function json(value: unknown): JsonObject {
   return JSON.parse(JSON.stringify(value)) as JsonObject;
+}
+
+function withInspection(canvas: InspectableCanvas, registry: FrozenPluginRegistry): JsonObject {
+  const inspection = inspectCanvas(canvas, registry);
+  return json({
+    ...canvas,
+    diagnostics: inspection.diagnostics,
+    inspectionSummary: inspection.summary
+  });
 }
 
 function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): JsonObject {
@@ -386,60 +405,60 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
       mcpCatalog: { coreToolCount, pluginToolCount, totalToolCount: coreToolCount + pluginToolCount }
     });
   }
-  if (name === 'canvas_create') return json(store.createCanvas(input as never));
+  if (name === 'canvas_create') return withInspection(store.createCanvas(input as never), runtime.registry);
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
-  if (name === 'canvas_get') return json(store.getCanvas(canvasId));
+  if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime.registry);
   if (name === 'canvas_inspect') {
     const canvas = store.getCanvas(canvasId);
-    const diagnostics = inspectCanvasElements(canvas, runtime.registry);
+    const inspection = inspectCanvas(canvas, runtime.registry);
     return json({
       canvasId,
       revision: canvas.revision,
-      diagnostics,
-      summary: {
-        errorCount: diagnostics.filter((item) => item.severity === 'error').length,
-        warningCount: diagnostics.filter((item) => item.severity === 'warning').length,
-        infoCount: diagnostics.filter((item) => item.severity === 'info').length
-      }
+      diagnostics: inspection.diagnostics,
+      summary: inspection.summary
     });
   }
   if (name === 'canvas_rename') {
-    return json(
+    return withInspection(
       store.renameCanvas(canvasId, {
         title: input.title as string,
         expectedRevision
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_set_theme') {
-    return json(
-      store.updateCanvasTheme(canvasId, { theme: input.theme as unknown as CanvasThemeV1, expectedRevision })
+    return withInspection(
+      store.updateCanvasTheme(canvasId, { theme: input.theme as unknown as CanvasThemeV1, expectedRevision }),
+      runtime.registry
     );
   }
   if (name === 'canvas_clear_theme') {
-    return json(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }));
+    return withInspection(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }), runtime.registry);
   }
   if (name === 'canvas_upsert_element') {
-    return json(
+    return withInspection(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [{ op: 'upsertElement', element: input.element as JsonObject }]
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_patch_element_frame') {
-    return json(
+    return withInspection(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
           { op: 'patchElementFrame', elementId: input.elementId as string, frame: input.frame as JsonObject }
         ]
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_replace_element_data') {
-    return json(
+    return withInspection(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
@@ -450,29 +469,35 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
             ...(Object.hasOwn(input, 'style') ? { style: input.style as JsonObject | null } : {})
           }
         ]
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_replace_element_metadata') {
-    return json(
+    return withInspection(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
           { op: 'replaceElementMetadata', elementId: input.elementId as string, metadata: input.metadata as JsonObject }
         ]
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_delete_element') {
-    return json(
+    return withInspection(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [{ op: 'deleteElement', elementId: input.elementId as string }]
-      })
+      }),
+      runtime.registry
     );
   }
   if (name === 'canvas_clear')
-    return json(store.applyOperations(canvasId, { expectedRevision, operations: [{ op: 'clear' }] }));
+    return withInspection(
+      store.applyOperations(canvasId, { expectedRevision, operations: [{ op: 'clear' }] }),
+      runtime.registry
+    );
   const status = createPluginStatusCatalog(runtime.registry, {
     browserEntries: runtime.browserCatalog.entries,
     diagnostics: runtime.diagnostics()

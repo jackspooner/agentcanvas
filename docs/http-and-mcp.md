@@ -167,10 +167,16 @@ Plugin tools use `<normalized-plugin-id>__<normalized-local-name>`. For example,
 
 Use `canvas_list_plugins` or HTTP plugin discovery before choosing a plugin tool. An optional tool is absent when its plugin folder is absent.
 
-Use `canvas_inspect` after composing or resizing elements. It aggregates
-plugin-owned, deterministic quality checks such as likely content clipping and
-also reports intersecting non-connector frames. Inspection is advisory and
-does not replace a browser check for appearance or remote-resource loading.
+Every successful core MCP mutation returns the post-mutation canvas with
+`diagnostics` and `inspectionSummary`. Read those fields before making the next
+edit: they immediately expose plugin-owned checks such as likely content
+clipping, along with intersecting non-connector frames. `canvas_get` returns the
+same advisory inspection projection.
+
+Use `canvas_inspect` as the deliberate final whole-canvas audit after composing
+or resizing elements. It runs the same inspection owner used by mutation
+responses; it does not replace a browser check for appearance or
+remote-resource loading.
 Plugins persist `allowScroll` or `allowClipping` intent when those options are
 used, so later audits can distinguish a deliberate compact frame from an
 accidental one.
@@ -179,7 +185,8 @@ accidental one.
 
 - Supply `expectedRevision` for mutations when coordinating against a read.
 - Use an idempotency key for retried document batches.
-- Refresh the canvas projection after a successful mutation.
+- Read the returned post-mutation diagnostics immediately, then refresh the
+  canvas projection before final verification.
 - Retry only failures marked retryable.
 - Do not retry validation, missing-plugin, unsupported-version, or revision-conflict failures without changing the request or refreshing state.
 

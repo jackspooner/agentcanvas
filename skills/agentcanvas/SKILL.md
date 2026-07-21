@@ -19,6 +19,8 @@ remote media loaded, or the user's requested result is complete.
    choose a layout and approximate frames before adding elements.
 3. Create or edit with the most specific tool available. Use plugin tools for
    their owned element types and core frame/data tools for later corrections.
+   After each core mutation, read the returned `diagnostics` and
+   `inspectionSummary`; repair unintended warnings before continuing.
 4. Call `canvas_get` after composing. Compare the returned elements with the
    request, then call `canvas_inspect` when available and repair its
    deterministic plugin-owned diagnostics. Re-run both checks after repairs.
@@ -66,8 +68,9 @@ remote media loaded, or the user's requested result is complete.
   scrolling option only when the user requested a compact scroller or a hard
   space constraint makes one necessary. Default to showing all content.
 - Generic frame edits do not auto-size plugin content. After changing a frame,
-  use `canvas_inspect` and follow any reported minimum height instead of
-  estimating by eye.
+  follow any minimum height in the mutation response immediately instead of
+  estimating by eye. Use `canvas_inspect` for the final whole-canvas audit (or
+  as a fallback when an older client does not expose response diagnostics).
 - Keep at least 32 world pixels between unrelated frames. If element A starts
   at `x` with width `w`, the next horizontal element should normally start at
   `x + w + 32` or later.

@@ -43,6 +43,7 @@ function fixturePlugins(): string {
         name: 'card', schemaVersion: 1, browser: true, snapshot: 'supported',
         dataSchema: { type: 'object', additionalProperties: false, required: ['title'], properties: { title: { type: 'string' } } },
         summarize: (element) => ({ title: element.data.title }),
+        inspect: (element) => element.height < 60 ? [{ code: 'card_content_may_clip', path: '/height', message: 'Increase height to at least 60.' }] : [],
         renderSnapshot: (element) => ({ space: 'frame', layer: 'content', nodes: [
           { kind: 'rect', x: 0, y: 0, width: element.width ?? 100, height: element.height ?? 50, fill: '#ffffff', stroke: '#000000' },
           { kind: 'text', x: 8, y: 22, text: element.data.title, fill: '#000000' }
@@ -207,6 +208,30 @@ describe('v0.2 assembled runtime', () => {
       id: canvasId,
       title: 'Renamed by agent',
       revision: 6
+    });
+    const clippingMutation = await client.callTool({
+      name: 'canvas_patch_element_frame',
+      arguments: { canvasId, elementId: 'card_1', frame: { height: 40 }, expectedRevision: 6 }
+    });
+    expect(clippingMutation.structuredContent).toMatchObject({
+      id: canvasId,
+      revision: 7,
+      diagnostics: [
+        {
+          code: 'card_content_may_clip',
+          severity: 'warning',
+          elementId: 'card_1',
+          message: '/height: Increase height to at least 60.'
+        }
+      ],
+      inspectionSummary: { errorCount: 0, warningCount: 1, infoCount: 0 }
+    });
+    const clippingInspection = await client.callTool({ name: 'canvas_inspect', arguments: { canvasId } });
+    expect(clippingInspection.structuredContent).toMatchObject({
+      canvasId,
+      revision: 7,
+      diagnostics: [expect.objectContaining({ code: 'card_content_may_clip', elementId: 'card_1' })],
+      summary: { errorCount: 0, warningCount: 1, infoCount: 0 }
     });
     const pluginCall = await client.callTool({ name: 'canvas_list_plugins', arguments: {} });
     expect(pluginCall.structuredContent).toMatchObject({ plugins: [{ id: 'fixture.cards' }] });
