@@ -39,7 +39,7 @@ model.
 - Node.js 24 or newer and npm 11 or newer.
 - An empty database, which AgentCanvas initializes at physical schema 3 / document schema 2, or an older database upgraded with the offline CLI before startup.
 
-No media service is required. Local files and [Assets-2](https://github.com/jackspooner/Assets-2) are independently installable image-source extensions.
+No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
 Markdown documents render HTTP(S) and same-origin relative image URLs by default;
 set `allowImages: false` on an individual Markdown document to keep only its
 alt text. Use the filesystem-images extension for administrator-controlled

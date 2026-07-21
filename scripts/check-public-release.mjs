@@ -66,7 +66,7 @@ if (rootManifest.scripts?.['check:extension-packages'] !== 'node scripts/verify-
 }
 
 const readme = read('README.md');
-if (!readme.includes('https://github.com/jackspooner/Assets-2')) {
+if (!readme.includes('https://github.com/jackspooner/assets2')) {
   failures.push('README must link to the public Assets-2 installation source.');
 }
 if (!/No media service is required\./.test(readme)) {

@@ -126,7 +126,7 @@ For durable Assets-2 references:
 npm run plugins:install -- dist/plugin-catalog/agentcanvas.assets2
 ```
 
-Start a compatible [Assets-2](https://github.com/jackspooner/Assets-2) service, set `ASSETS_BASE_URL` when it is not at `http://127.0.0.1:23000`, then restart AgentCanvas. The provider must identify as `asset-service` and advertise `asset_crud` and `asset_refs`.
+Start a compatible [Assets-2](https://github.com/jackspooner/assets2) service, set `ASSETS_BASE_URL` when it is not at `http://127.0.0.1:23000`, then restart AgentCanvas. The provider must identify as `asset-service` and advertise `asset_crud` and `asset_refs`.
 
 ## Existing databases
 
