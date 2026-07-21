@@ -100,6 +100,13 @@ Use the returned canvas ID at `http://127.0.0.1:23003/canvases/<canvas-id>`.
 
 For API mutations and MCP usage, continue to [HTTP and MCP](http-and-mcp.md). To add a third-party element type, continue to [Plugin authoring](plugin-authoring/README.md).
 
+If the MCP client supports agent skills, also load the bundled
+[`skills/agentcanvas/SKILL.md`](../skills/agentcanvas/SKILL.md). This guidance is
+not required by the server, but it teaches an agent to compose readable layouts
+and avoid claiming that persisted data proves rendered appearance. Hermes
+installation and the eight agent acceptance objectives are documented in
+[Agent readiness](agent-readiness.md).
+
 ## Choose an image source
 
 No image provider is required. With AgentCanvas stopped, install one or both first-party sources from the built catalog.

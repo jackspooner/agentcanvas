@@ -24,7 +24,11 @@ export const tableDataSchema: JsonSchema = {
   properties: {
     columns,
     rows,
-    caption: { type: ['string', 'null'], maxLength: 2_000 }
+    caption: { type: ['string', 'null'], maxLength: 2_000 },
+    allowScroll: {
+      type: 'boolean',
+      description: 'Whether a deliberately undersized frame may use its internal scrollbar.'
+    }
   }
 };
 
@@ -54,10 +58,26 @@ export const addTableInputSchema: JsonSchema = {
   properties: {
     canvasId: { type: 'string', minLength: 1 },
     id: { type: 'string', minLength: 1 },
-    x: { type: 'number' },
-    y: { type: 'number' },
-    width: { type: ['number', 'null'] },
-    height: { type: ['number', 'null'] },
+    x: {
+      type: 'number',
+      description: 'Left edge in canvas world coordinates. Fresh unlimited canvases initially open around (0, 0).'
+    },
+    y: {
+      type: 'number',
+      description: 'Top edge in canvas world coordinates. Fresh unlimited canvases initially open around (0, 0).'
+    },
+    width: {
+      type: ['number', 'null'],
+      description: 'Visible frame width. Set explicitly for the number and expected length of columns.'
+    },
+    height: {
+      type: ['number', 'null'],
+      description: 'Fixed visible height. Omit it to auto-size; explicit undersizing requires allowScroll=true.'
+    },
+    allowScroll: {
+      type: 'boolean',
+      description: 'Set true only when a deliberately compact, internally scrolling table frame is required.'
+    },
     zIndex: { type: ['number', 'null'] },
     rotation: { type: ['number', 'null'] },
     opacity: { type: ['number', 'null'] },

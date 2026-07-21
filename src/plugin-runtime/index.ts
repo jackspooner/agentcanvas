@@ -4,6 +4,7 @@ export * from './canvas-operations.js';
 export * from './browser-modules.js';
 export * from './errors.js';
 export * from './elements.js';
+export * from './inspection.js';
 export * from './freeze.js';
 export * from './host-capabilities.js';
 export * from './manifest.js';

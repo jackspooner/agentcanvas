@@ -8,7 +8,7 @@ import type {
 } from '@agentcanvas/plugin-sdk';
 import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { connectorData, elementSize, stringValue } from './browser/data.js';
-import { arrowHead, connectorMidpoint, type Point, resolveConnectorEndpoints } from './browser/geometry.js';
+import { arrowHead, connectorRoute, type Point, resolveConnectorEndpoints, routeMidpoint } from './browser/geometry.js';
 
 function styleString(element: Readonly<CanvasElement>, key: string, fallback: string): string {
   const value = element.style?.[key];
@@ -137,21 +137,33 @@ export function renderConnectorSnapshot(
   const projected = runtimeGeometry(runtime);
   const fallback = resolveConnectorEndpoints(data.from, data.to);
   const resolved = projected ?? fallback;
+  const route = connectorRoute(data.from, data.to, resolved);
   const stroke = data.stroke ?? theme.colors.accent;
   const strokeWidth = data.strokeWidth ?? 2;
-  const nodes: SnapshotNode[] = [
-    {
-      kind: 'line',
-      x1: resolved.from.x,
-      y1: resolved.from.y,
-      x2: resolved.to.x,
-      y2: resolved.to.y,
-      stroke,
-      strokeWidth
-    }
-  ];
+  const nodes: SnapshotNode[] =
+    route.length === 2
+      ? [
+          {
+            kind: 'line',
+            x1: resolved.from.x,
+            y1: resolved.from.y,
+            x2: resolved.to.x,
+            y2: resolved.to.y,
+            stroke,
+            strokeWidth
+          }
+        ]
+      : [
+          {
+            kind: 'path',
+            d: route.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' '),
+            fill: 'none',
+            stroke,
+            strokeWidth
+          }
+        ];
   if (element.type.endsWith('/arrow')) {
-    const [tip, left, right] = arrowHead(resolved.from, resolved.to);
+    const [tip, left, right] = arrowHead(route.at(-2) ?? resolved.from, resolved.to);
     nodes.push({
       kind: 'path',
       d: `M ${tip.x} ${tip.y} L ${left.x} ${left.y} L ${right.x} ${right.y} Z`,
@@ -159,7 +171,7 @@ export function renderConnectorSnapshot(
     });
   }
   if (data.label) {
-    const mid = connectorMidpoint(resolved.from, resolved.to);
+    const mid = routeMidpoint(route);
     nodes.push({
       kind: 'rect',
       x: mid.x - Math.min(120, data.label.length * 3.8 + 8),

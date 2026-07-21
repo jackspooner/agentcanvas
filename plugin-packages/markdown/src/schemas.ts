@@ -7,7 +7,15 @@ export const markdownDataSchema: JsonSchema = {
   required: ['markdown'],
   properties: {
     markdown: { type: 'string', maxLength: 20_000 },
-    allowImages: { type: 'boolean' }
+    allowImages: {
+      type: 'boolean',
+      description:
+        'Whether supported image references may render. This setting does not prove that a remote image loaded.'
+    },
+    allowScroll: {
+      type: 'boolean',
+      description: 'Whether a deliberately undersized frame may use its internal scrollbar.'
+    }
   }
 };
 
@@ -40,12 +48,37 @@ export const addDocumentInputSchema: JsonSchema = {
   properties: {
     canvasId: { type: 'string', minLength: 1 },
     id: { type: 'string', minLength: 1 },
-    markdown: { type: 'string', maxLength: 20_000 },
-    allowImages: { type: 'boolean' },
-    x: { type: 'number' },
-    y: { type: 'number' },
-    width: { type: ['number', 'null'] },
-    height: { type: ['number', 'null'] },
+    markdown: {
+      type: 'string',
+      maxLength: 20_000,
+      description: 'Markdown source displayed inside this fixed-size frame.'
+    },
+    allowImages: {
+      type: 'boolean',
+      description:
+        'Whether supported image references may render. This setting does not prove that a remote image loaded.'
+    },
+    x: {
+      type: 'number',
+      description: 'Left edge in canvas world coordinates. Fresh unlimited canvases initially open around (0, 0).'
+    },
+    y: {
+      type: 'number',
+      description: 'Top edge in canvas world coordinates. Fresh unlimited canvases initially open around (0, 0).'
+    },
+    width: {
+      type: ['number', 'null'],
+      description: 'Visible frame width. Set explicitly when composing a multi-column layout.'
+    },
+    height: {
+      type: ['number', 'null'],
+      description:
+        'Fixed visible height. Omit it to auto-size from content; explicit undersizing is rejected unless allowScroll is true.'
+    },
+    allowScroll: {
+      type: 'boolean',
+      description: 'Set true only when a deliberately compact, internally scrolling Markdown frame is required.'
+    },
     zIndex: { type: ['number', 'null'] },
     rotation: { type: ['number', 'null'] },
     opacity: { type: ['number', 'null'] },

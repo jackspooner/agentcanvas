@@ -77,6 +77,13 @@ export interface ElementTypeDescriptor {
   snapshot: 'supported' | 'unsupported';
   schemaMigrations?: readonly ElementSchemaMigration[];
   validate?(element: Readonly<CanvasElement>, context: ElementValidationContext): readonly PluginValidationIssue[];
+  /**
+   * Report non-blocking, deterministic quality issues in a persisted element.
+   * Unlike `validate`, inspection issues do not prevent writes. The host exposes
+   * them to agents and viewers so content-fit and similar concerns can be
+   * repaired without duplicating plugin-owned rules in the core runtime.
+   */
+  inspect?(element: Readonly<CanvasElement>, context: ElementValidationContext): readonly PluginValidationIssue[];
   summarize(element: Readonly<CanvasElement>): ElementSummary;
   resolve?(element: Readonly<CanvasElement>, context: ElementRuntimeContext): Promise<ElementResolution>;
   renderSnapshot?(

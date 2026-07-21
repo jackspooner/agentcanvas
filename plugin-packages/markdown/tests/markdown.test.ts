@@ -32,6 +32,12 @@ describe('safe Markdown rendering', () => {
     expect(html).toContain('secret');
   });
 
+  it('renders common Markdown character references without allowing raw HTML', () => {
+    const html = renderSafeMarkdown('Research &amp; Planning&nbsp;|&nbsp;&lt;safe&gt;');
+    expect(html).toContain('Research &amp; Planning\u00a0|\u00a0&lt;safe&gt;');
+    expect(html).not.toContain('<safe>');
+  });
+
   it('creates a deterministic semantic snapshot projection', () => {
     expect(projectMarkdown('# Heading\n\nBody **strong**')).toEqual([
       { text: 'Heading', role: 'heading', depth: 1 },

@@ -13,7 +13,8 @@ export function readViewportCookie(canvasId: string): Partial<CanvasViewport> | 
   const entry = document.cookie.split('; ').find((part) => part.startsWith(name));
   if (!entry) return null;
   try {
-    return JSON.parse(decodeURIComponent(entry.slice(name.length))) as Partial<CanvasViewport>;
+    const parsed = JSON.parse(decodeURIComponent(entry.slice(name.length))) as Partial<CanvasViewport>;
+    return { ...parsed, source: 'user' };
   } catch {
     return null;
   }

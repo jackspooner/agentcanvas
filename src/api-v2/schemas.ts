@@ -38,10 +38,16 @@ export const CANVAS_ELEMENT_SCHEMA: JsonSchema = {
       pattern: '^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$'
     },
     schemaVersion: { type: 'integer', minimum: 1 },
-    x: { type: 'number' },
-    y: { type: 'number' },
-    width: nullableNumber,
-    height: nullableNumber,
+    x: { type: 'number', description: 'Left edge in canvas world coordinates.' },
+    y: { type: 'number', description: 'Top edge in canvas world coordinates.' },
+    width: {
+      type: ['number', 'null'],
+      description: 'Visible frame width. Explicit sizing prevents overlap and clipped content.'
+    },
+    height: {
+      type: ['number', 'null'],
+      description: 'Visible frame height. Explicit sizing prevents overlap and clipped content.'
+    },
     zIndex: nullableNumber,
     rotation: nullableNumber,
     opacity: nullableNumber,
@@ -163,13 +169,13 @@ export const VIEWPORT_SCHEMA: JsonSchema = {
   additionalProperties: false,
   required: ['source', 'centerX', 'centerY', 'zoom', 'width', 'height', 'updatedAt'],
   properties: {
-    source: { type: 'string', enum: ['user', 'agent'] },
+    source: { type: 'string', enum: ['default', 'user', 'agent'] },
     centerX: { type: 'number' },
     centerY: { type: 'number' },
     zoom: { type: 'number', exclusiveMinimum: 0 },
     width: { type: 'integer', minimum: 1 },
     height: { type: 'integer', minimum: 1 },
-    updatedAt: { type: 'string', format: 'date-time' }
+    updatedAt: { type: ['string', 'null'], format: 'date-time' }
   }
 };
 

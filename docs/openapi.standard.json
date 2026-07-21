@@ -42,6 +42,7 @@
             "type": "object"
           },
           "height": {
+            "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
             "type": [
               "number",
               "null"
@@ -93,15 +94,18 @@
             "type": "string"
           },
           "width": {
+            "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
             "type": [
               "number",
               "null"
             ]
           },
           "x": {
+            "description": "Left edge in canvas world coordinates.",
             "type": "number"
           },
           "y": {
+            "description": "Top edge in canvas world coordinates.",
             "type": "number"
           },
           "zIndex": {
@@ -132,6 +136,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -183,15 +188,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -218,6 +226,11 @@
                 "additionalProperties": false,
                 "properties": {
                   "allowImages": {
+                    "description": "Whether supported image references may render. This setting does not prove that a remote image loaded.",
+                    "type": "boolean"
+                  },
+                  "allowScroll": {
+                    "description": "Whether a deliberately undersized frame may use its internal scrollbar.",
                     "type": "boolean"
                   },
                   "markdown": {
@@ -336,6 +349,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -387,15 +401,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -435,18 +452,21 @@
                         ]
                       },
                       "elementId": {
+                        "description": "ID of an existing element on this same canvas. Prefer this for anchored connectors.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "x": {
+                        "description": "Absolute world x coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
                         ]
                       },
                       "y": {
+                        "description": "Absolute world y coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
@@ -487,18 +507,21 @@
                         ]
                       },
                       "elementId": {
+                        "description": "ID of an existing element on this same canvas. Prefer this for anchored connectors.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "x": {
+                        "description": "Absolute world x coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
                         ]
                       },
                       "y": {
+                        "description": "Absolute world y coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
@@ -623,6 +646,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -674,15 +698,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -722,18 +749,21 @@
                         ]
                       },
                       "elementId": {
+                        "description": "ID of an existing element on this same canvas. Prefer this for anchored connectors.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "x": {
+                        "description": "Absolute world x coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
                         ]
                       },
                       "y": {
+                        "description": "Absolute world y coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
@@ -774,18 +804,21 @@
                         ]
                       },
                       "elementId": {
+                        "description": "ID of an existing element on this same canvas. Prefer this for anchored connectors.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "x": {
+                        "description": "Absolute world x coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
                         ]
                       },
                       "y": {
+                        "description": "Absolute world y coordinate when elementId is not used.",
                         "type": [
                           "number",
                           "null"
@@ -910,6 +943,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -961,15 +995,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -995,7 +1032,11 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "additionalProperties": false,
                 "properties": {
+                  "allowClipping": {
+                    "type": "boolean"
+                  },
                   "label": {
+                    "description": "Literal visible label. Use characters such as & directly; do not HTML-escape the value.",
                     "type": [
                       "string",
                       "null"
@@ -1123,6 +1164,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -1174,15 +1216,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -1208,7 +1253,11 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "additionalProperties": false,
                 "properties": {
+                  "allowClipping": {
+                    "type": "boolean"
+                  },
                   "text": {
+                    "description": "Literal visible text. Use characters such as & directly; do not HTML-escape the value.",
                     "maxLength": 20000,
                     "type": "string"
                   }
@@ -1327,6 +1376,7 @@
                 "type": "object"
               },
               "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
@@ -1378,15 +1428,18 @@
                 "type": "string"
               },
               "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
                 "type": [
                   "number",
                   "null"
                 ]
               },
               "x": {
+                "description": "Left edge in canvas world coordinates.",
                 "type": "number"
               },
               "y": {
+                "description": "Top edge in canvas world coordinates.",
                 "type": "number"
               },
               "zIndex": {
@@ -1412,6 +1465,10 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "additionalProperties": false,
                 "properties": {
+                  "allowScroll": {
+                    "description": "Whether a deliberately undersized frame may use its internal scrollbar.",
+                    "type": "boolean"
+                  },
                   "caption": {
                     "maxLength": 2000,
                     "type": [

@@ -58,6 +58,85 @@ function canvas(): CanvasDocument {
 }
 
 describe('plugin canvas React host', () => {
+  it('collapses multiple diagnostics behind a compact severity summary', () => {
+    const diagnostics = Array.from({ length: 6 }, (_, index) => ({
+      code: `quality_${index}`,
+      severity: 'warning' as const,
+      message: `Warning ${index}`,
+      retryable: false,
+      elementId: `card_${index}`
+    }));
+    const { container, getByText } = render(
+      <CanvasView
+        canvas={canvas()}
+        elementRuntime={{}}
+        diagnostics={diagnostics}
+        browserRegistry={registry()}
+        readOnly
+      />
+    );
+    const panel = container.querySelector<HTMLDetailsElement>('.plugin-diagnostics');
+    expect(panel?.open).toBe(false);
+    expect(getByText('6 warnings')).toBeTruthy();
+    expect(container.querySelectorAll('.diagnostic-item')).toHaveLength(6);
+  });
+
+  it('fits non-empty canvas content on first load when no viewport has been saved', async () => {
+    const onViewportChange = vi.fn();
+    render(
+      <CanvasView
+        canvas={canvas()}
+        elementRuntime={{}}
+        diagnostics={[]}
+        browserRegistry={registry()}
+        initialViewport={{
+          centerX: 0,
+          centerY: 0,
+          zoom: 1,
+          width: 1920,
+          height: 900,
+          source: 'default',
+          updatedAt: null
+        }}
+        onViewportChange={onViewportChange}
+      />
+    );
+
+    await waitFor(() => expect(onViewportChange).toHaveBeenCalled(), { timeout: 1_000 });
+    const reported = onViewportChange.mock.calls.at(-1)?.[0];
+    expect(reported).toMatchObject({ centerX: 90, centerY: 60, zoom: 8, source: 'user' });
+  });
+
+  it('preserves a saved user viewport instead of auto-fitting it', async () => {
+    const onViewportChange = vi.fn();
+    render(
+      <CanvasView
+        canvas={canvas()}
+        elementRuntime={{}}
+        diagnostics={[]}
+        browserRegistry={registry()}
+        initialViewport={{
+          centerX: 500,
+          centerY: 250,
+          zoom: 0.75,
+          width: 1920,
+          height: 900,
+          source: 'user',
+          updatedAt: '2026-07-13T00:00:00.000Z'
+        }}
+        onViewportChange={onViewportChange}
+      />
+    );
+
+    await waitFor(() => expect(onViewportChange).toHaveBeenCalled(), { timeout: 1_000 });
+    expect(onViewportChange.mock.calls.at(-1)?.[0]).toMatchObject({
+      centerX: 500,
+      centerY: 250,
+      zoom: 0.75,
+      source: 'user'
+    });
+  });
+
   it('renders plugin content in Shadow DOM and hides mutation handles for read-only shares', async () => {
     const { container, unmount } = render(
       <CanvasView canvas={canvas()} elementRuntime={{}} diagnostics={[]} browserRegistry={registry()} readOnly />

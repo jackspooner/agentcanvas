@@ -146,9 +146,11 @@ Do not trust a tool list cached before the restart. A stale client may display o
 
 The kernel registers:
 
+- `canvas_get_guidance`
 - `canvas_create`
 - `canvas_list`
 - `canvas_get`
+- `canvas_inspect`
 - `canvas_rename`
 - `canvas_set_theme`
 - `canvas_clear_theme`
@@ -164,6 +166,14 @@ The kernel registers:
 Plugin tools use `<normalized-plugin-id>__<normalized-local-name>`. For example, `agentcanvas.image-overlays` plus `add-bbox` becomes `agentcanvas_image_overlays__add_bbox`.
 
 Use `canvas_list_plugins` or HTTP plugin discovery before choosing a plugin tool. An optional tool is absent when its plugin folder is absent.
+
+Use `canvas_inspect` after composing or resizing elements. It aggregates
+plugin-owned, deterministic quality checks such as likely content clipping and
+also reports intersecting non-connector frames. Inspection is advisory and
+does not replace a browser check for appearance or remote-resource loading.
+Plugins persist `allowScroll` or `allowClipping` intent when those options are
+used, so later audits can distinguish a deliberate compact frame from an
+accidental one.
 
 ## Concurrency and retry guidance
 

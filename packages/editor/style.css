@@ -62,10 +62,17 @@
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 3px 12px rgba(15, 23, 42, 0.16);
   cursor: move;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
 }
 
+.agentcanvas-editor-node:hover > .agentcanvas-editor-drag-handle,
+.agentcanvas-editor-node.is-selected > .agentcanvas-editor-drag-handle,
 .agentcanvas-editor-drag-handle:hover,
 .agentcanvas-editor-drag-handle:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
   border-color: #2563eb;
   background: #eff6ff;
   outline: 2px solid transparent;

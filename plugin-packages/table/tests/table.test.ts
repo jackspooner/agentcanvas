@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { ServerPluginHost } from '@agentcanvas/plugin-sdk';
+import type {
+  CanvasElement,
+  ElementTypeDescriptor,
+  PluginInvocationContext,
+  PluginToolDescriptor,
+  ServerPluginHost
+} from '@agentcanvas/plugin-sdk';
 import { validatePluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it, vi } from 'vitest';
 import { importLegacyTable } from '../src/legacy.js';
@@ -44,5 +50,65 @@ describe('table plugin', () => {
     expect(renderTableSnapshot(element).nodes).toContainEqual(
       expect.objectContaining({ kind: 'text', text: 'Numbers' })
     );
+  });
+
+  it('auto-sizes omitted heights and rejects accidental scrolling tables', async () => {
+    const tools: PluginToolDescriptor[] = [];
+    const elements: ElementTypeDescriptor[] = [];
+    const host = {
+      registerElementType: (item: ElementTypeDescriptor) => elements.push(item),
+      registerTool: (item: PluginToolDescriptor) => tools.push(item),
+      registerMigration: vi.fn(),
+      registerProcedure: vi.fn(),
+      provideCapability: vi.fn(),
+      consumeCapability: vi.fn(),
+      config: {},
+      kv: {},
+      diagnostics: { emit: vi.fn() }
+    } as unknown as ServerPluginHost;
+    await plugin.activate(host);
+    const addTable = tools.find((tool) => tool.name === 'add-table') as PluginToolDescriptor;
+    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
+    const context = { canvas: { upsertElement } } as unknown as PluginInvocationContext;
+    const input = {
+      canvasId: 'canvas_1',
+      x: 0,
+      y: 0,
+      width: 520,
+      columns: ['Option', 'Evidence'],
+      rows: [
+        ['A', 'Verified'],
+        ['B', 'Assumption'],
+        ['C', 'Unknown']
+      ],
+      caption: 'Comparison'
+    };
+
+    await addTable.invoke(input, context);
+    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ height: 204 });
+
+    await expect(addTable.invoke({ ...input, height: 160 }, context)).rejects.toThrow('is likely to hide rows');
+
+    const undersized = {
+      id: 'table_1',
+      type: 'agentcanvas.table/table',
+      schemaVersion: 1,
+      x: 0,
+      y: 0,
+      width: input.width,
+      height: 160,
+      data: { columns: input.columns, rows: input.rows, caption: input.caption }
+    } as CanvasElement;
+    expect(
+      elements[0].inspect?.(undersized, {
+        pluginId: 'agentcanvas.table',
+        type: undersized.type,
+        schemaVersion: 1
+      })
+    ).toEqual([expect.objectContaining({ code: 'table_content_may_clip' })]);
+
+    upsertElement.mockClear();
+    await addTable.invoke({ ...input, height: 160, allowScroll: true }, context);
+    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ data: { allowScroll: true } });
   });
 });

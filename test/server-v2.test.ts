@@ -166,9 +166,25 @@ describe('v0.2 assembled runtime', () => {
     const listedTools = await client.listTools();
     expect(listedTools.tools.map((tool) => tool.name)).toEqual(mcp.tools.map((tool) => tool.name));
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_rename');
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_get_guidance');
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_inspect');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_set_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_clear_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_upsert_element');
+    const guidanceCall = await client.callTool({ name: 'canvas_get_guidance', arguments: {} });
+    expect(guidanceCall.structuredContent).toMatchObject({
+      schemaVersion: 1,
+      layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
+      truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
+      mcpCatalog: { coreToolCount: 16, pluginToolCount: 0, totalToolCount: 16 }
+    });
+    const inspectCall = await client.callTool({ name: 'canvas_inspect', arguments: { canvasId } });
+    expect(inspectCall.structuredContent).toMatchObject({
+      canvasId,
+      revision: 3,
+      diagnostics: [],
+      summary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
     const clearThemeCall = await client.callTool({
       name: 'canvas_clear_theme',
       arguments: { canvasId, expectedRevision: 3 }

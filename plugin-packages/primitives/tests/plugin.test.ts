@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { ServerPluginHost } from '@agentcanvas/plugin-sdk';
+import type {
+  CanvasElement,
+  ElementTypeDescriptor,
+  PluginInvocationContext,
+  PluginToolDescriptor,
+  ServerPluginHost
+} from '@agentcanvas/plugin-sdk';
 import { validatePluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it, vi } from 'vitest';
 import { importLegacyPrimitive } from '../src/legacy.js';
@@ -55,6 +61,99 @@ describe('primitives plugin', () => {
       height: 180,
       data: { shape: 'diamond', label: 'Decision' }
     });
+  });
+
+  it('rejects HTML entities in literal text tool input with a corrective message', async () => {
+    const tools: PluginToolDescriptor[] = [];
+    const host = {
+      registerElementType: vi.fn(),
+      registerTool: (item: PluginToolDescriptor) => tools.push(item),
+      registerProcedure: vi.fn(),
+      registerMigration: vi.fn(),
+      provideCapability: vi.fn(),
+      consumeCapability: vi.fn(),
+      config: {},
+      kv: {},
+      diagnostics: { emit: vi.fn() }
+    } as unknown as ServerPluginHost;
+    await plugin.activate(host);
+
+    const addText = tools.find((tool) => tool.name === 'add-text') as PluginToolDescriptor;
+    await expect(
+      addText.invoke(
+        { canvasId: 'canvas_1', x: 0, y: 0, text: 'Research &amp; Planning' },
+        {} as PluginInvocationContext
+      )
+    ).rejects.toThrow('text is literal text; replace HTML entities');
+  });
+
+  it('rejects an explicitly undersized text frame unless clipping is intentional', async () => {
+    const tools: PluginToolDescriptor[] = [];
+    const elements: ElementTypeDescriptor[] = [];
+    const host = {
+      registerElementType: (item: ElementTypeDescriptor) => elements.push(item),
+      registerTool: (item: PluginToolDescriptor) => tools.push(item),
+      registerProcedure: vi.fn(),
+      registerMigration: vi.fn(),
+      provideCapability: vi.fn(),
+      consumeCapability: vi.fn(),
+      config: {},
+      kv: {},
+      diagnostics: { emit: vi.fn() }
+    } as unknown as ServerPluginHost;
+    await plugin.activate(host);
+
+    const addText = tools.find((tool) => tool.name === 'add-text') as PluginToolDescriptor;
+    await expect(
+      addText.invoke(
+        {
+          canvasId: 'canvas_1',
+          x: 0,
+          y: 0,
+          width: 900,
+          height: 56,
+          text: 'AgentCanvas — Instance Reference',
+          style: { fontSize: 36 }
+        },
+        {} as PluginInvocationContext
+      )
+    ).rejects.toThrow('is likely to clip this literal text');
+
+    const textDescriptor = elements.find((element) => element.name === 'text') as ElementTypeDescriptor;
+    const undersized = {
+      id: 'text_1',
+      type: 'agentcanvas.primitives/text',
+      schemaVersion: 1,
+      x: 0,
+      y: 0,
+      width: 900,
+      height: 56,
+      data: { text: 'AgentCanvas — Instance Reference' },
+      style: { fontSize: 36 }
+    } as CanvasElement;
+    expect(
+      textDescriptor.inspect?.(undersized, {
+        pluginId: 'agentcanvas.primitives',
+        type: undersized.type,
+        schemaVersion: 1
+      })
+    ).toEqual([expect.objectContaining({ code: 'literal_text_may_clip' })]);
+
+    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
+    await addText.invoke(
+      {
+        canvasId: 'canvas_1',
+        x: 0,
+        y: 0,
+        width: 900,
+        height: 56,
+        text: 'AgentCanvas — Instance Reference',
+        style: { fontSize: 36 },
+        allowClipping: true
+      },
+      { canvas: { upsertElement } } as unknown as PluginInvocationContext
+    );
+    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ data: { allowClipping: true } });
   });
 
   it('renders rectangle, ellipse, and diamond as distinct snapshot nodes', () => {

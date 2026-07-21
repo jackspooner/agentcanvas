@@ -1,5 +1,13 @@
 const HTML_ESCAPE = /[&<>"']/g;
 const HTML_ENTITIES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const MARKDOWN_CHARACTER_REFERENCES: Record<string, string> = {
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  nbsp: '\u00a0',
+  quot: '"'
+};
 
 export function escapeHtml(value: string): string {
   return value.replace(HTML_ESCAPE, (character) => HTML_ENTITIES[character] ?? character);
@@ -30,7 +38,11 @@ export function safeImageHref(value: string): string | null {
 }
 
 function inlineMarkdown(source: string, allowImages: boolean): string {
-  let value = escapeHtml(source);
+  let value = escapeHtml(
+    source.replace(/&(amp|apos|gt|lt|nbsp|quot);/giu, (entity, name: string) => {
+      return MARKDOWN_CHARACTER_REFERENCES[name.toLowerCase()] ?? entity;
+    })
+  );
   value = value.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+[^)]*)?\)/g, (_match, alt: string, escapedHref: string) => {
     const href = safeImageHref(escapedHref.replaceAll('&amp;', '&'));
     if (!allowImages || !href) return alt;

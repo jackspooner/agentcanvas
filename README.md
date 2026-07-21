@@ -275,6 +275,27 @@ When upgrading an existing MCP client from v0.1, restart or reload that client's
 
 Snapshots and plugin exports return compact opaque resource handles and metadata. Agent-facing JSON never contains full base64 strings or data URLs.
 
+### Agent guidance
+
+The repository bundles an operational skill at
+[`skills/agentcanvas/SKILL.md`](skills/agentcanvas/SKILL.md). It is optional for
+the runtime but recommended for agents: it covers runtime discovery, layout,
+frame sizing, diagrams, images, and evidence-based reporting. See [Agent
+readiness](docs/agent-readiness.md) for Hermes installation, eight broad
+acceptance objectives, and the verification rubric.
+
+For Hermes, connect the resident MCP endpoint and install the published skill:
+
+```bash
+hermes mcp add agentcanvas --url http://127.0.0.1:23003/mcp
+hermes mcp test agentcanvas
+hermes skills install https://raw.githubusercontent.com/jackspooner/agentcanvas/main/skills/agentcanvas/SKILL.md --category software-development --yes
+```
+
+Start a new agent session after installing or updating the skill. Restart or
+reconnect the MCP client after AgentCanvas tool schemas or active extensions
+change so it does not continue using a cached catalog.
+
 ## Environment
 
 Copy `.env.example` to `.env`. The host owns:

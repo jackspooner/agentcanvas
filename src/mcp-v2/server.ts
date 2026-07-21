@@ -15,15 +15,17 @@ import {
   createRegistryElementSchemas,
   getPluginStatus,
   JSON_OBJECT_SCHEMA,
+  PLUGIN_DIAGNOSTIC_SCHEMA,
   PLUGIN_STATUS_CATALOG_SCHEMA,
   PLUGIN_STATUS_SCHEMA,
   type CoreJsonSchemaTool,
   type McpJsonSchemaTool
 } from '../api-v2/index.js';
 import type { BrowserPluginCatalog, FrozenPluginRegistry } from '../plugin-runtime/index.js';
-import { createPluginCanvasOperations } from '../plugin-runtime/index.js';
+import { createPluginCanvasOperations, inspectCanvasElements } from '../plugin-runtime/index.js';
 import type { V2SqliteCanvasStore } from '../store/v2.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
+import { AGENTCANVAS_AGENT_GUIDANCE, AGENTCANVAS_MCP_INSTRUCTIONS } from './agent-guidance.js';
 
 export interface McpV2Runtime {
   registry: FrozenPluginRegistry;
@@ -40,10 +42,10 @@ const FRAME_SCHEMA: JsonSchema = {
   additionalProperties: false,
   minProperties: 1,
   properties: {
-    x: { type: 'number' },
-    y: { type: 'number' },
-    width: { type: ['number', 'null'] },
-    height: { type: ['number', 'null'] },
+    x: { type: 'number', description: 'New left edge in canvas world coordinates.' },
+    y: { type: 'number', description: 'New top edge in canvas world coordinates.' },
+    width: { type: ['number', 'null'], description: 'New visible frame width.' },
+    height: { type: ['number', 'null'], description: 'New visible frame height.' },
     zIndex: { type: ['number', 'null'] },
     rotation: { type: ['number', 'null'] },
     opacity: { type: ['number', 'null'], minimum: 0, maximum: 1 },
@@ -119,9 +121,40 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
   };
   return [
     {
+      name: 'canvas_get_guidance',
+      title: 'Get agent canvas guidance',
+      description:
+        'Read this before creating, editing, or evaluating a canvas. It returns the concise runtime rules for layout, literal text, capability discovery, and evidence-based claims.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {} },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['schemaVersion', 'workflow', 'layout', 'text', 'truth', 'mcpCatalog'],
+        properties: {
+          schemaVersion: { const: 1 },
+          workflow: { type: 'array', items: { type: 'string' } },
+          layout: { type: 'array', items: { type: 'string' } },
+          text: { type: 'array', items: { type: 'string' } },
+          truth: { type: 'array', items: { type: 'string' } },
+          mcpCatalog: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['coreToolCount', 'pluginToolCount', 'totalToolCount'],
+            properties: {
+              coreToolCount: { type: 'integer', minimum: 1 },
+              pluginToolCount: { type: 'integer', minimum: 0 },
+              totalToolCount: { type: 'integer', minimum: 1 }
+            }
+          }
+        }
+      },
+      annotations: { readOnlyHint: true }
+    },
+    {
       name: 'canvas_create',
       title: 'Create canvas',
-      description: 'Create a new AgentCanvas v0.2 canvas.',
+      description:
+        'Create an empty AgentCanvas v0.2 canvas. This does not create elements or prove a finished layout is readable.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -150,7 +183,8 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
     {
       name: 'canvas_get',
       title: 'Get canvas',
-      description: 'Get one canvas with its canonical element envelopes.',
+      description:
+        'Get the persisted source of truth for one canvas. Use it after edits to verify element IDs, frames, data, revision, and diagnostics; persisted state alone does not prove rendered readability or remote-image loading.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -158,6 +192,39 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         properties: { canvasId: CANVAS_ID }
       },
       outputSchema: canvas,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_inspect',
+      title: 'Inspect canvas quality',
+      description:
+        'Run deterministic plugin-owned quality checks against persisted elements. Use after edits to find likely clipping and similar repairable issues; a clean result still does not prove rendered appearance or remote resource loading.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId'],
+        properties: { canvasId: CANVAS_ID }
+      },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'revision', 'diagnostics', 'summary'],
+        properties: {
+          canvasId: CANVAS_ID,
+          revision: { type: 'integer', minimum: 1 },
+          diagnostics: { type: 'array', items: PLUGIN_DIAGNOSTIC_SCHEMA },
+          summary: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['errorCount', 'warningCount', 'infoCount'],
+            properties: {
+              errorCount: { type: 'integer', minimum: 0 },
+              warningCount: { type: 'integer', minimum: 0 },
+              infoCount: { type: 'integer', minimum: 0 }
+            }
+          }
+        }
+      },
       annotations: { readOnlyHint: true }
     },
     mutationTool(
@@ -264,7 +331,8 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
     {
       name: 'canvas_list_plugins',
       title: 'List plugins',
-      description: 'List sanitized active plugin status.',
+      description:
+        'List sanitized active plugin status. Treat this runtime result as authoritative for which element types and plugin tools are currently available.',
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
       outputSchema: PLUGIN_STATUS_CATALOG_SCHEMA,
       annotations: { readOnlyHint: true }
@@ -310,10 +378,32 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
   const store = runtime.store;
   const canvasId = input.canvasId as string;
   const expectedRevision = input.expectedRevision as number | undefined;
+  if (name === 'canvas_get_guidance') {
+    const coreToolCount = coreTools(runtime.registry).length;
+    const pluginToolCount = runtime.registry.plugins.reduce((count, plugin) => count + plugin.tools.length, 0);
+    return json({
+      ...AGENTCANVAS_AGENT_GUIDANCE,
+      mcpCatalog: { coreToolCount, pluginToolCount, totalToolCount: coreToolCount + pluginToolCount }
+    });
+  }
   if (name === 'canvas_create') return json(store.createCanvas(input as never));
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
   if (name === 'canvas_get') return json(store.getCanvas(canvasId));
+  if (name === 'canvas_inspect') {
+    const canvas = store.getCanvas(canvasId);
+    const diagnostics = inspectCanvasElements(canvas, runtime.registry);
+    return json({
+      canvasId,
+      revision: canvas.revision,
+      diagnostics,
+      summary: {
+        errorCount: diagnostics.filter((item) => item.severity === 'error').length,
+        warningCount: diagnostics.filter((item) => item.severity === 'warning').length,
+        infoCount: diagnostics.filter((item) => item.severity === 'info').length
+      }
+    });
+  }
   if (name === 'canvas_rename') {
     return json(
       store.renameCanvas(canvasId, {
@@ -414,7 +504,7 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
     { name: 'AgentCanvasMcp', version: AGENTCANVAS_VERSION },
     {
       capabilities: { tools: {} },
-      instructions: 'Use canonical core tools and active plugin tools; resources are returned as compact handles.'
+      instructions: AGENTCANVAS_MCP_INSTRUCTIONS
     }
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrowHead, resolveConnectorEndpoints } from '../src/geometry.js';
+import { arrowHead, connectorRoute, resolveConnectorEndpoints, routeMidpoint } from '../src/geometry.js';
 
 describe('primitive connector geometry', () => {
   it('resolves element anchors before falling back to free coordinates', () => {
@@ -25,5 +25,20 @@ describe('primitive connector geometry', () => {
         .flatMap((point) => [point.x, point.y])
         .every(Number.isFinite)
     ).toBe(true);
+  });
+
+  it('routes same-side anchors outside the direct node column', () => {
+    const route = connectorRoute(
+      { elementId: 'bottom', anchor: 'left' },
+      { elementId: 'top', anchor: 'left' },
+      { from: { x: -140, y: 435 }, to: { x: -140, y: -115 } }
+    );
+    expect(route).toEqual([
+      { x: -140, y: 435 },
+      { x: -415, y: 435 },
+      { x: -415, y: -115 },
+      { x: -140, y: -115 }
+    ]);
+    expect(routeMidpoint(route)).toEqual({ x: -415, y: 160 });
   });
 });

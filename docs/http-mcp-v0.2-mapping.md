@@ -47,6 +47,7 @@ Type or schema-version changes require migration or delete plus upsert.
 | `canvas_create` | `canvas_create` |
 | `canvas_list` | `canvas_list` |
 | `canvas_get` | `canvas_get` |
+| none | `canvas_get_guidance`, `canvas_inspect` |
 | rename | `canvas_rename` |
 | none | `canvas_set_theme`, `canvas_clear_theme` |
 | generic add/update | `canvas_upsert_element`, `canvas_patch_element_frame`, `canvas_replace_element_data`, `canvas_replace_element_metadata` |

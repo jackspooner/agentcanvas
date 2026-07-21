@@ -6,7 +6,7 @@ import type {
   RendererContext
 } from '@agentcanvas/plugin-sdk';
 import { connectorData, stringValue } from './data.js';
-import { arrowHead, connectorMidpoint, resolveConnectorEndpoints } from './geometry.js';
+import { arrowHead, connectorRoute, resolveConnectorEndpoints, routeMidpoint } from './geometry.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -32,7 +32,7 @@ function cardRenderer(type: 'text' | 'shape'): BrowserElementRenderer {
     mount(root, initial) {
       const container = mountContainer(
         root,
-        `:host{display:block;width:100%;height:100%;box-sizing:border-box}.content{box-sizing:border-box;width:100%;height:100%;display:grid;place-items:center;overflow:hidden;color:var(--ac-color,#0f172a);font:var(--ac-font,16px/1.4 Inter,Arial,sans-serif)}.text{display:block;white-space:pre-wrap;padding:14px;overflow:auto;border:var(--ac-border-width,1px) solid var(--ac-border,#d0d7de);border-radius:var(--ac-radius,10px);background:var(--ac-background,#fff)}.shape{border:var(--ac-stroke-width,2px) solid var(--ac-stroke,#64748b);background:var(--ac-fill,#fff);text-align:center;padding:12px}.ellipse{border-radius:50%}.diamond{width:68%;height:68%;transform:rotate(45deg);padding:0}.diamond>span{display:grid;place-items:center;width:100%;height:100%;transform:rotate(-45deg)}`
+        `:host{display:block;width:100%;height:100%;box-sizing:border-box}.content{box-sizing:border-box;width:100%;height:100%;display:grid;place-items:center;overflow:hidden;color:var(--ac-color,#0f172a);font:var(--ac-font,16px/1.4 Inter,Arial,sans-serif)}.text{display:block;white-space:pre-wrap;padding:14px;overflow:auto;border:var(--ac-border-width,1px) solid var(--ac-border,#d0d7de);border-radius:var(--ac-radius,10px);background:var(--ac-background,#fff)}.shape{border:var(--ac-stroke-width,2px) solid var(--ac-stroke,#64748b);background:var(--ac-fill,#fff);text-align:center;padding:12px}.shape>span{white-space:pre-wrap}.ellipse{border-radius:50%}.diamond{width:68%;height:68%;transform:rotate(45deg);padding:0}.diamond>span{display:grid;place-items:center;width:100%;height:100%;transform:rotate(-45deg)}`
       );
       const update = (context: RendererContext) => {
         const element = context.element;
@@ -91,26 +91,25 @@ function connectorRenderer(type: 'line' | 'arrow'): BrowserElementRenderer {
       const update = (context: RendererContext) => {
         const data = connectorData(context.element);
         const resolved = resolveConnectorEndpoints(data.from, data.to, context.geometry);
+        const route = connectorRoute(data.from, data.to, resolved);
         const svg = document.createElementNS(SVG_NS, 'svg');
         svg.setAttribute('width', '1');
         svg.setAttribute('height', '1');
-        const line = document.createElementNS(SVG_NS, 'line');
-        line.setAttribute('x1', String(resolved.from.x));
-        line.setAttribute('y1', String(resolved.from.y));
-        line.setAttribute('x2', String(resolved.to.x));
-        line.setAttribute('y2', String(resolved.to.y));
-        line.setAttribute('stroke', data.stroke ?? context.theme.colors.accent);
-        line.setAttribute('stroke-width', String(data.strokeWidth ?? 2));
-        svg.append(line);
+        const polyline = document.createElementNS(SVG_NS, 'polyline');
+        polyline.setAttribute('points', route.map((point) => `${point.x},${point.y}`).join(' '));
+        polyline.setAttribute('fill', 'none');
+        polyline.setAttribute('stroke', data.stroke ?? context.theme.colors.accent);
+        polyline.setAttribute('stroke-width', String(data.strokeWidth ?? 2));
+        svg.append(polyline);
         if (type === 'arrow') {
-          const points = arrowHead(resolved.from, resolved.to);
+          const points = arrowHead(route.at(-2) ?? resolved.from, resolved.to);
           const polygon = document.createElementNS(SVG_NS, 'polygon');
           polygon.setAttribute('points', points.map((point) => `${point.x},${point.y}`).join(' '));
           polygon.setAttribute('fill', data.stroke ?? context.theme.colors.accent);
           svg.append(polygon);
         }
         if (data.label) {
-          const midpoint = connectorMidpoint(resolved.from, resolved.to);
+          const midpoint = routeMidpoint(route);
           const label = document.createElementNS(SVG_NS, 'text');
           label.classList.add('label');
           label.setAttribute('x', String(midpoint.x));

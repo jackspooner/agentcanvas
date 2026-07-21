@@ -51,3 +51,53 @@ export function arrowHead(from: Point, to: Point, length = 12, halfWidth = 5): r
 export function connectorMidpoint(from: Point, to: Point): Point {
   return { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
 }
+
+export function connectorRoute(
+  fromEndpoint: ConnectorEndpointData,
+  toEndpoint: ConnectorEndpointData,
+  resolved: Pick<ResolvedConnectorGeometry, 'from' | 'to'>,
+  offset = 60
+): readonly Point[] {
+  const sharedAnchor =
+    fromEndpoint.elementId && toEndpoint.elementId && fromEndpoint.anchor === toEndpoint.anchor
+      ? fromEndpoint.anchor
+      : null;
+  if (!sharedAnchor || !['left', 'right', 'top', 'bottom'].includes(sharedAnchor)) {
+    return [resolved.from, resolved.to];
+  }
+  if (sharedAnchor === 'left' || sharedAnchor === 'right') {
+    const direction = sharedAnchor === 'left' ? -1 : 1;
+    const routeOffset = Math.max(offset, Math.min(320, Math.abs(resolved.to.y - resolved.from.y) * 0.5));
+    const routeX =
+      (direction < 0 ? Math.min(resolved.from.x, resolved.to.x) : Math.max(resolved.from.x, resolved.to.x)) +
+      direction * routeOffset;
+    return [resolved.from, { x: routeX, y: resolved.from.y }, { x: routeX, y: resolved.to.y }, resolved.to];
+  }
+  const direction = sharedAnchor === 'top' ? -1 : 1;
+  const routeOffset = Math.max(offset, Math.min(320, Math.abs(resolved.to.x - resolved.from.x) * 0.5));
+  const routeY =
+    (direction < 0 ? Math.min(resolved.from.y, resolved.to.y) : Math.max(resolved.from.y, resolved.to.y)) +
+    direction * routeOffset;
+  return [resolved.from, { x: resolved.from.x, y: routeY }, { x: resolved.to.x, y: routeY }, resolved.to];
+}
+
+export function routeMidpoint(points: readonly Point[]): Point {
+  if (points.length < 2) return points[0] ?? { x: 0, y: 0 };
+  const lengths = points
+    .slice(1)
+    .map((point, index) => Math.hypot(point.x - points[index].x, point.y - points[index].y));
+  const halfway = lengths.reduce((sum, length) => sum + length, 0) / 2;
+  let travelled = 0;
+  for (let index = 0; index < lengths.length; index += 1) {
+    const length = lengths[index];
+    if (travelled + length >= halfway) {
+      const ratio = length === 0 ? 0 : (halfway - travelled) / length;
+      return {
+        x: points[index].x + (points[index + 1].x - points[index].x) * ratio,
+        y: points[index].y + (points[index + 1].y - points[index].y) * ratio
+      };
+    }
+    travelled += length;
+  }
+  return points.at(-1) as Point;
+}

@@ -229,6 +229,7 @@ export function CanvasView({
   const [viewportError, setViewportError] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
   const viewportNode = useRef<HTMLDivElement | null>(null);
+  const autoFittedCanvas = useRef<string | null>(null);
   const lastAgentViewport = useRef<string | null>(null);
   const lastLocalRevision = useRef<number | null>(null);
   const pendingLocalMutations = useRef(0);
@@ -358,6 +359,14 @@ export function CanvasView({
   );
 
   useEffect(() => setViewport(coerceViewport(initialViewport)), [canvas.id, initialViewport]);
+  useEffect(() => {
+    const source = initialViewport?.source ?? 'default';
+    if (canvas.id === 'empty' || source !== 'default' || autoFittedCanvas.current === canvas.id) return undefined;
+    if (!fixedBounds && nodeElements.length === 0) return undefined;
+    autoFittedCanvas.current = canvas.id;
+    const animationFrame = window.requestAnimationFrame(() => fitCanvas());
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [canvas.id, fixedBounds, initialViewport?.source, nodeElements]);
   useEffect(() => {
     const previous = extensionAbort.current;
     extensionAbort.current = new AbortController();
@@ -799,6 +808,17 @@ export function CanvasView({
       ? [{ code: 'viewport_poll_failed', severity: 'warning' as const, message: viewportError, retryable: true }]
       : [])
   ];
+  const diagnosticCounts = visibleDiagnostics.reduce(
+    (counts, diagnostic) => ({ ...counts, [diagnostic.severity]: counts[diagnostic.severity] + 1 }),
+    { error: 0, warning: 0, info: 0 }
+  );
+  const diagnosticSummary = [
+    diagnosticCounts.error ? `${diagnosticCounts.error} error${diagnosticCounts.error === 1 ? '' : 's'}` : '',
+    diagnosticCounts.warning ? `${diagnosticCounts.warning} warning${diagnosticCounts.warning === 1 ? '' : 's'}` : '',
+    diagnosticCounts.info ? `${diagnosticCounts.info} notice${diagnosticCounts.info === 1 ? '' : 's'}` : ''
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="canvas-shell" onKeyDown={handleCommandKeyDown}>
@@ -828,18 +848,25 @@ export function CanvasView({
           />
         </div>
       </header>
-      {(moveError || visibleDiagnostics.length > 0) && (
-        <aside className="plugin-diagnostics" aria-live="polite">
-          {moveError && <div className="node-move-error">{moveError}</div>}
-          {visibleDiagnostics.slice(-5).map((diagnostic, index) => (
-            <div
-              key={`${diagnostic.code}-${diagnostic.elementId ?? diagnostic.pluginId ?? index}`}
-              className={`diagnostic-${diagnostic.severity}`}
-            >
-              {diagnostic.message}
-            </div>
-          ))}
-        </aside>
+      {moveError && <div className="node-move-error">{moveError}</div>}
+      {visibleDiagnostics.length > 0 && (
+        <details className="plugin-diagnostics">
+          <summary aria-live="polite">
+            <span className="diagnostic-signal">Canvas diagnostics</span>
+            <span>{diagnosticSummary}</span>
+          </summary>
+          <div className="diagnostic-list">
+            {visibleDiagnostics.map((diagnostic, index) => (
+              <div
+                key={`${diagnostic.code}-${diagnostic.elementId ?? diagnostic.pluginId ?? index}`}
+                className={`diagnostic-item diagnostic-${diagnostic.severity}`}
+              >
+                <code>{diagnostic.code}</code>
+                <span>{diagnostic.message}</span>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
       <main ref={viewportNode} className="canvas-viewport">
         <AgentCanvasEditor

@@ -30,6 +30,7 @@ import { CanvasError, toCanvasError } from './errors.js';
 import {
   createPluginCanvasOperations,
   createBrowserPluginCatalog,
+  inspectCanvasElements,
   PluginElementValidator,
   preparePluginRuntime,
   resolveBrowserPluginModule,
@@ -111,21 +112,11 @@ async function resolveCanvasProjection(
   signal: AbortSignal
 ): Promise<{ elementRuntime: Record<string, JsonObject>; diagnostics: PluginDiagnostic[] }> {
   const elementRuntime: Record<string, JsonObject> = {};
-  const diagnostics: PluginDiagnostic[] = [];
+  const diagnostics: PluginDiagnostic[] = inspectCanvasElements(canvas, registry);
   const elements = new Map(canvas.elements.map((element) => [element.id, element]));
   for (const element of canvas.elements) {
     const descriptor = registry.getElementType(element.type);
-    if (!descriptor) {
-      diagnostics.push({
-        code: 'plugin_unavailable',
-        severity: 'warning',
-        message: `No active plugin owns ${element.type}.`,
-        retryable: false,
-        pluginId: element.type.slice(0, element.type.lastIndexOf('/')),
-        elementId: element.id
-      });
-      continue;
-    }
+    if (!descriptor) continue;
     let runtime: JsonObject = {};
     if (descriptor.resolve) {
       try {

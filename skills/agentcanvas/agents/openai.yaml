@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentCanvas"
+  short_description: "Create, edit, and verify readable agent canvases"
+  default_prompt: "Use $agentcanvas to create a polished, truthful visual canvas for this request."

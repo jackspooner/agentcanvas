@@ -23,6 +23,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Upgrade an existing installation | [Upgrading](upgrading.md) |
 | Operate the service or manage extensions | [Operations](operations.md) |
 | Use the HTTP API or MCP tools | [HTTP and MCP](http-and-mcp.md) |
+| Prepare or evaluate an AI agent | [Agent readiness](agent-readiness.md) |
 | Understand the system | [Architecture](architecture.md) |
 | Understand how extensions load | [How extensions load](plugins.md) |
 | Understand persisted data | [Data contracts](data-contracts.md) |
@@ -60,6 +61,7 @@ runtime](plugin-snapshot-runtime.md).
 - [Upgrading](upgrading.md): process-manager-neutral source updates, builds, extension replacement, migrations, restart, and verification.
 - [Operations](operations.md): source/catalog/runtime layout, install/disable/replace procedures, service lifecycle, backups, and health checks.
 - [HTTP and MCP](http-and-mcp.md): current routes, discovery, mutation operations, MCP transports, and contract ownership.
+- [Agent readiness](agent-readiness.md): bundled operational skill, Hermes setup, eight acceptance objectives, and evidence rules.
 - [Troubleshooting](troubleshooting.md): startup, plugin, browser, Assets-2, database, and MCP failure guides.
 - [Standard OpenAPI](openapi.standard.json): generated contract for the three default extensions.
 
