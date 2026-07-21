@@ -38,8 +38,8 @@ maintaining separate browser and snapshot defaults.
 
 ## Documentation
 
-- [Plugin authoring overview](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/README.md)
-- [Build your first plugin](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/tutorial.md)
-- [Plugin API reference](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-api-reference.md)
-- [Manifest reference](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-manifest-reference.md)
-- [Capabilities and permissions](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-capabilities-and-permissions.md)
+- [Plugin authoring overview](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/README.md)
+- [Build your first plugin](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/tutorial.md)
+- [Plugin API reference](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-api-reference.md)
+- [Manifest reference](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-manifest-reference.md)
+- [Capabilities and permissions](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-capabilities-and-permissions.md)

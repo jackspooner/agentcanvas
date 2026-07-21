@@ -18,12 +18,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jackspooner/AgentCanvas.git"
+    "url": "https://github.com/jackspooner/agentcanvas.git"
   },
   "bugs": {
-    "url": "https://github.com/jackspooner/AgentCanvas/issues"
+    "url": "https://github.com/jackspooner/agentcanvas/issues"
   },
-  "homepage": "https://github.com/jackspooner/AgentCanvas#readme",
+  "homepage": "https://github.com/jackspooner/agentcanvas#readme",
   "keywords": [
     "agent-canvas",
     "mcp",

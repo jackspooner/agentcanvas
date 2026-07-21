@@ -120,8 +120,8 @@ if (fs.existsSync(absolute('service'))) {
 }
 
 const repositoryUrls = new Set([
-  'https://github.com/jackspooner/AgentCanvas.git',
-  'git+https://github.com/jackspooner/AgentCanvas.git'
+  'https://github.com/jackspooner/agentcanvas.git',
+  'git+https://github.com/jackspooner/agentcanvas.git'
 ]);
 for (const packageDirectory of [
   'plugin-sdk',

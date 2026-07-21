@@ -10,4 +10,4 @@ catch missing, undeclared, or duplicate registrations.
 
 The testkit does not start AgentCanvas, access a database, or import private host code.
 
-Use the full [testing and distribution guide](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/testing-and-distribution.md) for browser lifecycle, snapshot safety, migration determinism, packed-public-package, and host conformance coverage.
+Use the full [testing and distribution guide](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/testing-and-distribution.md) for browser lifecycle, snapshot safety, migration determinism, packed-public-package, and host conformance coverage.

@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jackspooner/AgentCanvas.git",
+    "url": "git+https://github.com/jackspooner/agentcanvas.git",
     "directory": "packages/editor"
   },
   "type": "module",

@@ -23,4 +23,4 @@ After publication, use `npx create-agentcanvas-plugin my-plugin`.
 
 The generated `plugin-dist/<plugin-id>` folder is the installable distribution. Copy it into the AgentCanvas `plugins/` directory with the host's `plugins:install` command, then restart AgentCanvas.
 
-Read the [complete plugin-authoring guide](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/README.md) and the [end-to-end tutorial](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugin-authoring/tutorial.md).
+Read the [complete plugin-authoring guide](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/README.md) and the [end-to-end tutorial](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/tutorial.md).

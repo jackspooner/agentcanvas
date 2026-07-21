@@ -5,13 +5,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jackspooner/AgentCanvas.git",
+    "url": "git+https://github.com/jackspooner/agentcanvas.git",
     "directory": "packages/plugin-testkit"
   },
   "bugs": {
-    "url": "https://github.com/jackspooner/AgentCanvas/issues"
+    "url": "https://github.com/jackspooner/agentcanvas/issues"
   },
-  "homepage": "https://github.com/jackspooner/AgentCanvas#readme",
+  "homepage": "https://github.com/jackspooner/agentcanvas#readme",
   "keywords": [
     "agentcanvas",
     "canvas",

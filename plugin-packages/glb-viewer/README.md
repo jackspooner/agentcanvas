@@ -6,4 +6,4 @@ The installable distribution is built into `dist/plugin-catalog/agentcanvas.glb-
 
 The AgentCanvas source is MIT licensed. Bundled browser dependencies retain their original licenses in `THIRD_PARTY_NOTICES.md` alongside the distribution.
 
-See the [AgentCanvas plugin guide](https://github.com/jackspooner/AgentCanvas/blob/main/docs/plugins.md) for installation and lifecycle details.
+See the [AgentCanvas plugin guide](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugins.md) for installation and lifecycle details.

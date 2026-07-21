@@ -1,7 +1,7 @@
 # AgentCanvas
 
-AgentCanvas is a local-first visual workspace and MCP server for canvases built
-by people and agents. The current main branch includes the v0.3 editor
+AgentCanvas v0.3.0-alpha.1 is a local-first visual workspace and MCP server for
+canvases built by people and agents. This alpha includes the v0.3 editor
 foundation: polished pan, zoom, selection, marquee, multi-move, resize,
 clipboard, undo/redo, grid snapping, and a shared command service.
 
@@ -14,6 +14,11 @@ editor implementation.
 AgentCanvas binds to loopback by default and has no user-account or
 authentication layer. Extensions are trusted executable application
 dependencies; they are not sandboxed.
+
+> **Local-only by default:** keep AgentCanvas on loopback unless it is placed
+> behind an authenticated, TLS-terminating reverse proxy. Binding it to a
+> network address does not add authentication. See [Security](SECURITY.md)
+> before exposing it beyond the local machine.
 
 ## Documentation
 
@@ -44,10 +49,12 @@ and does not depend on Servy, systemd, Docker, or any other supervisor.
 npm ci
 npm run plugins:build
 npm run plugins:materialize -- --defaults
-npm test
 npm run build
 npm run dev
 ```
+
+The commands in [Verification](#verification) are optional checks for a
+checkout; they are not required before the first local launch.
 
 Open `http://127.0.0.1:23003/`. Verify the service with:
 

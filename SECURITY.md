@@ -6,7 +6,7 @@ Security fixes are provided for the current `0.3.x` prerelease line. Older devel
 
 ## Reporting a vulnerability
 
-Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/jackspooner/AgentCanvas/security/advisories/new). Do not include exploit details, credentials, private canvas data, or asset contents in a public issue.
+Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/jackspooner/agentcanvas/security/advisories/new). Do not include exploit details, credentials, private canvas data, or asset contents in a public issue.
 
 Include the affected version, operating system, reproduction steps, expected impact, and any safe proof-of-concept material. Maintainers will acknowledge a report within seven days and will coordinate disclosure after a fix is available. If private vulnerability reporting is temporarily unavailable, open a public issue containing no sensitive details and ask the maintainers to establish a private channel.
 

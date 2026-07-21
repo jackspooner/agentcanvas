@@ -12,7 +12,7 @@ AgentCanvas is a local-first visual workspace whose element behavior is
 supplied by automatically discovered, trusted extensions. The installed
 distribution format remains `agentcanvas.plugin/v1` for compatibility.
 
-The public distribution is the GitHub source repository. The root application remains private to prevent accidental npm publication. The SDK, testkit, and scaffolder are separate publication-ready packages, but their npm commands must not be treated as available until those packages are explicitly released. Media sources are optional extensions; start with [Getting started](getting-started.md) for the standalone setup and image-source choices.
+The public distribution is the GitHub source repository. The root package remains marked private to prevent accidental npm publication. The SDK, testkit, and scaffolder are separate publication-ready packages, but their npm commands must not be treated as available until those packages are explicitly released. Media sources are optional extensions; start with [Getting started](getting-started.md) for the standalone setup and image-source choices.
 
 ## Choose your path
 
