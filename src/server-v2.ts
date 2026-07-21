@@ -27,6 +27,7 @@ import {
 } from './api-v2/index.js';
 import { loadConfig, type AgentCanvasConfig } from './config.js';
 import { CanvasError, toCanvasError } from './errors.js';
+import { canvasPageUrl } from './canvas-url.js';
 import {
   createPluginCanvasOperations,
   createBrowserPluginCatalog,
@@ -302,8 +303,23 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
             metadata: { type: 'object' }
           }
         }),
-        responses: { 201: response('Created canvas'), ...errorResponses },
-        'x-agent-notes': agentNotes(['Creates one canvas.'])
+        responses: {
+          201: response('Created canvas', {
+            type: 'object',
+            additionalProperties: false,
+            required: ['ok', 'canvas', 'url'],
+            properties: {
+              ok: { const: true },
+              canvas: { $ref: '#/components/schemas/CanvasRecord' },
+              url: { type: 'string', minLength: 1 }
+            }
+          }),
+          ...errorResponses
+        },
+        'x-agent-notes': agentNotes([
+          'Creates one canvas.',
+          'Returns the direct browser URL based on AGENT_CANVAS_PUBLIC_BASE_URL; this does not create a public share link.'
+        ])
       }
     },
     '/api/v1/canvases/{canvasId}': {
@@ -710,7 +726,10 @@ setInterval(async () => {
     });
     return c.json({ ok: true, canvases });
   });
-  app.post('/api/v1/canvases', async (c) => c.json({ ok: true, canvas: store.createCanvas(await c.req.json()) }, 201));
+  app.post('/api/v1/canvases', async (c) => {
+    const canvas = store.createCanvas(await c.req.json());
+    return c.json({ ok: true, canvas, url: canvasPageUrl(config.publicBaseUrl, canvas.id) }, 201);
+  });
   app.get('/api/v1/canvases/:canvasId', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
     const projection = await resolveCanvasProjection(canvas, registry, false, c.req.raw.signal);
@@ -873,6 +892,7 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
     const requestUrl = new URL(request.url ?? '/', runtime.config.publicBaseUrl);
     if (requestUrl.pathname === '/mcp') {
       await handleMcpV2Request(request, response, {
+        publicBaseUrl: runtime.config.publicBaseUrl,
         registry: runtime.registry,
         store: runtime.store,
         browserCatalog: runtime.browserCatalog,

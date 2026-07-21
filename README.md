@@ -247,6 +247,11 @@ Important routes:
 - `GET /api/v1/resources/:handle/content`
 - share-link, configuration, and viewport routes documented by `/openapi.json`
 
+Canvas creation returns a direct browser `url`, derived from
+`AGENT_CANVAS_PUBLIC_BASE_URL`. MCP's `canvas_create` returns the same URL and
+`canvas_get_url` recovers it for an existing canvas. This is not a share link:
+it respects the service's normal network and access controls.
+
 The installed frozen plugin registry generates runtime OpenAPI and both MCP transports. The committed [standard OpenAPI document](docs/openapi.standard.json) represents the three-extension default distribution; verify freshness with `npm run check:openapi`.
 
 Resident MCP is `POST http://127.0.0.1:23003/mcp`. The stdio command is a transport bridge to that resident endpoint and does not rediscover plugins:

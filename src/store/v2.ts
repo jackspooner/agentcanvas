@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';
 import { isJsonObject } from '@agentcanvas/plugin-sdk';
 import { nanoid } from 'nanoid';
+import { canvasShareUrl } from '../canvas-url.js';
 import { loadConfig, type AgentCanvasConfig } from '../config.js';
 import {
   type AgentCanvasConfiguration,
@@ -400,7 +401,7 @@ export class V2SqliteCanvasStore {
       .prepare(`INSERT INTO canvas_share_links
         (id,canvas_id,token_hash,mode,label,expires_at,created_at,revoked_at) VALUES (?,?,?,?,?,?,?,NULL)`)
       .run(link.id, canvasId, sha256(token), 'read', link.label ?? null, link.expiresAt ?? null, createdAt);
-    return { ...link, token, url: `${this.config.publicBaseUrl}/c/${token}` };
+    return { ...link, token, url: canvasShareUrl(this.config.publicBaseUrl, token) };
   }
 
   resolveShareToken(token: string): { link: ShareLinkRecord; canvas: V2CanvasRecord } {

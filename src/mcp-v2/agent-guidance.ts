@@ -6,6 +6,7 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
   workflow: [
     'Read this guidance, then call canvas_list_plugins before relying on optional element or media capabilities.',
     'Inspect an existing target with canvas_get before editing it.',
+    'canvas_create returns the direct browser URL. Give that URL to the user when appropriate; use canvas_get_url to recover it later. A direct URL does not create a public share link or bypass the host access controls.',
     'Plan element frames before composing. After every core mutation, read the returned diagnostics and inspectionSummary and repair unintended warnings immediately. The final tool sequence before reporting must be canvas_get then canvas_inspect with no later mutation.',
     'Use rendered browser evidence for appearance and remote-image claims when browser access exists.'
   ],
@@ -31,4 +32,4 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
 });
 
 export const AGENTCANVAS_MCP_INSTRUCTIONS =
-  'Before creating or evaluating a canvas, use canvas_get_guidance. Discover active capabilities with canvas_list_plugins, set explicit non-overlapping frames, read post-mutation diagnostics immediately, then finish with canvas_get and canvas_inspect. Never treat persisted state as proof of rendered appearance or remote-image loading.';
+  'Before creating or evaluating a canvas, use canvas_get_guidance. canvas_create returns a direct browser URL and canvas_get_url recovers one later; neither creates a share link. Discover active capabilities with canvas_list_plugins, set explicit non-overlapping frames, read post-mutation diagnostics immediately, then finish with canvas_get and canvas_inspect. Never treat persisted state as proof of rendered appearance or remote-image loading.';

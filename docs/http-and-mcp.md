@@ -150,6 +150,7 @@ The kernel registers:
 - `canvas_create`
 - `canvas_list`
 - `canvas_get`
+- `canvas_get_url`
 - `canvas_inspect`
 - `canvas_rename`
 - `canvas_set_theme`
@@ -166,6 +167,13 @@ The kernel registers:
 Plugin tools use `<normalized-plugin-id>__<normalized-local-name>`. For example, `agentcanvas.image-overlays` plus `add-bbox` becomes `agentcanvas_image_overlays__add_bbox`.
 
 Use `canvas_list_plugins` or HTTP plugin discovery before choosing a plugin tool. An optional tool is absent when its plugin folder is absent.
+
+`canvas_create` returns the direct browser `url` for the new canvas. Use
+`canvas_get_url` to recover that URL from a canvas ID later. Both URLs are
+derived from `AGENT_CANVAS_PUBLIC_BASE_URL`; they are direct application routes,
+not share links, and do not make a locally bound service reachable from another
+machine. Use the existing share-link HTTP routes when a read-only token link is
+the intended access model.
 
 Every successful core MCP mutation returns the post-mutation canvas with
 `diagnostics` and `inspectionSummary`. Read those fields before making the next

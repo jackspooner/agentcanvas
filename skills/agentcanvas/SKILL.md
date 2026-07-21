@@ -17,8 +17,12 @@ remote media loaded, or the user's requested result is complete.
    extensions from documentation or source folders.
 2. Inspect the target with `canvas_get` before editing it. For a new canvas,
    choose a layout and approximate frames before adding elements.
-3. Create or edit with the most specific tool available. Use plugin tools for
-   their owned element types and core frame/data tools for later corrections.
+3. Create or edit with the most specific tool available. `canvas_create`
+   returns a direct browser `url`; retain it so you can give it to the user.
+   Use `canvas_get_url` to recover the URL for an existing canvas. This direct
+   URL does not create a read-only share link or bypass access controls. Use
+   plugin tools for their owned element types and core frame/data tools for
+   later corrections.
    After each core mutation, read the returned `diagnostics` and
    `inspectionSummary`; repair unintended warnings before continuing.
 4. Call `canvas_get` after composing. Compare the returned elements with the

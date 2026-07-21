@@ -25,9 +25,11 @@ import type { BrowserPluginCatalog, FrozenPluginRegistry, InspectableCanvas } fr
 import { createPluginCanvasOperations, inspectCanvas } from '../plugin-runtime/index.js';
 import type { V2SqliteCanvasStore } from '../store/v2.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
+import { canvasPageUrl } from '../canvas-url.js';
 import { AGENTCANVAS_AGENT_GUIDANCE, AGENTCANVAS_MCP_INSTRUCTIONS } from './agent-guidance.js';
 
 export interface McpV2Runtime {
+  publicBaseUrl: string;
   registry: FrozenPluginRegistry;
   store: V2SqliteCanvasStore;
   browserCatalog: BrowserPluginCatalog;
@@ -36,6 +38,11 @@ export interface McpV2Runtime {
 
 const CANVAS_ID = { type: 'string', minLength: 1 };
 const ELEMENT_ID = { type: 'string', minLength: 1 };
+const CANVAS_URL_SCHEMA: JsonSchema = {
+  type: 'string',
+  minLength: 1,
+  description: 'Direct browser URL for this canvas, based on AGENT_CANVAS_PUBLIC_BASE_URL.'
+};
 
 const INSPECTION_SUMMARY_SCHEMA: JsonSchema = {
   type: 'object',
@@ -64,7 +71,7 @@ const FRAME_SCHEMA: JsonSchema = {
   }
 };
 
-function canvasSchema(elementSchema: JsonSchema, includeInspection = false): JsonSchema {
+function canvasSchema(elementSchema: JsonSchema, includeInspection = false, includeUrl = false): JsonSchema {
   return {
     type: 'object',
     additionalProperties: false,
@@ -78,7 +85,8 @@ function canvasSchema(elementSchema: JsonSchema, includeInspection = false): Jso
       'elements',
       'revision',
       'documentVersion',
-      ...(includeInspection ? ['diagnostics', 'inspectionSummary'] : [])
+      ...(includeInspection ? ['diagnostics', 'inspectionSummary'] : []),
+      ...(includeUrl ? ['url'] : [])
     ],
     properties: {
       id: CANVAS_ID,
@@ -122,7 +130,8 @@ function canvasSchema(elementSchema: JsonSchema, includeInspection = false): Jso
             diagnostics: { type: 'array', items: PLUGIN_DIAGNOSTIC_SCHEMA },
             inspectionSummary: INSPECTION_SUMMARY_SCHEMA
           }
-        : {})
+        : {}),
+      ...(includeUrl ? { url: CANVAS_URL_SCHEMA } : {})
     }
   };
 }
@@ -132,6 +141,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
   const elementSchema: JsonSchema = { oneOf: Object.values(elementCatalog.schemas) };
   const canvas = canvasSchema(elementSchema);
   const inspectedCanvas = canvasSchema(elementSchema, true);
+  const createdCanvas = canvasSchema(elementSchema, true, true);
   const canvasList: JsonSchema = {
     type: 'object',
     additionalProperties: false,
@@ -173,7 +183,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       name: 'canvas_create',
       title: 'Create canvas',
       description:
-        'Create an empty AgentCanvas v0.2 canvas. This does not create elements or prove a finished layout is readable.',
+        'Create an empty AgentCanvas v0.2 canvas and return its direct browser URL. This does not create elements or prove a finished layout is readable.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -185,7 +195,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
           theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
-      outputSchema: inspectedCanvas
+      outputSchema: createdCanvas
     },
     {
       name: 'canvas_list',
@@ -211,6 +221,25 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         properties: { canvasId: CANVAS_ID }
       },
       outputSchema: inspectedCanvas,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_get_url',
+      title: 'Get canvas browser URL',
+      description:
+        'Return the direct browser URL for an existing canvas. Use this when you need to give a user the canvas URL after a previous creation or edit. This does not create a share link or change access controls.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId'],
+        properties: { canvasId: CANVAS_ID }
+      },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'url'],
+        properties: { canvasId: CANVAS_ID, url: CANVAS_URL_SCHEMA }
+      },
       annotations: { readOnlyHint: true }
     },
     {
@@ -393,6 +422,10 @@ function withInspection(canvas: InspectableCanvas, registry: FrozenPluginRegistr
   });
 }
 
+function withInspectionAndUrl(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonObject {
+  return { ...withInspection(canvas, runtime.registry), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
+}
+
 function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): JsonObject {
   const store = runtime.store;
   const canvasId = input.canvasId as string;
@@ -405,10 +438,14 @@ function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Jso
       mcpCatalog: { coreToolCount, pluginToolCount, totalToolCount: coreToolCount + pluginToolCount }
     });
   }
-  if (name === 'canvas_create') return withInspection(store.createCanvas(input as never), runtime.registry);
+  if (name === 'canvas_create') return withInspectionAndUrl(store.createCanvas(input as never), runtime);
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
   if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime.registry);
+  if (name === 'canvas_get_url') {
+    const canvas = store.getCanvas(canvasId);
+    return { canvasId: canvas.id, url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
+  }
   if (name === 'canvas_inspect') {
     const canvas = store.getCanvas(canvasId);
     const inspection = inspectCanvas(canvas, runtime.registry);

@@ -20,7 +20,8 @@ recipes. An agent should discover the relevant tools and guidance itself.
 2. **Turn a supplied brief into a polished board.** Given a short project brief,
    create a title, summary, goals, work areas, and next actions with a clear
    visual hierarchy. The first view should be useful without manual panning or
-   zooming.
+   zooming. Return the direct canvas URL produced by `canvas_create` so the
+   user can open the result.
 3. **Apply a coherent, accessible theme.** Restyle an existing mixed-element
    canvas using a semantic theme with readable contrast. Preserve content and
    report the theme that was actually persisted.

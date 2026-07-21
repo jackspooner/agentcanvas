@@ -99,6 +99,7 @@ describe('v0.2 assembled runtime', () => {
       })
     ).json();
     const canvasId = created.canvas.id as string;
+    expect(created.url).toBe(`http://127.0.0.1:23003/canvases/${canvasId}`);
     const mutated = await app.request(`/api/v1/canvases/${canvasId}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -156,6 +157,7 @@ describe('v0.2 assembled runtime', () => {
     expect(moduleResponse.headers.get('cache-control')).toContain('immutable');
 
     const mcp = createMcpV2Server({
+      publicBaseUrl: runtime.config.publicBaseUrl,
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
@@ -169,6 +171,7 @@ describe('v0.2 assembled runtime', () => {
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_rename');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_get_guidance');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_inspect');
+    expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_get_url');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_set_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_clear_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_upsert_element');
@@ -177,7 +180,19 @@ describe('v0.2 assembled runtime', () => {
       schemaVersion: 1,
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
-      mcpCatalog: { coreToolCount: 16, pluginToolCount: 0, totalToolCount: 16 }
+      mcpCatalog: { coreToolCount: 17, pluginToolCount: 0, totalToolCount: 17 }
+    });
+    const mcpCreated = await client.callTool({ name: 'canvas_create', arguments: { title: 'MCP created canvas' } });
+    expect(mcpCreated.structuredContent).toMatchObject({
+      title: 'MCP created canvas',
+      url: expect.stringMatching(/^http:\/\/127\.0\.0\.1:23003\/canvases\/canvas_/),
+      diagnostics: [],
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
+    const canvasUrl = await client.callTool({ name: 'canvas_get_url', arguments: { canvasId } });
+    expect(canvasUrl.structuredContent).toEqual({
+      canvasId,
+      url: `http://127.0.0.1:23003/canvases/${canvasId}`
     });
     const inspectCall = await client.callTool({ name: 'canvas_inspect', arguments: { canvasId } });
     expect(inspectCall.structuredContent).toMatchObject({

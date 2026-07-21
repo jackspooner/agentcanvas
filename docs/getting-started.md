@@ -96,7 +96,10 @@ curl -X POST http://127.0.0.1:23003/api/v1/canvases \
   -d '{"title":"My first canvas"}'
 ```
 
-Use the returned canvas ID at `http://127.0.0.1:23003/canvases/<canvas-id>`.
+The response includes a direct `url` for the new canvas. Give that URL to the
+user when appropriate. It is built from `AGENT_CANVAS_PUBLIC_BASE_URL`; with the
+default local configuration it works on the same machine and does not create a
+public share link.
 
 For API mutations and MCP usage, continue to [HTTP and MCP](http-and-mcp.md). To add a third-party element type, continue to [Plugin authoring](plugin-authoring/README.md).
 

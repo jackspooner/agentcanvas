@@ -2313,6 +2313,31 @@
         },
         "responses": {
           "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "canvas": {
+                      "$ref": "#/components/schemas/CanvasRecord"
+                    },
+                    "ok": {
+                      "const": true
+                    },
+                    "url": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "canvas",
+                    "url"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
             "description": "Created canvas"
           },
           "400": {
@@ -2364,7 +2389,8 @@
           "idempotency": "Use expectedRevision; element batches may also use idempotencyKey.",
           "retry": "No retry is normally required.",
           "sideEffects": [
-            "Creates one canvas."
+            "Creates one canvas.",
+            "Returns the direct browser URL based on AGENT_CANVAS_PUBLIC_BASE_URL; this does not create a public share link."
           ]
         }
       }

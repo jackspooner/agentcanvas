@@ -78,6 +78,7 @@ describe('external plugin host proof', () => {
     ).json();
     const canvasId = created.canvas.id as string;
     const { server } = createMcpV2Server({
+      publicBaseUrl: runtime.config.publicBaseUrl,
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
