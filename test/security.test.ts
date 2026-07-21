@@ -35,6 +35,7 @@ describe('local security policy', () => {
     applySecurityHeaders(headers);
     expect(headers.get('content-security-policy')).toContain("default-src 'self'");
     expect(headers.get('content-security-policy')).toContain("'wasm-unsafe-eval'");
+    expect(headers.get('content-security-policy')).toContain("img-src 'self' http: https: blob:");
     expect(headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
     expect(headers.get('content-security-policy')).not.toContain('data:');
     expect(headers.get('referrer-policy')).toBe('no-referrer');

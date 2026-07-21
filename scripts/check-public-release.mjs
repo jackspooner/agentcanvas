@@ -39,7 +39,12 @@ for (const required of [
   'CONTRIBUTING.md',
   '.github/workflows/ci.yml',
   'docs/README.md',
-  'docs/openapi.standard.json'
+  'docs/openapi.standard.json',
+  'docs/deployment.md',
+  'compose.yaml',
+  'deploy/docker/Dockerfile',
+  'deploy/windows/AgentCanvasServiceHost.cs',
+  'deploy/windows/manage-service.ps1'
 ]) {
   requireFile(required);
 }

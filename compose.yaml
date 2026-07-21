@@ -1,0 +1,40 @@
+services:
+  agentcanvas:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+    image: agentcanvas:local
+    init: true
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "127.0.0.1:${AGENT_CANVAS_PORT:-23003}:${AGENT_CANVAS_PORT:-23003}"
+    environment:
+      AGENT_CANVAS_HOST: 0.0.0.0
+      AGENT_CANVAS_PORT: ${AGENT_CANVAS_PORT:-23003}
+      AGENT_CANVAS_PUBLIC_BASE_URL: ${AGENT_CANVAS_PUBLIC_BASE_URL:-http://127.0.0.1:${AGENT_CANVAS_PORT:-23003}}
+      AGENT_CANVAS_ALLOW_REMOTE: "true"
+      AGENT_CANVAS_DB: /var/lib/agentcanvas/agent-canvas.sqlite
+      AGENT_CANVAS_ALLOWED_HOSTS: ${AGENT_CANVAS_ALLOWED_HOSTS:-127.0.0.1:${AGENT_CANVAS_PORT:-23003},localhost:${AGENT_CANVAS_PORT:-23003},[::1]:${AGENT_CANVAS_PORT:-23003}}
+      AGENT_CANVAS_ALLOWED_ORIGINS: ${AGENT_CANVAS_ALLOWED_ORIGINS:-http://127.0.0.1:${AGENT_CANVAS_PORT:-23003},http://localhost:${AGENT_CANVAS_PORT:-23003},http://[::1]:${AGENT_CANVAS_PORT:-23003}}
+    volumes:
+      - agentcanvas-data:/var/lib/agentcanvas
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:${AGENT_CANVAS_PORT:-23003}/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  agentcanvas-data:

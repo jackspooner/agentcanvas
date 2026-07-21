@@ -5,7 +5,10 @@ export const markdownDataSchema: JsonSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['markdown'],
-  properties: { markdown: { type: 'string', maxLength: 20_000 } }
+  properties: {
+    markdown: { type: 'string', maxLength: 20_000 },
+    allowImages: { type: 'boolean' }
+  }
 };
 
 export const markdownStyleSchema: JsonSchema = {
@@ -38,6 +41,7 @@ export const addDocumentInputSchema: JsonSchema = {
     canvasId: { type: 'string', minLength: 1 },
     id: { type: 'string', minLength: 1 },
     markdown: { type: 'string', maxLength: 20_000 },
+    allowImages: { type: 'boolean' },
     x: { type: 'number' },
     y: { type: 'number' },
     width: { type: ['number', 'null'] },

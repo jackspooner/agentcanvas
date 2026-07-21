@@ -11,6 +11,14 @@ v0.3.0-alpha.1 with its three default extensions.
 AgentCanvas has no user-account layer. It binds to loopback by default.
 Extensions are trusted executable dependencies.
 
+Default Markdown documents render HTTP(S) and same-origin relative image URLs.
+Pass `allowImages: false` to the Markdown tool, or store that field as `false`
+in Markdown element data, when an individual document must not load embedded
+images. Arbitrary filesystem paths and `file://` URLs are not Markdown sources;
+use the optional filesystem-images extension for administrator-controlled local
+files. Remote image loads can disclose a viewer's network request to the image
+host; set `allowImages: false` for untrusted Markdown when that matters.
+
 An empty database is initialized at physical schema 3 / document schema 2. Existing v0.1 or physical/document 2/2 databases require the offline migration described in [Upgrading](upgrading.md) before the current host starts.
 
 ## Install dependencies
@@ -129,6 +137,9 @@ Start a compatible [Assets-2](https://github.com/jackspooner/Assets-2) service, 
 - A newer or contradictory database fails explicitly.
 
 ## Long-running operation
+
+For ready-to-use optional service setups, see [Deployment helpers](deployment.md)
+for Docker Compose and Windows Service Control Manager instructions.
 
 After `npm run build`, a supervisor-neutral runtime command is:
 

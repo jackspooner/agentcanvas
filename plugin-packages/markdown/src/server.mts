@@ -29,7 +29,8 @@ const plugin: AgentCanvasServerPlugin = {
     host.registerTool({
       name: 'add-document',
       title: 'Add Markdown document',
-      description: 'Add a sanitized Markdown document to a canvas.',
+      description:
+        'Add a sanitized Markdown document to a canvas. Embedded HTTP(S) and same-origin relative images are displayed by default; set allowImages to false to keep only alt text.',
       inputSchema: addDocumentInputSchema,
       outputSchema: mutationOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -43,7 +44,10 @@ const plugin: AgentCanvasServerPlugin = {
           y: input.y as number,
           width: optionalNumber(input, 'width') ?? 360,
           height: optionalNumber(input, 'height') ?? 240,
-          data: { markdown: input.markdown }
+          data: {
+            markdown: input.markdown,
+            ...(typeof input.allowImages === 'boolean' ? { allowImages: input.allowImages } : {})
+          }
         };
         for (const key of ['zIndex', 'rotation', 'opacity'] as const) {
           const value = optionalNumber(input, key);

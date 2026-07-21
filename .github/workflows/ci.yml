@@ -93,6 +93,9 @@ jobs:
       - name: Verify documentation
         run: npm run check:docs
 
+      - name: Validate Docker Compose deployment definition
+        run: docker compose config --quiet
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=moderate
 

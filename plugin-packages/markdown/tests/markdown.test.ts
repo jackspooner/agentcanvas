@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { projectMarkdown, renderSafeMarkdown, safeLinkHref } from '../src/markdown.js';
+import { projectMarkdown, renderSafeMarkdown, safeImageHref, safeLinkHref } from '../src/markdown.js';
 
 describe('safe Markdown rendering', () => {
   it('renders headings, GFM tables, lists, and fenced code', () => {
@@ -10,15 +10,26 @@ describe('safe Markdown rendering', () => {
     expect(html).toContain('data-language="js"');
   });
 
-  it('escapes raw HTML, removes image sources, and rejects unsafe links', () => {
+  it('renders safe image URLs by default and rejects unsafe links and image schemes', () => {
     const html = renderSafeMarkdown(
-      '<script>alert(1)</script> ![secret](https://example.test/image.png) [bad](javascript:alert(1))'
+      '<script>alert(1)</script> ![secret](https://example.test/image.png "title") [bad](javascript:alert(1))'
     );
     expect(html).not.toContain('<script>');
-    expect(html).not.toContain('<img');
+    expect(html).toContain('<img src="https://example.test/image.png" alt="secret"');
     expect(html).not.toContain('javascript:');
     expect(html).toContain('&lt;script&gt;');
     expect(safeLinkHref('https://example.test')).toBe('https://example.test');
+    expect(safeImageHref('file:///Users/example/image.png')).toBeNull();
+    expect(safeImageHref('data:image/png;base64,abc')).toBeNull();
+    expect(safeImageHref('//evil.example/image.png')).toBeNull();
+    expect(safeImageHref('/images/local.png')).toBe('/images/local.png');
+    expect(renderSafeMarkdown('![local](/images/local.png)')).toContain('src="/images/local.png"');
+  });
+
+  it('can disable embedded images while preserving their alt text', () => {
+    const html = renderSafeMarkdown('![secret](https://example.test/image.png)', { allowImages: false });
+    expect(html).not.toContain('<img');
+    expect(html).toContain('secret');
   });
 
   it('creates a deterministic semantic snapshot projection', () => {

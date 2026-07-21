@@ -24,6 +24,9 @@ bundle are built, the process-manager-neutral runtime command is:
 node --import tsx src/server.ts
 ```
 
+For packaged long-running setups, see [Deployment helpers](deployment.md) for
+the Docker Compose and Windows Service Control Manager paths.
+
 Run it from the repository root. An optional supervisor owns process startup,
 shutdown, environment injection, logging, and restart policy; those mechanisms
 are not part of the AgentCanvas runtime contract. Whatever launches the

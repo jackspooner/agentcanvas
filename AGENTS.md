@@ -20,7 +20,10 @@
 
 ## Optional media capabilities
 
-AgentCanvas core has no required media extension or Windows service dependency.
+AgentCanvas core has no required media extension or process-manager dependency.
+The optional public Docker Compose and Windows Service Control Manager helpers
+live under `compose.yaml` and `deploy/`; they are deployment conveniences, not
+kernel contracts.
 
 - The host owns `agentcanvas.image-sources@1.0.0`, a registry for provider-neutral image references and opaque image resources.
 - `agentcanvas.assets2` and `agentcanvas.filesystem-images` register independent providers in that registry.

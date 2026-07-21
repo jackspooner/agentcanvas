@@ -50,7 +50,7 @@ Persisted types are host-derived, for example `agentcanvas.markdown/document`. M
 ### Verified plugin behavior
 
 - Primitives render distinct rectangle, ellipse, and diamond shapes. Connector renderers use host geometry for element anchors and render labels.
-- Markdown escapes raw HTML, removes image sources, rejects unsafe links, and produces a deterministic semantic snapshot rather than DOM pixel parity.
+- Markdown escapes raw HTML, renders safe HTTP(S) and same-origin relative image URLs by default, supports per-document `allowImages: false`, rejects unsafe links and image schemes, and produces a deterministic semantic snapshot rather than DOM pixel parity.
 - Tables render captions in both browser and snapshot output.
 - Assets-2 validates durable refs, probes exact provider identity/capabilities, resolves metadata and bounded JSON content, creates same-origin resource handles, sanitizes details, and implements `contain`, `cover`, `stretch`, and `original` fit semantics.
 - Image overlays support inline and asset-backed bbox layouts, path overlays, labels/legends, browser PNG/ZIP export, and server PNG/ZIP opaque-resource procedures. Server PNG output reports a warning when a referenced background image is not embedded.

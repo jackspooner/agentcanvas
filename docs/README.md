@@ -19,6 +19,7 @@ The public distribution is the GitHub source repository. The root package remain
 | I want to… | Start here |
 |---|---|
 | Install or run AgentCanvas | [Getting started](getting-started.md) |
+| Run it as a Docker or Windows service | [Deployment helpers](deployment.md) |
 | Upgrade an existing installation | [Upgrading](upgrading.md) |
 | Operate the service or manage extensions | [Operations](operations.md) |
 | Use the HTTP API or MCP tools | [HTTP and MCP](http-and-mcp.md) |
@@ -55,6 +56,7 @@ runtime](plugin-snapshot-runtime.md).
 ## Operator and API documentation
 
 - [Getting started](getting-started.md): prerequisites, installation, default plugins, first start, and verification.
+- [Deployment helpers](deployment.md): Docker Compose and Windows Service Control Manager setup.
 - [Upgrading](upgrading.md): process-manager-neutral source updates, builds, extension replacement, migrations, restart, and verification.
 - [Operations](operations.md): source/catalog/runtime layout, install/disable/replace procedures, service lifecycle, backups, and health checks.
 - [HTTP and MCP](http-and-mcp.md): current routes, discovery, mutation operations, MCP transports, and contract ownership.
