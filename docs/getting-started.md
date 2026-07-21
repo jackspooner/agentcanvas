@@ -148,7 +148,7 @@ is used, configure it to:
 - restart the process after a new build or extension-set change.
 
 AgentCanvas does not require Servy, systemd, Docker, or any other specific
-supervisor. Tool-specific examples under `service/` are optional examples for
-operators who already use those tools; they are not the public installation
-path. See [Operations](operations.md) for lifecycle requirements and
-[Upgrading](upgrading.md) before updating an existing installation.
+supervisor. Process-manager configuration remains deployment-owned and is not
+part of the public source distribution. See [Operations](operations.md) for
+lifecycle requirements and [Upgrading](upgrading.md) before updating an
+existing installation.

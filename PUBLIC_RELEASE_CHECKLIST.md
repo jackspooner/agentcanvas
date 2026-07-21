@@ -15,6 +15,7 @@ AgentCanvas should be public as an agent-operable browser canvas and MCP surface
 - [x] Confirm share links, screenshots, asset refs, and Markdown rendering do not expose raw private data or unsafe HTML.
 - [x] Publish as a GitHub clone-and-run source application; keep the root package private and describe the SDK, testkit, and scaffolder as unavailable from npm until their separate release.
 - [x] Keep deployment-specific migration IDs, database counts, backup names, hashes, and retention records out of public operator and release documentation.
+- [x] Keep Workspace2/Servy deployment templates and lifecycle scripts out of the public source tree; the release check rejects tracked `service/` artifacts.
 
 ## Environment contract
 

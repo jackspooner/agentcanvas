@@ -20,7 +20,6 @@
       "*.ts",
       "*.html",
       "*.json",
-      "service/**/*.json",
       "!package-lock.json",
       "!packages/**/dist",
       "!plugin-packages/**/dist"

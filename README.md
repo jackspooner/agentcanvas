@@ -68,9 +68,9 @@ node --import tsx src/server.ts
 ```
 
 AgentCanvas does not require or select the supervisor. Optional deployment
-examples under `service/` apply only to operators who already use those tools.
-See [Getting started](docs/getting-started.md), [Operations](docs/operations.md),
-and [Upgrading](docs/upgrading.md).
+configuration remains deployment-owned and is not part of the public source
+distribution. See [Getting started](docs/getting-started.md),
+[Operations](docs/operations.md), and [Upgrading](docs/upgrading.md).
 
 ## Extensions
 
