@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type {
   AssetsCapabilityV1,
   JsonObject,
@@ -142,6 +143,7 @@ async function cancel(response: Response): Promise<void> {
 
 export class Assets2Capability implements AssetsCapabilityV1 {
   private readonly handles = new Map<string, OpaqueResourceHandle>();
+  private readonly pendingHandles = new Map<string, Promise<OpaqueResourceHandle>>();
 
   constructor(
     private readonly config: AssetsPluginConfig,
@@ -334,6 +336,21 @@ export class Assets2Capability implements AssetsCapabilityV1 {
     const cached = this.handles.get(referenceKey);
     if (cached && this.resources.details(cached.handle)) return cached;
     if (cached) this.handles.delete(referenceKey);
+    const pending = this.pendingHandles.get(referenceKey);
+    if (pending) return pending;
+    const creation = this.createContentHandle(reference, signal);
+    this.pendingHandles.set(referenceKey, creation);
+    try {
+      return await creation;
+    } finally {
+      this.pendingHandles.delete(referenceKey);
+    }
+  }
+
+  private async createContentHandle(
+    reference: AssetReference,
+    signal: AbortSignal
+  ): Promise<OpaqueResourceHandle> {
     const record = await this.metadata(reference, signal);
     const mimeType =
       typeof record.content_type === 'string' ? record.content_type.split(';')[0].trim().toLowerCase() : '';
@@ -355,8 +372,28 @@ export class Assets2Capability implements AssetsCapabilityV1 {
       ...(typeof record.content_sha256 === 'string' && /^[a-f0-9]{64}$/i.test(record.content_sha256)
         ? { sha256: record.content_sha256.toLowerCase() }
         : {}),
+      mutable: true,
       ttlMs: 60 * 60 * 1000,
       load: async (resourceSignal): Promise<ResourcePayload> => {
+        const currentRecord = await this.metadata(reference, resourceSignal);
+        const currentMimeType =
+          typeof currentRecord.content_type === 'string'
+            ? currentRecord.content_type.split(';')[0].trim().toLowerCase()
+            : '';
+        if (currentMimeType !== mimeType || !SAFE_RESOURCE_TYPES.has(currentMimeType)) {
+          throw new Error('Assets-2 asset MIME type changed or is unsupported');
+        }
+        const currentByteLength =
+          typeof currentRecord.size_bytes === 'number' && Number.isSafeInteger(currentRecord.size_bytes)
+            ? currentRecord.size_bytes
+            : undefined;
+        if (currentByteLength !== undefined && currentByteLength > this.config.contentMaxBytes) {
+          throw new Error('Assets-2 asset exceeds the content byte limit');
+        }
+        const currentSha256 =
+          typeof currentRecord.content_sha256 === 'string' && /^[a-f0-9]{64}$/i.test(currentRecord.content_sha256)
+            ? currentRecord.content_sha256.toLowerCase()
+            : undefined;
         const response = await this.request(`${pathFor(reference)}/content`, resourceSignal);
         if (!response.ok) {
           await cancel(response);
@@ -370,16 +407,25 @@ export class Assets2Capability implements AssetsCapabilityV1 {
           await cancel(response);
           throw new Error('Assets-2 content MIME type did not match its metadata');
         }
+        const bytes = await this.boundedBytes(response, this.config.contentMaxBytes);
+        if (currentByteLength !== undefined && currentByteLength !== bytes.byteLength) {
+          throw new Error('Assets-2 content length did not match current metadata');
+        }
+        if (currentSha256 && createHash('sha256').update(bytes).digest('hex') !== currentSha256) {
+          throw new Error('Assets-2 content SHA-256 did not match current metadata');
+        }
+        const currentDetails = normalizeAssetDetails(currentRecord);
+        const currentAsset = object(currentDetails.asset, 'normalized asset details');
         return {
-          bytes: await this.boundedBytes(response, this.config.contentMaxBytes),
+          bytes,
           mimeType,
-          ...(typeof detailAsset.width === 'number' ? { width: detailAsset.width } : {}),
-          ...(typeof detailAsset.height === 'number' ? { height: detailAsset.height } : {})
+          ...(typeof currentAsset.width === 'number' ? { width: currentAsset.width } : {}),
+          ...(typeof currentAsset.height === 'number' ? { height: currentAsset.height } : {})
         };
       }
     });
     if (this.handles.size >= 10_000) this.handles.delete(this.handles.keys().next().value as string);
-    this.handles.set(referenceKey, handle);
+    this.handles.set(this.referenceKey(reference), handle);
     return handle;
   }
 }

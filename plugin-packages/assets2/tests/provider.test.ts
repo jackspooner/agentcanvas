@@ -107,6 +107,17 @@ describe('Assets2Capability', () => {
         })
       )
       .mockResolvedValueOnce(
+        json({
+          project: 'demo',
+          id: reference.assetId,
+          content_type: 'image/png',
+          size_bytes: bytes.byteLength,
+          image_width_px: 64,
+          image_height_px: 32,
+          metadata: {}
+        })
+      )
+      .mockResolvedValueOnce(
         new Response(bytes, {
           headers: { 'content-type': 'image/png', 'content-length': String(bytes.byteLength) }
         })
@@ -155,6 +166,30 @@ describe('Assets2Capability', () => {
     );
     await capability.contentHandle(capability.validateReference(reference), new AbortController().signal);
     expect(registrations[0].mimeType).toBe(mimeType);
+  });
+
+  it('coalesces concurrent stable-reference registrations', async () => {
+    let releaseMetadata!: () => void;
+    const metadataGate = new Promise<void>((resolve) => {
+      releaseMetadata = resolve;
+    });
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => {
+      if (!(new URL(input as string).pathname.endsWith('/content'))) await metadataGate;
+      return json({
+        project: 'demo',
+        id: reference.assetId,
+        content_type: 'model/gltf-binary',
+        size_bytes: 4,
+        metadata: {}
+      });
+    });
+    const registrations: ResourceRegistration[] = [];
+    const capability = new Assets2Capability(config, resourceBroker(registrations), fetcher);
+    const first = capability.contentHandle(capability.validateReference(reference), new AbortController().signal);
+    const second = capability.contentHandle(capability.validateReference(reference), new AbortController().signal);
+    releaseMetadata();
+    await expect(Promise.all([first, second])).resolves.toEqual([expect.any(Object), expect.any(Object)]);
+    expect(registrations).toHaveLength(1);
   });
 
   it('rejects per-reference provider overrides outside the configured Assets-2 URL', () => {

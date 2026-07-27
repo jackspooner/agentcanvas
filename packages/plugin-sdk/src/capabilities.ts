@@ -28,6 +28,13 @@ export interface ResourceRegistration {
   width?: number;
   height?: number;
   sha256?: string;
+  /**
+   * Provider-backed resources may keep their identity while their bytes change.
+   * The host still validates MIME type, size limits, and computes the current
+   * checksum, but does not compare the payload with registration-time size or
+   * checksum hints.
+   */
+  mutable?: boolean;
   ttlMs?: number;
   load(signal: AbortSignal): Promise<ResourcePayload>;
 }

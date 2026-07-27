@@ -6,6 +6,14 @@ Capabilities are named singleton providers with exact semantic versions. Consume
 
 ### Host capability: `agentcanvas.snapshot-resources@1.0.0`
 
+Resource registrations are fixed by default. A provider that owns a stable
+identity with replaceable bytes must opt into `mutable: true`; the host then
+refreshes the handle's measured size, checksum, and dimensions from the loaded
+payload while retaining MIME-type validation and byte limits. Assets-2 uses this
+mode because `asset_replace_content` preserves the asset ID. Providers must
+revalidate their current metadata before fetching mutable content and reject
+size or checksum mismatches rather than weakening integrity checks.
+
 The host resource broker supports:
 
 - registering a lazy bounded byte loader with MIME, optional length/dimensions/SHA-256, and TTL;

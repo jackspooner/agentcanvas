@@ -22,4 +22,24 @@ describe('opaque resource broker', () => {
     expect(broker.details(handle.handle)).toBeNull();
     await expect(broker.load(handle.handle, new AbortController().signal)).resolves.toBeNull();
   });
+
+  it('refreshes mutable provider metadata while retaining the handle', async () => {
+    let bytes = Uint8Array.from([1, 2]);
+    const broker = new ResourceBroker();
+    const handle = broker.register({
+      mimeType: 'model/gltf-binary',
+      byteLength: bytes.byteLength,
+      mutable: true,
+      load: async () => ({ bytes, mimeType: 'model/gltf-binary' })
+    });
+
+    await expect(broker.load(handle.handle, new AbortController().signal)).resolves.toMatchObject({ bytes });
+    const firstDetails = broker.details(handle.handle);
+    expect(firstDetails).toMatchObject({ byteLength: 2, sha256: expect.any(String) });
+
+    bytes = Uint8Array.from([3, 4, 5, 6]);
+    await expect(broker.load(handle.handle, new AbortController().signal)).resolves.toMatchObject({ bytes });
+    expect(broker.details(handle.handle)).toMatchObject({ byteLength: 4, sha256: expect.any(String) });
+    expect(broker.details(handle.handle)?.sha256).not.toBe(firstDetails?.sha256);
+  });
 });

@@ -280,6 +280,13 @@ When upgrading an existing MCP client from v0.1, restart or reload that client's
 
 Snapshots and plugin exports return compact opaque resource handles and metadata. Agent-facing JSON never contains full base64 strings or data URLs.
 
+Provider-backed resource handles may outlive a replacement of the bytes behind a
+stable source identity. Such registrations explicitly opt into mutable metadata:
+the broker refreshes byte length, SHA-256, and dimensions after each load while
+continuing to enforce the registered MIME type, byte limit, and content response
+checks. Fixed registrations retain strict registration-time size and checksum
+validation.
+
 ### Agent guidance
 
 The repository bundles an operational skill at

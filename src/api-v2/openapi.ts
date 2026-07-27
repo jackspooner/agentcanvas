@@ -135,6 +135,8 @@ export function createRegistryOpenApiDocument(
   addPath(paths, '/api/v1/resources/{handle}/content', 'get', {
     operationId: 'canvasGetResourceContent',
     summary: 'Resolve bounded content for an opaque resource handle',
+    description:
+      'Returns the current bounded bytes for the handle. Provider-backed resources may refresh size, checksum, and dimensions when their stable source identity has mutable content; MIME type and delivery limits remain enforced.',
     tags: ['Resources'],
     parameters: [{ name: 'handle', in: 'path', required: true, schema: { type: 'string' } }],
     responses: {
@@ -146,7 +148,7 @@ export function createRegistryOpenApiDocument(
       useWhen: ['A consumer explicitly needs bytes after inspecting resource details.'],
       doNotUseWhen: ['Agent-readable metadata or a compact resource URL is sufficient.'],
       sideEffects: [],
-      consistency: { refresh: [] }
+      consistency: { refresh: ['Resource metadata is refreshed after mutable provider content is loaded.'] }
     }
   });
 
