@@ -43,7 +43,7 @@ The source packages exist under `plugin-packages/`. Building the catalog does no
 | `agentcanvas.gallery` | optional | `gallery` | `create`, `append-items`, `remove-item`, `reorder-items`, `set-cover`, `update-settings` | — | provider-neutral images through `agentcanvas.image-sources@1.0.0` |
 | `agentcanvas.image-overlays` | optional | `bbox`, `path` | `add-bbox`, `add-path`, `export-png`, `export-mask-zip` | `export-png`, `export-mask-zip` | requires Assets and snapshot resources |
 | `agentcanvas.video` | optional | `video` | `place` | — | requires Assets |
-| `agentcanvas.glb-viewer` | optional | `model` | `place` | — | requires Assets |
+| `agentcanvas.glb-viewer` | optional | `model` | `place` | `details` | requires Assets |
 
 Persisted types are host-derived, for example `agentcanvas.markdown/document`. MCP tool names are host-derived, for example `agentcanvas_markdown__add_document`.
 
@@ -53,6 +53,7 @@ Persisted types are host-derived, for example `agentcanvas.markdown/document`. M
 - Markdown escapes raw HTML, renders safe HTTP(S) and same-origin relative image URLs by default, supports per-document `allowImages: false`, rejects unsafe links and image schemes, and produces a deterministic semantic snapshot rather than DOM pixel parity.
 - Tables render captions in both browser and snapshot output.
 - Assets-2 validates durable refs, probes exact provider identity/capabilities, resolves metadata and bounded JSON content, creates same-origin resource handles, sanitizes details, and implements `contain`, `cover`, `stretch`, and `original` fit semantics.
+- The browser host owns one optional node-level Details affordance. Assets-2 images and GLB models use it; GLB details include safe asset identity, logical asset path, byte size, timestamps, generation metadata, and recorded source-image references without exposing provider-local filesystem paths.
 - Image overlays support inline and asset-backed bbox layouts, path overlays, labels/legends, browser PNG/ZIP export, and server PNG/ZIP opaque-resource procedures. Server PNG output reports a warning when a referenced background image is not embedded.
 - Video and GLB plugins resolve Assets-2 resources, manage browser object-URL cleanup, and render deterministic poster or placeholder snapshots.
 - `group` has no v0.2 plugin or canonical type. Migration blocks if any legacy group is present.

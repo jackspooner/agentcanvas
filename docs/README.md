@@ -21,6 +21,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Install or run AgentCanvas | [Getting started](getting-started.md) |
 | Run it as a Docker or Windows service | [Deployment helpers](deployment.md) |
 | Upgrade an existing installation | [Upgrading](upgrading.md) |
+| Understand macro definitions and execution | [Macros](proposals/macros.md) |
 | Operate the service or manage extensions | [Operations](operations.md) |
 | Use the HTTP API or MCP tools | [HTTP and MCP](http-and-mcp.md) |
 | Prepare or evaluate an AI agent | [Agent readiness](agent-readiness.md) |
@@ -32,6 +33,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Follow a complete extension example | [Build your first extension](plugin-authoring/tutorial.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |
 | Migrate a v0.1 database | [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md) |
+| Migrate physical schema 2 or 3 to schema 4 | [Physical schema 4 migration](physical-schema-4-migration.md) |
 
 ## Extension documentation
 
@@ -59,6 +61,7 @@ runtime](plugin-snapshot-runtime.md).
 - [Getting started](getting-started.md): prerequisites, installation, default plugins, first start, and verification.
 - [Deployment helpers](deployment.md): Docker Compose and Windows Service Control Manager setup.
 - [Upgrading](upgrading.md): process-manager-neutral source updates, builds, extension replacement, migrations, restart, and verification.
+- [Physical schema 4 migration](physical-schema-4-migration.md): offline macro-storage migration paths, backup manifests, preservation verification, and restore.
 - [Operations](operations.md): source/catalog/runtime layout, install/disable/replace procedures, service lifecycle, backups, and health checks.
 - [HTTP and MCP](http-and-mcp.md): current routes, discovery, mutation operations, MCP transports, and contract ownership.
 - [Agent readiness](agent-readiness.md): bundled operational skill, Hermes setup, eight acceptance objectives, and evidence rules.

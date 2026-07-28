@@ -54,8 +54,11 @@ export function inspectPluginSchemaMigrations(
   registry: FrozenPluginRegistry
 ): PluginSchemaInspection {
   const state = inspectDatabaseVersion(db);
-  if (state.kind !== 'v2')
-    return { pending: [], blockers: [`plugin schema inspection requires a v0.2 database, found ${state.kind}`] };
+  if (state.kind !== 'v2' || state.physicalVersion !== 4)
+    return {
+      pending: [],
+      blockers: [`plugin schema inspection requires physical/document version 4/2, found ${state.kind}`]
+    };
   const pending: PendingPluginSchemaMigration[] = [];
   const blockers: string[] = [];
   const rows = db.prepare('SELECT id, elements_json FROM canvases ORDER BY id').all() as unknown as CanvasElementsRow[];
@@ -169,6 +172,9 @@ export async function applyPluginSchemaMigrations(input: {
     db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 1; BEGIN EXCLUSIVE; ROLLBACK;');
     const inspection = inspectPluginSchemaMigrations(db, input.registry);
     if (inspection.blockers.length) throw new Error(inspection.blockers.join('; '));
+    const state = inspectDatabaseVersion(db);
+    if (state.kind !== 'v2' || state.physicalVersion !== 4)
+      throw new Error(`plugin schema migration requires physical/document version 4/2, found ${state.kind}`);
     if (!inspection.pending.length) throw new Error('no installed-plugin schema migrations are pending');
     const before = counts(db);
     await backup(db, backupPath);
@@ -177,6 +183,8 @@ export async function applyPluginSchemaMigrations(input: {
       backupPath,
       sourceVersion: 2,
       targetVersion: 2,
+      sourcePhysicalVersion: state.physicalVersion,
+      targetPhysicalVersion: state.physicalVersion,
       createdAt: now.toISOString(),
       counts: before,
       toolVersion: input.toolVersion

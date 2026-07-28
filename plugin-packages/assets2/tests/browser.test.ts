@@ -124,13 +124,14 @@ describe('Assets-2 browser renderer', () => {
     vi.stubGlobal('fetch', fetcher);
     const update = vi.fn();
     const close = vi.fn();
-    const rendererContext = context(element(), new AbortController().signal);
+    const detailsController = new AbortController();
+    const rendererContext = context(element(), detailsController.signal);
     rendererContext.overlays = { open: () => ({ update, close }) };
     const root = document.createElement('div').attachShadow({ mode: 'open' });
     const mounted = renderer.mount(root, rendererContext);
-    await vi.waitFor(() => expect(root.querySelector('button')).toBeTruthy());
-    root.querySelector('button')?.click();
-    await vi.waitFor(() => expect(update).toHaveBeenCalled());
+    expect(root.querySelector('button')).toBeNull();
+    await renderer.details?.open(rendererContext);
+    expect(update).toHaveBeenCalled();
     const panel = update.mock.calls[0][0] as HTMLElement;
     expect(panel.textContent).toContain('openai / gpt-image');
     expect(panel.textContent).toContain('A safe prompt');
@@ -138,6 +139,7 @@ describe('Assets-2 browser renderer', () => {
       '/api/v1/plugins/agentcanvas.assets2/procedures/details',
       expect.objectContaining({ method: 'POST', credentials: 'same-origin' })
     );
+    detailsController.abort();
     await mounted.dispose();
     expect(close).toHaveBeenCalled();
   });

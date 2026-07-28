@@ -9,6 +9,7 @@ import {
   type MigrationBackupManifest
 } from './backup';
 import { inspectMigrationDatabase, intendedMigrationBackupPath } from './inspect';
+import { MACRO_STORAGE_SCHEMA_SQL } from '../store/v2-schema.js';
 import { canonicalizeLegacyElement } from './legacy';
 import type { CanonicalElement, JsonObject, LegacyElementImporter, MigrationCounts } from './types';
 import {
@@ -360,19 +361,22 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
     const migrationRunId = `migration_${createHash('sha256').update(`${MIGRATION_ID}:${createdAt}`).digest('hex').slice(0, 20)}`;
 
     createV2Schema(db);
+    db.exec(MACRO_STORAGE_SCHEMA_SQL);
     const updateCanvas = db.prepare('UPDATE canvases SET elements_json = ?, document_version = 2 WHERE id = ?');
     for (const canvas of transformed) updateCanvas.run(canvas.elementsJson, canvas.id);
     db.exec('UPDATE canvas_events SET document_version = 1;');
     replaceIdempotencyTable(db);
     db.prepare(
       `INSERT INTO agent_canvas_installation_metadata
-       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 3, 2, ?, ?)`
+       (id, physical_version, document_version, migrated_at, tool_version) VALUES (1, 4, 2, ?, ?)`
     ).run(createdAt, input.toolVersion);
-    db.exec('PRAGMA user_version = 3;');
+    db.exec('PRAGMA user_version = 4;');
 
     const provisionalSummary = {
       sourceVersion: 1,
       targetVersion: 2,
+      sourcePhysicalVersion: preflight.versions.physicalVersion,
+      targetPhysicalVersion: 4,
       countsBefore: expectations.countsBefore,
       countsAfter: { ...expectations.countsBefore, idempotencyRows: 0 } as MigrationCounts,
       mappedElementCounts: expectations.mappedElementCounts,
@@ -387,7 +391,7 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
       `INSERT INTO agent_canvas_migration_runs
        (id, migration_id, source_physical_version, target_physical_version, source_document_version,
         target_document_version, started_at, completed_at, backup_path, backup_sha256, summary_json)
-       VALUES (?, ?, ?, 3, 1, 2, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, 4, 1, 2, ?, ?, ?, ?, ?)`
     ).run(
       migrationRunId,
       MIGRATION_ID,

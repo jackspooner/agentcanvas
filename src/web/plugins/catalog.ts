@@ -212,6 +212,13 @@ export async function loadBrowserPluginRegistry(options: {
             !Array.isArray(renderer.schemaVersions) ||
             renderer.schemaVersions.some((version) => !Number.isSafeInteger(version) || version < 1) ||
             !['node', 'world-underlay', 'world-overlay'].includes(renderer.placement) ||
+            !(
+              renderer.details === undefined ||
+              (isObject(renderer.details) &&
+                (renderer.details.label === undefined ||
+                  (typeof renderer.details.label === 'string' && renderer.details.label.length > 0)) &&
+                typeof renderer.details.open === 'function')
+            ) ||
             typeof renderer.mount !== 'function'
           ) {
             throw new TypeError(`${plugin.id} registered an invalid browser renderer`);

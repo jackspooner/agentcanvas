@@ -1,10 +1,4 @@
-import type {
-  AgentCanvasBrowserPlugin,
-  BrowserPluginHost,
-  JsonObject,
-  RendererContext,
-  RendererOverlayHandle
-} from '@agentcanvas/plugin-sdk';
+import type { AgentCanvasBrowserPlugin, BrowserPluginHost, JsonObject, RendererContext } from '@agentcanvas/plugin-sdk';
 import { assetElementData, fitToObjectFit, type AssetReference } from '../contracts.js';
 
 const styles = `
@@ -13,8 +7,6 @@ const styles = `
   img{display:block;width:100%;height:100%;object-position:center;background:var(--asset-background,#f8fafc)}
   .placeholder{display:grid;width:100%;height:100%;place-content:center;gap:4px;text-align:center;color:var(--asset-muted,#64748b);background:var(--asset-background,#f8fafc)}.placeholder strong{color:var(--asset-color,#475569)}.placeholder span{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   figcaption{position:absolute;right:0;bottom:0;left:0;box-sizing:border-box;padding:7px 10px;background:var(--asset-surface,#fff);color:var(--asset-color,#334155);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  button{position:absolute;top:8px;right:8px;border:1px solid var(--asset-border,#cbd5e1);border-radius:6px;background:var(--asset-surface,#fff);padding:5px 8px;color:var(--asset-color,#334155);font:600 11px var(--asset-font,system-ui,sans-serif);cursor:pointer}
-  button:focus-visible{outline:2px solid var(--asset-accent,#2563eb);outline-offset:2px}
 `;
 
 function text(value: unknown, fallback = 'not recorded'): string {
@@ -32,6 +24,20 @@ function detailRow(list: HTMLDListElement, label: string, value: unknown): void 
   const description = document.createElement('dd');
   description.textContent = text(value);
   list.append(term, description);
+}
+
+function formatBytes(value: unknown): string | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined;
+  if (value < 1024) return `${value} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let amount = value;
+  let unit = 'B';
+  for (const candidate of units) {
+    amount /= 1024;
+    unit = candidate;
+    if (amount < 1024) break;
+  }
+  return `${amount >= 10 ? amount.toFixed(1) : amount.toFixed(2)} ${unit}`;
 }
 
 function detailsPanel(details: JsonObject, close: () => void): HTMLElement {
@@ -54,9 +60,11 @@ function detailsPanel(details: JsonObject, close: () => void): HTMLElement {
   const list = document.createElement('dl');
   list.style.cssText = 'display:grid;grid-template-columns:max-content 1fr;gap:7px 14px;margin:0';
   detailRow(list, 'Project', asset.project);
+  detailRow(list, 'Asset path', asset.assetKey ?? asset.groupPath);
   detailRow(list, 'Asset ID', asset.assetId);
   detailRow(list, 'Filename', asset.filename);
   detailRow(list, 'Content type', asset.contentType);
+  detailRow(list, 'File size', formatBytes(asset.sizeBytes));
   detailRow(list, 'Dimensions', asset.width && asset.height ? `${asset.width} × ${asset.height}` : undefined);
   detailRow(list, 'Provider / model', [generation.provider, generation.model].filter(Boolean).join(' / ') || undefined);
   detailRow(list, 'Quality', generation.quality);
@@ -115,12 +123,30 @@ async function fetchDetails(reference: AssetReference, signal: AbortSignal): Pro
   return details;
 }
 
+async function openAssetDetails(context: RendererContext): Promise<void> {
+  let overlay = context.overlays.open(loadingPanel('Loading asset details…'), {
+    modal: true,
+    label: 'Asset details'
+  });
+  const close = () => {
+    overlay.close();
+  };
+  context.signal.addEventListener('abort', close, { once: true });
+  try {
+    const details = await fetchDetails(assetElementData(context.element.data).assetRef, context.signal);
+    if (!context.signal.aborted) overlay.update(detailsPanel(details, close));
+  } catch {
+    if (!context.signal.aborted) overlay.update(loadingPanel('Asset details could not be loaded.'));
+  }
+}
+
 const plugin: AgentCanvasBrowserPlugin = {
   activate(host: BrowserPluginHost) {
     host.registerRenderer({
       type: 'agentcanvas.assets2/asset',
       schemaVersions: [1],
       placement: 'node',
+      details: { open: openAssetDetails },
       mount(root, initial) {
         const style = document.createElement('style');
         style.textContent = styles;
@@ -134,19 +160,12 @@ const plugin: AgentCanvasBrowserPlugin = {
         const identity = document.createElement('span');
         placeholder.append(unavailable, identity);
         const caption = document.createElement('figcaption');
-        const detailsButton = document.createElement('button');
-        detailsButton.type = 'button';
-        detailsButton.textContent = 'Details';
-        detailsButton.dataset.agentcanvasInteractive = '';
         root.replaceChildren(style, frame);
         let current = initial;
         let currentHandle: string | null = null;
         let objectUrl: string | null = null;
         let requestVersion = 0;
         let disposed = false;
-        let overlay: RendererOverlayHandle | null = null;
-        let detailsController: AbortController | null = null;
-        let currentReferenceKey: string | null = null;
 
         const revoke = () => {
           if (!objectUrl) return;
@@ -158,7 +177,7 @@ const plugin: AgentCanvasBrowserPlugin = {
         const showPlaceholder = () => {
           const data = assetElementData(current.element.data);
           identity.textContent = data.assetRef.assetId ?? data.assetRef.assetKey ?? current.element.id;
-          frame.replaceChildren(placeholder, detailsButton, ...(data.caption ? [caption] : []));
+          frame.replaceChildren(placeholder, ...(data.caption ? [caption] : []));
         };
 
         const load = async (context: RendererContext) => {
@@ -186,11 +205,7 @@ const plugin: AgentCanvasBrowserPlugin = {
             if (disposed || context.signal.aborted || version !== requestVersion) return;
             objectUrl = URL.createObjectURL(blob);
             image.src = objectUrl;
-            frame.replaceChildren(
-              image,
-              detailsButton,
-              ...(assetElementData(context.element.data).caption ? [caption] : [])
-            );
+            frame.replaceChildren(image, ...(assetElementData(context.element.data).caption ? [caption] : []));
           } catch {
             if (context.signal.aborted || disposed || version !== requestVersion) return;
             context.reportDiagnostic({
@@ -207,21 +222,12 @@ const plugin: AgentCanvasBrowserPlugin = {
 
         const update = async (context: RendererContext) => {
           const data = assetElementData(context.element.data);
-          const referenceKey = `${data.assetRef.project}:${data.assetRef.assetId ?? ''}:${data.assetRef.assetKey ?? ''}`;
-          if (currentReferenceKey && currentReferenceKey !== referenceKey) {
-            detailsController?.abort();
-            detailsController = null;
-            overlay?.close();
-            overlay = null;
-          }
-          currentReferenceKey = referenceKey;
           current = context;
           const label = data.alt ?? data.caption ?? `Asset ${data.assetRef.assetId ?? data.assetRef.assetKey}`;
           image.alt = label;
           image.style.objectFit = fitToObjectFit(data.fit);
           image.style.objectPosition = 'center';
           caption.textContent = data.caption ?? '';
-          detailsButton.setAttribute('aria-label', `Open asset details for ${label}`);
           const styleData = context.element.style ?? {};
           const { colors, typography, shape } = context.theme;
           frame.style.setProperty(
@@ -251,38 +257,12 @@ const plugin: AgentCanvasBrowserPlugin = {
           await load(context);
         };
 
-        detailsButton.addEventListener('click', () => {
-          overlay?.close();
-          detailsController?.abort();
-          const controller = new AbortController();
-          detailsController = controller;
-          const close = () => {
-            controller.abort();
-            detailsController = null;
-            overlay?.close();
-            overlay = null;
-          };
-          overlay = current.overlays.open(loadingPanel('Loading asset details…'), {
-            modal: true,
-            label: 'Asset details'
-          });
-          void fetchDetails(assetElementData(current.element.data).assetRef, controller.signal)
-            .then((details) => overlay?.update(detailsPanel(details, close)))
-            .catch(() => {
-              if (!controller.signal.aborted) overlay?.update(loadingPanel('Asset details could not be loaded.'));
-            });
-        });
-
         void update(initial);
         return {
           update,
           dispose() {
             disposed = true;
             requestVersion += 1;
-            detailsController?.abort();
-            detailsController = null;
-            overlay?.close();
-            overlay = null;
             revoke();
             root.replaceChildren();
           }

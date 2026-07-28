@@ -13,12 +13,23 @@ interface BrowserElementRenderer {
   type: `${string}/${string}`;
   schemaVersions: readonly number[];
   placement: "node" | "world-underlay" | "world-overlay";
+  details?: {
+    label?: string;
+    open(context: RendererContext): void | Promise<void>;
+  };
   mount(root: ShadowRoot, context: RendererContext): {
     update(next: RendererContext): void | Promise<void>;
     dispose(): void | Promise<void>;
   };
 }
 ```
+
+Node renderers may opt into the shared Details affordance. The editor owns the
+button and its interaction isolation; the extension receives a current
+`RendererContext` and owns the safe metadata projection plus overlay content.
+Abort-aware implementations must close their overlay when `context.signal`
+fires. World renderers may declare the hook, but the current editor only
+presents it for node placements.
 
 The browser activation host exposes `registerRenderer` and, when supported,
 `registerCommand`. Existing browser extensions that only register renderers
@@ -52,6 +63,7 @@ own their per-element `mount`/`update`/`dispose` lifecycle separately.
 - abort prior work, serialize updates, and dispose once;
 - catch mount/update/dispose failures and render a diagnostic card;
 - preserve an external drag handle for editable unlocked node renderers;
+- present one consistent Details button for node renderers that opt in;
 - use `event.composedPath()` for interactive-region detection.
 
 Native controls and elements marked `data-agentcanvas-interactive` do not initiate pan/selection. World renderers are pointer-transparent and receive geometry rather than DOM access.

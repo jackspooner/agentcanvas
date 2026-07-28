@@ -110,6 +110,7 @@ export interface MigrationInspectionReport {
   generatedAt: string;
   sourceVersion: 1 | 2 | null;
   targetVersion: 2;
+  targetPhysicalVersion: 4;
   versions: DatabaseVersionState;
   checks: DatabaseCheckResult;
   counts: MigrationCounts;
@@ -124,6 +125,8 @@ export interface MigrationInspectionReport {
 export interface MigrationVerificationSummary {
   sourceVersion: number;
   targetVersion: number;
+  sourcePhysicalVersion?: number;
+  targetPhysicalVersion?: number;
   countsBefore: MigrationCounts;
   countsAfter: MigrationCounts;
   mappedElementCounts: TypeMappingCount[];

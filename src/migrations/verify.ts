@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { PHYSICAL_SCHEMA_VERSION } from '../store/v2-schema.js';
 import { LEGACY_TYPE_DEFINITIONS, RUNTIME_ONLY_LEGACY_FIELDS } from './legacy';
 import type { CanonicalElement, MigrationCounts, MigrationVerificationSummary, TypeMappingCount } from './types';
 
@@ -30,6 +31,8 @@ export interface CanonicalElementValidationContext {
 export type CanonicalElementValidator = (element: CanonicalElement, context: CanonicalElementValidationContext) => void;
 
 export interface MigrationVerificationExpectations {
+  sourceVersion?: number;
+  sourcePhysicalVersion?: number;
   countsBefore: MigrationCounts;
   mappedElementCounts: TypeMappingCount[];
   strippedRuntimeFieldCount: number;
@@ -190,12 +193,20 @@ function mappedCountsFromCanonical(typeCounts: Map<string, number>): TypeMapping
     .sort((a, b) => a.legacyType.localeCompare(b.legacyType));
 }
 
-function sameCounts(actual: MigrationCounts, expected: MigrationCounts, errors: string[]): void {
+function sameCounts(
+  actual: MigrationCounts,
+  expected: MigrationCounts,
+  invalidatedIdempotencyRows: number,
+  errors: string[]
+): void {
   for (const field of ['canvases', 'elements', 'shareLinks', 'events'] as const) {
     if (actual[field] !== expected[field])
       errors.push(`${field} count changed: expected ${expected[field]}, found ${actual[field]}`);
   }
-  if (actual.idempotencyRows !== 0) errors.push(`idempotency rows were not cleared: found ${actual.idempotencyRows}`);
+  const expectedIdempotencyRows = expected.idempotencyRows - invalidatedIdempotencyRows;
+  if (actual.idempotencyRows !== expectedIdempotencyRows) {
+    errors.push(`idempotency row count changed: expected ${expectedIdempotencyRows}, found ${actual.idempotencyRows}`);
+  }
 }
 
 function checkSchema(db: DatabaseSync, errors: string[]): void {
@@ -207,7 +218,10 @@ function checkSchema(db: DatabaseSync, errors: string[]): void {
     'agent_canvas_installation_metadata',
     'agent_canvas_migration_runs',
     'plugin_migration_runs',
-    'plugin_kv'
+    'plugin_kv',
+    'macro_definitions',
+    'macro_versions',
+    'macro_invocations'
   ];
   for (const table of requiredTables) if (!hasTable(db, table)) errors.push(`required v0.2 table is missing: ${table}`);
   if (!tableColumns(db, 'canvases').includes('document_version')) errors.push('canvases.document_version is missing');
@@ -237,6 +251,10 @@ function ledgerExpectations(db: DatabaseSync): { expectations?: MigrationVerific
     }
     return {
       expectations: {
+        ...(typeof summary.sourceVersion === 'number' ? { sourceVersion: summary.sourceVersion } : {}),
+        ...(typeof summary.sourcePhysicalVersion === 'number'
+          ? { sourcePhysicalVersion: summary.sourcePhysicalVersion }
+          : {}),
         countsBefore: summary.countsBefore,
         mappedElementCounts: summary.mappedElementCounts,
         strippedRuntimeFieldCount: summary.strippedRuntimeFieldCount,
@@ -256,7 +274,9 @@ export function verifyMigrationConnection(
   const errors: string[] = [];
   checkSchema(db, errors);
   const physicalVersion = Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version);
-  if (physicalVersion !== 3) errors.push(`physical database version must be 3, found ${physicalVersion}`);
+  if (physicalVersion !== PHYSICAL_SCHEMA_VERSION) {
+    errors.push(`physical database version must be ${PHYSICAL_SCHEMA_VERSION}, found ${physicalVersion}`);
+  }
 
   const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(
     (row) => Object.values(row)[0] ?? 'unknown'
@@ -299,7 +319,7 @@ export function verifyMigrationConnection(
   };
   const expectations = options.expectations;
   if (expectations) {
-    sameCounts(countsAfter, expectations.countsBefore, errors);
+    sameCounts(countsAfter, expectations.countsBefore, expectations.invalidatedIdempotencyRows, errors);
     for (const mapping of expectations.mappedElementCounts) {
       const actual = mapping.targetType ? (typeCounts.get(mapping.targetType) ?? 0) : 0;
       if (actual !== mapping.count) {
@@ -312,8 +332,8 @@ export function verifyMigrationConnection(
     const row = db
       .prepare('SELECT physical_version, document_version FROM agent_canvas_installation_metadata WHERE id = 1')
       .get() as { physical_version: number; document_version: number } | undefined;
-    if (!row || row.physical_version !== 3 || row.document_version !== 2) {
-      errors.push('installation metadata does not declare physical/document version 3/2');
+    if (!row || row.physical_version !== PHYSICAL_SCHEMA_VERSION || row.document_version !== 2) {
+      errors.push(`installation metadata does not declare physical/document version ${PHYSICAL_SCHEMA_VERSION}/2`);
     }
   }
   if (hasTable(db, 'agent_canvas_migration_runs') && tableCount(db, 'agent_canvas_migration_runs') < 1) {
@@ -324,8 +344,10 @@ export function verifyMigrationConnection(
     ok: errors.length === 0,
     errors,
     summary: {
-      sourceVersion: 1,
+      sourceVersion: expectations?.sourceVersion ?? 1,
       targetVersion: 2,
+      sourcePhysicalVersion: expectations?.sourcePhysicalVersion,
+      targetPhysicalVersion: PHYSICAL_SCHEMA_VERSION,
       countsBefore: expectations?.countsBefore ?? countsAfter,
       countsAfter,
       mappedElementCounts: expectations?.mappedElementCounts ?? mappedCountsFromCanonical(typeCounts),

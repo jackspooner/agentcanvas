@@ -1,5 +1,6 @@
 import type { JsonObject, JsonSchema } from '@agentcanvas/plugin-sdk';
 import type { FrozenPluginRegistry } from '../plugin-runtime/index.js';
+import { getMacroOpenApiComponentSchemas } from '../macros/schema-catalog.js';
 import { PLUGIN_STATUS_CATALOG_SCHEMA, PLUGIN_STATUS_SCHEMA } from './plugin-status.js';
 import { createProcedureCatalog, type RegistryProcedureCatalog } from './procedures.js';
 import {
@@ -186,6 +187,7 @@ export function createRegistryOpenApiDocument(
     ResourceHandle: RESOURCE_HANDLE_SCHEMA,
     ResourceDetails: RESOURCE_DETAILS_SCHEMA,
     ApiError: API_ERROR_SCHEMA,
+    ...getMacroOpenApiComponentSchemas(),
     ...elementCatalog.schemas
   };
   for (const [name, schema] of Object.entries(options.additionalSchemas ?? {})) {
@@ -201,7 +203,15 @@ export function createRegistryOpenApiDocument(
       ...(options.description ? { description: options.description } : {})
     },
     ...(options.serverUrls?.length ? { servers: options.serverUrls.map((url) => ({ url })) } : {}),
-    tags: [{ name: 'Plugins' }, { name: 'Plugin procedures' }, { name: 'Resources' }],
+    tags: [
+      { name: 'Plugins' },
+      { name: 'Plugin procedures' },
+      { name: 'Resources' },
+      { name: 'Macros' },
+      { name: 'Canvases' },
+      { name: 'Service' },
+      { name: 'Configuration' }
+    ],
     paths,
     components: { schemas: components }
   };

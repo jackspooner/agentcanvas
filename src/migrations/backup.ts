@@ -11,6 +11,8 @@ export interface MigrationBackupManifest {
   sha256: string;
   sourceVersion: number;
   targetVersion: number;
+  sourcePhysicalVersion?: number;
+  targetPhysicalVersion?: number;
   createdAt: string;
   counts: MigrationCounts;
   toolVersion: string;
@@ -44,6 +46,8 @@ export function createBackupManifest(input: {
   backupPath: string;
   sourceVersion: number;
   targetVersion: number;
+  sourcePhysicalVersion?: number;
+  targetPhysicalVersion?: number;
   createdAt?: string;
   counts: MigrationCounts;
   toolVersion: string;
@@ -59,6 +63,8 @@ export function createBackupManifest(input: {
     sha256: sha256File(backupPath),
     sourceVersion: input.sourceVersion,
     targetVersion: input.targetVersion,
+    ...(input.sourcePhysicalVersion !== undefined ? { sourcePhysicalVersion: input.sourcePhysicalVersion } : {}),
+    ...(input.targetPhysicalVersion !== undefined ? { targetPhysicalVersion: input.targetPhysicalVersion } : {}),
     createdAt: input.createdAt ?? new Date().toISOString(),
     counts: { ...input.counts },
     toolVersion: input.toolVersion

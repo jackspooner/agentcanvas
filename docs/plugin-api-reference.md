@@ -71,6 +71,12 @@ KV keys match a bounded safe-key pattern. Values must be finite JSON and at most
 
 Browser entries default-export `AgentCanvasBrowserPlugin` and register framework-neutral `BrowserElementRenderer` objects. See [Browser plugin runtime](plugin-browser-runtime.md).
 
+A renderer may declare an optional `details` hook. The host then renders the
+standard node-level Details button and calls `details.open` with the current
+renderer context. Extensions must fetch only safe projections, use the host
+overlay service, honor the abort signal, and avoid exposing provider-local
+paths or credentials.
+
 Browser entries may also register declared `BrowserCommandDescriptor` values.
 Command IDs are namespaced as `<extension-id>.<local-name>`. A command receives:
 

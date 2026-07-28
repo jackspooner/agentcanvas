@@ -6,7 +6,7 @@ import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject 
 import { isJsonObject } from '@agentcanvas/plugin-sdk';
 import { nanoid } from 'nanoid';
 import { canvasShareUrl } from '../canvas-url.js';
-import { loadConfig, type AgentCanvasConfig } from '../config.js';
+import { type AgentCanvasConfig, loadConfig } from '../config.js';
 import {
   type AgentCanvasConfiguration,
   normalizeConfigurationUpdate,
@@ -28,11 +28,11 @@ import type {
 import { DEFAULT_CANVAS_HEIGHT, DEFAULT_CANVAS_WIDTH } from '../contracts.js';
 import { CanvasError } from '../errors.js';
 import type { PluginElementValidator } from '../plugin-runtime/elements.js';
+import { normalizeCanvasTheme } from '../theme.js';
 import { defaultViewport, normalizeCanvasBounds, normalizeViewportInput, validateSafeId } from '../validation.js';
+import { AGENTCANVAS_VERSION } from '../version.js';
 import { readAgentCanvasConfiguration, writeAgentCanvasConfiguration } from './configuration.js';
 import { initializeEmptyV2Database, inspectDatabaseVersion, requireV2Database } from './version.js';
-import { AGENTCANVAS_VERSION } from '../version.js';
-import { normalizeCanvasTheme } from '../theme.js';
 
 export interface V2CanvasRecord {
   id: string;
@@ -72,6 +72,23 @@ export interface V2CanvasBatchRequest {
   expectedRevision?: number;
   idempotencyKey?: string;
   actor?: string;
+}
+
+export interface V2BatchTransactionContext {
+  db: DatabaseSync;
+  canvas: V2CanvasRecord;
+  response: V2CanvasRecord;
+  revision: number;
+  updatedAt: string;
+  requestDigest: string;
+  normalizedOperations: readonly JsonObject[];
+  actor?: string;
+}
+
+export type V2BatchTransactionCallback<TResponse> = (context: V2BatchTransactionContext) => TResponse;
+
+export interface V2BatchTransactionOptions {
+  idempotencyRequestDigest?: string;
 }
 
 interface CanvasRow {
@@ -128,6 +145,17 @@ function timestamp(): string {
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function validateIdempotencyRequestDigest(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || value.length !== 64 || !/^[0-9a-f]{64}$/.test(value)) {
+    throw new CanvasError(
+      'validation_error',
+      'idempotencyRequestDigest must be a 64-character lowercase SHA-256 hex string',
+      'validation',
+      400
+    );
+  }
 }
 
 function checkRevision(expected: number | undefined, current: number): void {
@@ -339,10 +367,20 @@ export class V2SqliteCanvasStore {
   }
 
   applyOperations(canvasId: string, request: V2CanvasBatchRequest): V2CanvasRecord {
+    return this.applyOperationsWithTransaction(canvasId, request);
+  }
+
+  /** Applies an element batch and lets a caller add transaction-local state before the commit. */
+  applyOperationsWithTransaction<TResponse = V2CanvasRecord>(
+    canvasId: string,
+    request: V2CanvasBatchRequest,
+    callback?: V2BatchTransactionCallback<TResponse>,
+    options: V2BatchTransactionOptions = {}
+  ): TResponse {
     if (!Array.isArray(request.operations)) {
       throw new CanvasError('validation_error', 'operations must be an array', 'validation', 400);
     }
-    const requestDigest = sha256(
+    const ordinaryRequestDigest = sha256(
       serialize({
         canvasId,
         documentVersion: 2,
@@ -350,31 +388,105 @@ export class V2SqliteCanvasStore {
         expectedRevision: request.expectedRevision
       })
     );
-    if (request.idempotencyKey) {
-      const cached = this.db
-        .prepare(
-          'SELECT request_hash, response_json FROM canvas_idempotency_keys WHERE canvas_id=? AND document_version=2 AND key=?'
-        )
-        .get(canvasId, request.idempotencyKey) as { request_hash: string; response_json: string } | undefined;
-      if (cached) {
-        if (cached.request_hash !== requestDigest) {
-          throw new CanvasError(
-            'idempotency_conflict',
-            'idempotency key was reused with a different request',
-            'idempotency',
-            409
-          );
-        }
-        return JSON.parse(cached.response_json) as V2CanvasRecord;
+    if (options.idempotencyRequestDigest !== undefined)
+      validateIdempotencyRequestDigest(options.idempotencyRequestDigest);
+    const requestDigest = options.idempotencyRequestDigest ?? ordinaryRequestDigest;
+    const cached = this.readCachedBatchResponse(canvasId, request.idempotencyKey, requestDigest);
+    if (cached !== null) return JSON.parse(cached) as TResponse;
+
+    // All request validation and element normalization happen before the write transaction.
+    const prepared = this.prepareOperations(canvasId, request);
+    this.db.exec('BEGIN IMMEDIATE;');
+    try {
+      const transactionCached = this.readCachedBatchResponse(canvasId, request.idempotencyKey, requestDigest);
+      if (transactionCached !== null) {
+        this.db.exec('COMMIT;');
+        return JSON.parse(transactionCached) as TResponse;
       }
-    }
-    const response = this.applyOperationsUncached(canvasId, request);
-    if (request.idempotencyKey) {
+      const response = {
+        ...prepared.canvas,
+        elements: prepared.elements,
+        revision: prepared.revision,
+        updatedAt: prepared.updatedAt
+      };
       this.db
-        .prepare(`INSERT INTO canvas_idempotency_keys
-          (canvas_id,document_version,key,request_hash,response_json,created_at) VALUES (?,2,?,?,?,?)`)
-        .run(canvasId, request.idempotencyKey, requestDigest, serialize(response), timestamp());
+        .prepare('UPDATE canvases SET elements_json=?,revision=?,updated_at=? WHERE id=?')
+        .run(serialize(prepared.elements), prepared.revision, prepared.updatedAt, canvasId);
+      for (const operation of prepared.normalizedOperations)
+        this.recordEvent(canvasId, prepared.revision, operation, prepared.updatedAt, request.actor);
+      const shapedResponse: TResponse = callback
+        ? callback({
+            db: this.db,
+            canvas: prepared.canvas,
+            response,
+            revision: prepared.revision,
+            updatedAt: prepared.updatedAt,
+            requestDigest,
+            normalizedOperations: prepared.normalizedOperations,
+            ...(request.actor !== undefined ? { actor: request.actor } : {})
+          })
+        : (response as unknown as TResponse);
+      if (request.idempotencyKey) {
+        this.db
+          .prepare(`INSERT INTO canvas_idempotency_keys
+            (canvas_id,document_version,key,request_hash,response_json,created_at) VALUES (?,2,?,?,?,?)`)
+          .run(canvasId, request.idempotencyKey, requestDigest, serialize(shapedResponse), timestamp());
+      }
+      this.db.exec('COMMIT;');
+      return shapedResponse;
+    } catch (error) {
+      this.db.exec('ROLLBACK;');
+      throw error;
     }
+  }
+
+  /** Reads only a previously committed macro result, allowing replay after the in-memory plan has expired. */
+  getCachedMacroResponse(
+    canvasId: string,
+    idempotencyKey: string,
+    planId: string,
+    expectedRevision: number,
+    requestDigest?: string
+  ): unknown | undefined {
+    const row = this.db
+      .prepare('SELECT response_json FROM canvas_idempotency_keys WHERE canvas_id=? AND document_version=2 AND key=?')
+      .get(canvasId, idempotencyKey) as { response_json: string } | undefined;
+    if (!row) return undefined;
+    if (requestDigest !== undefined) {
+      const cached = JSON.parse(row.response_json) as {
+        canvas?: { revision?: unknown };
+        provenance?: { planId?: unknown };
+      };
+      const hash = this.db
+        .prepare('SELECT request_hash FROM canvas_idempotency_keys WHERE canvas_id=? AND document_version=2 AND key=?')
+        .get(canvasId, idempotencyKey) as { request_hash: string } | undefined;
+      if (!hash || hash.request_hash !== requestDigest) {
+        throw new CanvasError(
+          'idempotency_conflict',
+          'idempotency key was reused with a different macro request',
+          'idempotency',
+          409
+        );
+      }
+      if (!cached.provenance) return undefined;
+      return cached;
+    }
+    const response = JSON.parse(row.response_json) as {
+      canvas?: { revision?: unknown };
+      provenance?: { planId?: unknown };
+    };
+    if (
+      response.provenance &&
+      (response.provenance.planId !== planId || response.canvas?.revision !== expectedRevision + 1)
+    ) {
+      throw new CanvasError(
+        'idempotency_conflict',
+        'idempotency key was reused with a different macro request',
+        'idempotency',
+        409
+      );
+    }
+    if (!response.provenance) return undefined;
     return response;
   }
 
@@ -481,7 +593,39 @@ export class V2SqliteCanvasStore {
     return { ...viewport, updatedAt };
   }
 
-  private applyOperationsUncached(canvasId: string, request: V2CanvasBatchRequest): V2CanvasRecord {
+  private readCachedBatchResponse(
+    canvasId: string,
+    idempotencyKey: string | undefined,
+    requestDigest: string
+  ): string | null {
+    if (!idempotencyKey) return null;
+    const cached = this.db
+      .prepare(
+        'SELECT request_hash, response_json FROM canvas_idempotency_keys WHERE canvas_id=? AND document_version=2 AND key=?'
+      )
+      .get(canvasId, idempotencyKey) as { request_hash: string; response_json: string } | undefined;
+    if (!cached) return null;
+    if (cached.request_hash !== requestDigest) {
+      throw new CanvasError(
+        'idempotency_conflict',
+        'idempotency key was reused with a different request',
+        'idempotency',
+        409
+      );
+    }
+    return cached.response_json;
+  }
+
+  private prepareOperations(
+    canvasId: string,
+    request: V2CanvasBatchRequest
+  ): {
+    canvas: V2CanvasRecord;
+    elements: CanvasElement[];
+    normalizedOperations: JsonObject[];
+    revision: number;
+    updatedAt: string;
+  } {
     const canvas = this.getCanvas(canvasId);
     checkRevision(request.expectedRevision, canvas.revision);
     let elements = [...canvas.elements];
@@ -558,21 +702,13 @@ export class V2SqliteCanvasStore {
     }
     if (elements.length > 2_000)
       throw new CanvasError('validation_error', 'canvas exceeds 2000 elements', 'validation', 400);
-    const revision = canvas.revision + 1;
-    const updatedAt = timestamp();
-    this.db.exec('BEGIN IMMEDIATE;');
-    try {
-      this.db
-        .prepare('UPDATE canvases SET elements_json=?,revision=?,updated_at=? WHERE id=?')
-        .run(serialize(elements), revision, updatedAt, canvasId);
-      for (const operation of normalizedOperations)
-        this.recordEvent(canvasId, revision, operation, updatedAt, request.actor);
-      this.db.exec('COMMIT;');
-    } catch (error) {
-      this.db.exec('ROLLBACK;');
-      throw error;
-    }
-    return { ...canvas, elements, revision, updatedAt };
+    return {
+      canvas,
+      elements,
+      normalizedOperations,
+      revision: canvas.revision + 1,
+      updatedAt: timestamp()
+    };
   }
 
   private recordEvent(

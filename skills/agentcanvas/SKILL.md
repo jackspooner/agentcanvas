@@ -30,21 +30,64 @@ remote media loaded, or the user's requested result is complete.
    deterministic plugin-owned diagnostics. Re-run both checks after repairs.
    Before reporting, the final canvas operations must be `canvas_get` followed
    by `canvas_inspect`, with no mutation afterward.
-5. Visually inspect the browser canvas when browser access is available. If it
-   is not, say that visual rendering and remote-media loading remain
-   unverified.
+5. Treat the final `canvas_get` and `canvas_inspect` results as sufficient
+   verification of persisted canvas content by default. Use browser rendering
+   when the user explicitly requests a visual check, when the task depends on
+   proving rendered appearance or remote-media loading, **or when an
+   image-containing canvas must be checked to establish that its images are
+   present and displaying correctly.** Persisted image elements and clean
+   diagnostics do not prove that result.
 6. Report the canvas ID, what was verified, and any remaining limitation.
+
+## Macro workflow
+
+Macros are host-owned, declarative creation definitions. Use only the public
+HTTP routes and resident MCP tools; macro creation is available through HTTP or
+MCP, not through selection authoring or an extension planner.
+
+1. Discover the current generic catalog with `GET /api/v1/macros` or
+   `macro_list`; do not infer definitions from extension folders or cached tool
+   names.
+2. Fetch an exact immutable version with
+   `GET /api/v1/macros/:macroId/versions/:macroVersion` or `macro_get` using
+   both `macroId` and `macroVersion`. Create, version, or archive through the
+   public macro HTTP/MCP operations and retain the returned exact version.
+3. Plan with `POST /api/v1/canvases/:canvasId/macros/:macroId:plan` or
+   `macro_plan`, supplying `macroVersion`, explicit `{ x, y }` anchor, typed
+   input, and optional `label` in the body. Do not duplicate `canvasId` or
+   `macroId` in that body. Planning is pure: inspect `previewElements`,
+   `effectSummary`, `outputs`, exact version, revision, and expiry without
+   expecting canvas persistence.
+4. Execute with the canvas macro execution route or `canvas_run_macro`, always
+   supplying the plan ID, `expectedRevision`, and a bounded `idempotencyKey`.
+   Reuse the same key when retrying the same logical execution; allocate a new
+   key only for a new plan/execution. A direct invocation (`mode: "direct"`) validates and plans
+   internally before the same atomic, revision-aware commit; it does not bypass
+   validation or preview semantics. Prefer plan mode when a browser preview or
+   confirmation is required.
+5. After execution, call `canvas_get` and `canvas_inspect` to verify persisted
+   elements, revision, outputs, diagnostics, and layout. A macro run should be
+   one history/undo unit; do not claim that preview content persisted.
+
+Macro provenance contains the macro ID, exact version, plan ID, and digests.
+Never put raw invocation inputs, secrets, or sensitive row content into
+provenance, labels, or agent-facing logs; retain only an explicitly safe
+summary where the public response permits it.
 
 ## Truth Discipline
 
 - Distinguish persisted state from rendered state. `canvas_get` is
   authoritative for stored elements, frames, theme, revision, and
-  diagnostics. Only a browser or render check proves appearance.
+  diagnostics, and that persisted text-format state is sufficient for ordinary
+  canvas completion. Only use a browser or render check when rendered
+  appearance itself must be proven.
 - Distinguish runtime facts from repository guidance. Use
   `canvas_list_plugins` for active extensions and their versions. Do not label
   source-code architecture rules as runtime or user-facing safety facts.
 - Never say an image loaded because an element mutation succeeded. Verify the
-  URL/resource separately and, when possible, inspect the rendered canvas.
+  URL/resource separately and inspect the rendered canvas whenever the task
+  asks, or necessarily entails, checking that images are present or display
+  correctly.
 - Never invent element counts, active tools, URLs, dimensions, revisions, or
   diagnostics. Read them from tool results.
 - Treat `Verified`, `Confirmed`, and similar labels on an existing canvas as
@@ -170,5 +213,7 @@ Before saying the canvas is complete:
 - check title, Markdown, table, and image-card frames for likely clipping;
 - confirm connector endpoints resolve within the same canvas;
 - confirm the theme in the returned canvas instead of assuming a default;
-- inspect the rendered canvas when possible; and
+- inspect the rendered canvas when explicitly requested, when required to
+  prove appearance or remote-media loading, or when image presence/display
+  correctness is part of the requested check; and
 - describe only what these checks actually established.

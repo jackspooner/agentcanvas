@@ -13,7 +13,12 @@ describe('GLB viewer plugin', () => {
   it('ships a conforming manifest and exact registrations', async () => {
     const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'agentcanvas.plugin.json'), 'utf8'));
     expect(validatePluginManifestStructure(manifest)).toEqual({ ok: true, issues: [] });
-    const registrations = { elements: [] as string[], tools: [] as string[], migrations: [] as string[] };
+    const registrations = {
+      elements: [] as string[],
+      tools: [] as string[],
+      procedures: [] as string[],
+      migrations: [] as string[]
+    };
     const assets = {
       validateReference: (value: unknown) => value,
       contentHandle: vi.fn(),
@@ -25,7 +30,7 @@ describe('GLB viewer plugin', () => {
       registerElementType: (item: { name: string }) => registrations.elements.push(item.name),
       registerTool: (item: { name: string }) => registrations.tools.push(item.name),
       registerMigration: (item: { name: string }) => registrations.migrations.push(item.name),
-      registerProcedure: vi.fn(),
+      registerProcedure: (item: { name: string }) => registrations.procedures.push(item.name),
       provideCapability: vi.fn(),
       consumeCapability: () => ({ get: () => assets }),
       config: {},
@@ -33,7 +38,54 @@ describe('GLB viewer plugin', () => {
       diagnostics: { emit: vi.fn() }
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
-    expect(registrations).toEqual({ elements: ['model'], tools: ['place'], migrations: ['legacy-glb-v1'] });
+    expect(registrations).toEqual({
+      elements: ['model'],
+      tools: ['place'],
+      procedures: ['details'],
+      migrations: ['legacy-glb-v1']
+    });
+  });
+
+  it('projects model and poster metadata through the Assets capability', async () => {
+    const details = vi.fn(async (reference: unknown) => ({ asset: reference }));
+    let procedure:
+      | {
+          invoke(input: Record<string, unknown>, context: { signal: AbortSignal }): Promise<unknown>;
+        }
+      | undefined;
+    const assets = {
+      validateReference: (value: unknown) => value,
+      contentHandle: vi.fn(),
+      details,
+      boundedJson: vi.fn(),
+      providerStatus: vi.fn()
+    } as unknown as AssetsCapabilityV1;
+    const host = {
+      registerElementType: vi.fn(),
+      registerTool: vi.fn(),
+      registerMigration: vi.fn(),
+      registerProcedure: (item: typeof procedure) => {
+        procedure = item;
+      },
+      provideCapability: vi.fn(),
+      consumeCapability: () => ({ get: () => assets }),
+      config: {},
+      kv: {},
+      diagnostics: { emit: vi.fn() }
+    } as unknown as ServerPluginHost;
+    await plugin.activate(host);
+    const output = await procedure?.invoke(
+      { assetRef: ref, posterAssetRef: { ...ref, assetId: '00000000-0000-4000-8000-000000000002' } },
+      { signal: new AbortController().signal }
+    );
+    expect(output).toMatchObject({
+      ok: true,
+      details: {
+        model: { asset: ref },
+        poster: { asset: { assetId: '00000000-0000-4000-8000-000000000002' } }
+      }
+    });
+    expect(details).toHaveBeenCalledTimes(2);
   });
 
   it('imports camera defaults and strips response-only URLs', () => {

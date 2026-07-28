@@ -82,6 +82,7 @@ export function normalizeAssetDetails(assetValue: JsonObject, measured?: RasterD
       project: sanitizeAssetValue(asset.project ?? null),
       assetId: sanitizeAssetValue(asset.id ?? null),
       assetKey: sanitizeAssetValue(asset.asset_key ?? null),
+      groupPath: sanitizeAssetValue(asset.group_path ?? null),
       filename: sanitizeAssetValue(asset.filename ?? null),
       contentType: sanitizeAssetValue(asset.content_type ?? null),
       sizeBytes: safeNumber(asset.size_bytes),

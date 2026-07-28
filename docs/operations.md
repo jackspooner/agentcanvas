@@ -143,7 +143,7 @@ npm run migrate -- verify --database <path> --plugins <plugins-path>
 npm run migrate -- restore --database <path> --backup <backup-path>
 ```
 
-These commands run from the repository checkout. After `npm ci`, `npm exec -- agentcanvas migrate <command> ...` is equivalent. The service must be stopped for apply and restore. Empty databases initialize at physical/document version 3/2. Both v0.1 databases and physical/document 2/2 databases require an offline migration; the latter adds first-class theme storage without changing document version 2. Restore verifies and accepts the manifest-backed backup from either migration. Keep the backup and sidecar manifest until an explicit retention decision. See [Upgrading](upgrading.md) and [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).
+These commands run from the repository checkout. After `npm ci`, `npm exec -- agentcanvas migrate <command> ...` is equivalent. The service must be stopped for apply and restore. Empty databases initialize at physical/document version 4/2. v0.1, physical/document 2/2, and physical/document 3/2 databases require an offline migration; all supported paths preserve document version 2 and target physical schema 4. Restore verifies and accepts the manifest-backed backup from any supported path. Keep the backup and sidecar manifest until an explicit retention decision. See [Upgrading](upgrading.md), [physical schema 4 migration](physical-schema-4-migration.md), and [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).
 
 ## Operational acceptance
 

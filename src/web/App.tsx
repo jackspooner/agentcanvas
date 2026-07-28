@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { AgentCanvasConfiguration } from '../configuration';
 import {
   applyCanvasOperations,
+  executeMacro,
   fetchAgentCanvasConfiguration,
   fetchCanvasFromLocation,
   fetchCanvasList,
@@ -14,6 +15,7 @@ import { CanvasIndex } from './components/CanvasIndex';
 import { CanvasView } from './components/CanvasView';
 import { fetchBrowserPluginCatalog, loadBrowserPluginRegistry, type LoadedBrowserRegistry } from './plugins/catalog';
 import type { CanvasBounds, CanvasDocument, CanvasProjection, CanvasViewport } from './v2-types';
+import type { MacroServiceExecuteRequest } from '../macros/types';
 import { coerceViewport, readViewportCookie, writeViewportCookie } from './viewport';
 
 type AppState =
@@ -157,6 +159,15 @@ export function App() {
           current?.mode === 'canvas' && current.canvas.id === canvas.id ? { ...current, canvas } : current
         );
         return canvas;
+      }}
+      onMacroExecute={async (request: MacroServiceExecuteRequest) => {
+        const result = await executeMacro(request);
+        setState((current) =>
+          current?.mode === 'canvas' && current.canvas.id === result.canvas.id
+            ? { ...current, canvas: result.canvas as CanvasDocument }
+            : current
+        );
+        return result;
       }}
       onViewportChange={(viewport) => {
         writeViewportCookie(state.canvas.id, viewport);

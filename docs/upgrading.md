@@ -71,17 +71,21 @@ npm run migrate -- apply --database <path> --backup-dir <path> --plugins <plugin
 npm run migrate -- verify --database <path> --plugins <plugins-path>
 ```
 
-Physical/document version 2/2 installations require the canvas-theme schema migration before this release
-can start. The same `migrate apply` command creates and verifies a native SQLite backup, adds first-class
-`theme_json` storage, records the physical 2-to-3 migration, and keeps document version 2 unchanged.
+Physical/document version 2/2 installations require the offline physical schema
+4 migration before this release can start. Physical/document version 3/2
+installations require the additive macro-storage step. The same `migrate apply`
+command creates and verifies a native SQLite backup and sidecar manifest,
+records preservation counts/fingerprints, adds the required host tables, and
+keeps document version 2 unchanged. A v0.1 database uses the legacy-import path
+and also targets physical/document 4/2.
 
 Retain the verified backup and sidecar manifest until an explicit retention
-decision. `migrate restore` verifies and accepts the backup produced by either
-the v0.1 document migration or the physical 2-to-3 theme migration. Restoring
-the latter returns the database to physical/document version 2/2, so the
-current host will again require migration before startup. See [v0.1 to v0.2
-migration](v0.1-to-v0.2-migration.md) for the detailed staged, atomic restore
-contract.
+decision. `migrate restore` verifies and accepts the backup produced by any
+supported host migration. Restoring a v0.1, physical 2/2, or physical 3/2
+backup returns the database to that source state, so the current host may again
+require migration before startup. See [physical schema 4 migration](physical-schema-4-migration.md)
+for the detailed backup, verification, and restore contract, and [v0.1 to v0.2
+migration](v0.1-to-v0.2-migration.md) for legacy import semantics.
 
 ## Start and verify
 

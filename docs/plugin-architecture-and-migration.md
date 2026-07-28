@@ -38,7 +38,7 @@ Current startup performs these phases:
 4. Activate server entries in dependency order.
 5. Check that actual elements, tools, procedures, migrations, and provided capabilities exactly match the manifest.
 6. Freeze the registry.
-7. Open or initialize the SQLite database and require physical/document version 3/2.
+7. Open or initialize the SQLite database and require physical/document version 4/2.
 8. Bind plugin KV to the database.
 9. Require `agentcanvas.assets@^1.0.0` and run its readiness probe.
 10. Build the browser catalog and runtime OpenAPI.
@@ -121,4 +121,10 @@ See [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md) for operator commands an
 
 ## Activation and migration status
 
-The reference installation was cut over on 2026-07-13 and subsequently gained the offline physical 2-to-3 canvas-theme migration. The current physical/document version 3/2 database contract covers integrity, HTTP, MCP, snapshot, resource, and production-browser acceptance. Installation-specific extension choices, counts, and backup records remain private operator evidence; every migration must be verified against its own preflight report.
+The reference installation was cut over on 2026-07-13 and subsequently gained
+offline physical schema 4 migrations for canvas themes and macro storage. The
+current physical/document version 4/2 database contract covers integrity, HTTP,
+MCP, snapshot, resource, macro, and production-browser acceptance.
+Installation-specific extension choices, counts, and backup records remain
+private operator evidence; every migration must be verified against its own
+preflight report. See [physical schema 4 migration](physical-schema-4-migration.md).

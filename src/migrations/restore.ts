@@ -55,7 +55,13 @@ function assertInspectionMatchesManifest(
     inspection.versions.physicalVersion === 2 &&
     inspection.versions.documentVersions.length === 1 &&
     inspection.versions.documentVersions[0] === 2;
-  if (!isLegacyMigrationSource && !isThemeMigrationSource) {
+  const isMacroStorageMigrationSource =
+    sourceVersion === 2 &&
+    targetVersion === 2 &&
+    inspection.canApply &&
+    inspection.sourceVersion === 2 &&
+    inspection.versions.physicalVersion === 3;
+  if (!isLegacyMigrationSource && !isThemeMigrationSource && !isMacroStorageMigrationSource) {
     const details =
       inspection.issues.map((issue) => issue.message).join('; ') || 'version state does not match manifest';
     throw new Error(`backup is not a supported migration source (${sourceVersion} -> ${targetVersion}): ${details}`);

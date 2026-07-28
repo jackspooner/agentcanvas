@@ -10,6 +10,7 @@ const renderer: BrowserElementRenderer = {
   type: 'fixture.cards/card',
   schemaVersions: [1],
   placement: 'node',
+  details: { open: vi.fn() },
   mount(root, context) {
     const button = document.createElement('button');
     button.dataset.agentcanvasInteractive = '';
@@ -148,6 +149,44 @@ describe('plugin canvas React host', () => {
     expect(container.querySelector('.agentcanvas-editor-drag-handle')).toBeNull();
     unmount();
     expect(container.querySelector('[data-element-id="card_1"]')).toBeNull();
+  });
+
+  it('lets interactive plugin content receive pointer gestures without dragging or panning the canvas', async () => {
+    const { container } = render(
+      <CanvasView canvas={canvas()} elementRuntime={{}} diagnostics={[]} browserRegistry={registry()} />
+    );
+    const surface = await waitFor(() => {
+      const value = container.querySelector<HTMLElement>('.plugin-renderer-surface');
+      if (!value?.shadowRoot) throw new Error('plugin surface not mounted');
+      return value;
+    });
+    expect(surface.classList).toContain('agentcanvas-editor-no-drag');
+    expect(surface.classList).toContain('agentcanvas-editor-no-pan');
+    expect(surface.classList).toContain('agentcanvas-editor-no-wheel');
+
+    const button = surface.shadowRoot?.querySelector('button');
+    const pointerDown = vi.fn();
+    button?.addEventListener('pointerdown', pointerDown);
+    fireEvent.pointerDown(button as Element);
+    expect(pointerDown).toHaveBeenCalledOnce();
+  });
+
+  it('renders one host-owned Details affordance for renderers that opt in', async () => {
+    const { container } = render(
+      <CanvasView canvas={canvas()} elementRuntime={{}} diagnostics={[]} browserRegistry={registry()} />
+    );
+    const details = await waitFor(() => {
+      const value = container.querySelector<HTMLButtonElement>('.plugin-renderer-details');
+      if (!value) throw new Error('details button not mounted');
+      return value;
+    });
+    expect(details.textContent).toBe('Details');
+    fireEvent.click(details);
+    await waitFor(() =>
+      expect(renderer.details?.open).toHaveBeenCalledWith(
+        expect.objectContaining({ element: expect.objectContaining({ id: 'card_1' }) })
+      )
+    );
   });
 
   it('keeps visible host-owned movement and resize controls for editable elements', async () => {

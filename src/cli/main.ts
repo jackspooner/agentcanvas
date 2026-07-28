@@ -1,9 +1,11 @@
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { pathToFileURL } from 'node:url';
 import type { JsonObject, PluginMigrationDescriptor } from '@agentcanvas/plugin-sdk';
 import {
   applyMigration,
   applyCanvasThemeSchemaMigration,
+  applyMacroStorageSchemaMigration,
   applyPluginSchemaMigrations,
   inspectMigrationDatabase,
   LEGACY_TYPE_DEFINITIONS,
@@ -19,7 +21,7 @@ import {
 import { runMigrationCli } from './migrate.js';
 import { runPluginCli } from './plugins.js';
 import { runExtensionCli } from './extensions.js';
-import { inspectDatabaseVersion } from '../store/version.js';
+import { inspectDatabaseVersion, type DatabaseVersionState } from '../store/version.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
 async function loadOfflineRegistry(pluginsPath?: string): Promise<FrozenPluginRegistry> {
@@ -65,6 +67,52 @@ function adaptMigration(
   };
 }
 
+export async function applyMigrationCli(input: {
+  databasePath: string;
+  backupDir?: string;
+  pluginsPath?: string;
+}): Promise<unknown> {
+  const db = new DatabaseSync(path.resolve(input.databasePath));
+  let state: DatabaseVersionState;
+  try {
+    state = inspectDatabaseVersion(db);
+  } finally {
+    db.close();
+  }
+  if (state.kind === 'v2' && state.physicalVersion === 3) {
+    return applyMacroStorageSchemaMigration({
+      databasePath: input.databasePath,
+      ...(input.backupDir ? { backupDir: input.backupDir } : {}),
+      toolVersion: AGENTCANVAS_VERSION
+    });
+  }
+  if (state.kind === 'v2-theme-migration-required') {
+    return applyCanvasThemeSchemaMigration({
+      databasePath: input.databasePath,
+      ...(input.backupDir ? { backupDir: input.backupDir } : {}),
+      toolVersion: AGENTCANVAS_VERSION
+    });
+  }
+
+  const registry = await loadOfflineRegistry(input.pluginsPath);
+  if (state.kind === 'v2') {
+    return applyPluginSchemaMigrations({
+      databasePath: input.databasePath,
+      backupDir: input.backupDir,
+      registry,
+      toolVersion: AGENTCANVAS_VERSION
+    });
+  }
+  const validator = new PluginElementValidator(registry);
+  return applyMigration({
+    databasePath: input.databasePath,
+    backupDir: input.backupDir,
+    importers: migrationImporters(registry),
+    validateElement: (element) => validator.normalizeForWrite(element),
+    toolVersion: AGENTCANVAS_VERSION
+  });
+}
+
 async function run(): Promise<number> {
   const args = process.argv.slice(2);
   if (args[0] === 'plugins') {
@@ -77,35 +125,7 @@ async function run(): Promise<number> {
   }
   return runMigrationCli(args, undefined, {
     inspect: (databasePath) => inspectMigrationDatabase(databasePath),
-    apply: async ({ databasePath, backupDir, pluginsPath }) => {
-      const registry = await loadOfflineRegistry(pluginsPath);
-      const db = new DatabaseSync(path.resolve(databasePath));
-      const state = inspectDatabaseVersion(db);
-      db.close();
-      if (state.kind === 'v2') {
-        return applyPluginSchemaMigrations({
-          databasePath,
-          backupDir,
-          registry,
-          toolVersion: AGENTCANVAS_VERSION
-        });
-      }
-      if (state.kind === 'v2-theme-migration-required') {
-        return applyCanvasThemeSchemaMigration({
-          databasePath,
-          backupDir,
-          toolVersion: AGENTCANVAS_VERSION
-        });
-      }
-      const validator = new PluginElementValidator(registry);
-      return applyMigration({
-        databasePath,
-        backupDir,
-        importers: migrationImporters(registry),
-        validateElement: (element) => validator.normalizeForWrite(element),
-        toolVersion: AGENTCANVAS_VERSION
-      });
-    },
+    apply: applyMigrationCli,
     verify: async ({ databasePath, pluginsPath }) => {
       const registry = await loadOfflineRegistry(pluginsPath);
       const validator = new PluginElementValidator(registry);
@@ -118,11 +138,13 @@ async function run(): Promise<number> {
   });
 }
 
-run()
-  .then((code) => {
-    process.exitCode = code;
-  })
-  .catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  });
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  run()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    });
+}

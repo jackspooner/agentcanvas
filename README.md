@@ -11,6 +11,10 @@ the AgentCanvas kernel. Extensions contribute element schemas, renderers,
 commands, tools, procedures, migrations, and snapshots without importing the
 editor implementation.
 
+Browser renderers can optionally hook into the editor-owned node Details
+affordance. The extension supplies the safe metadata workflow and overlay;
+AgentCanvas supplies the consistent button and interaction behavior.
+
 AgentCanvas binds to loopback by default and has no user-account or
 authentication layer. Extensions are trusted executable application
 dependencies; they are not sandboxed.
@@ -37,7 +41,7 @@ model.
 ## Requirements
 
 - Node.js 24 or newer and npm 11 or newer.
-- An empty database, which AgentCanvas initializes at physical schema 3 / document schema 2, or an older database upgraded with the offline CLI before startup.
+- An empty database, which AgentCanvas initializes at physical schema 4 / document schema 2, or an older database upgraded with the offline CLI before startup.
 
 No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
 Markdown documents render HTTP(S) and same-origin relative image URLs by default;
@@ -227,9 +231,9 @@ npm run migrate -- restore --database <path> --backup <backup-path>
 
 After `npm ci`, the equivalent local-bin form is `npm exec -- agentcanvas migrate <command> ...`. The repository wrapper above is the canonical clone-and-run form and does not require a globally installed executable.
 
-`apply` uses the SQLite backup API, writes and verifies a SHA-256 sidecar manifest, transforms documents transactionally through plugin-owned importers, preserves historical events, and commits only after target validation, integrity, and foreign-key checks. It upgrades v0.1 databases directly to physical/document version 3/2, upgrades physical/document 2/2 databases to 3/2 for first-class theme storage, and applies pending installed-extension element-schema migrations. Migration refuses databases containing the removed `group` type or unknown legacy fields/types. `restore` accepts the verified backup produced by either host migration.
+`apply` uses the SQLite backup API, writes and verifies a SHA-256 sidecar manifest, transforms documents transactionally through plugin-owned importers, preserves historical events, and commits only after target validation, preservation fingerprints, integrity, and foreign-key checks. It upgrades v0.1 databases directly to physical/document version 4/2, upgrades physical/document 2/2 databases to 4/2 for first-class theme and macro storage, upgrades physical/document 3/2 databases to 4/2 for macro storage, and applies pending installed-extension element-schema migrations. Migration refuses databases containing the removed `group` type or unknown legacy fields/types. `restore` accepts the verified backup produced by any supported host migration.
 
-See [Upgrading](docs/upgrading.md) and [v0.1 to v0.2 migration](docs/v0.1-to-v0.2-migration.md).
+See [Upgrading](docs/upgrading.md), [physical schema 4 migration](docs/physical-schema-4-migration.md), and [v0.1 to v0.2 migration](docs/v0.1-to-v0.2-migration.md).
 
 ## HTTP, OpenAPI, and MCP
 
@@ -243,6 +247,12 @@ Important routes:
 - `POST /api/v1/canvases/:canvasId/snapshot`
 - `GET /api/v1/plugins` and `GET /api/v1/plugins/:pluginId`
 - `POST /api/v1/plugins/:pluginId/procedures/:procedureName`
+- `GET/POST /api/v1/macros`
+- `GET /api/v1/macros/:macroId/versions/:macroVersion`
+- `POST /api/v1/macros/:macroId/versions` (path-owned macro ID; body has no `macroId`)
+- `PATCH /api/v1/macros/:macroId` with `{ "archived": true|false }`
+- `POST /api/v1/canvases/:canvasId/macros/:macroId:plan` with `{ macroVersion, anchor, input, label? }`
+- `POST /api/v1/canvases/:canvasId/macros:execute`
 - `GET /api/v1/resources/:handle/details`
 - `GET /api/v1/resources/:handle/content`
 - share-link, configuration, and viewport routes documented by `/openapi.json`
@@ -274,7 +284,7 @@ npm run mcp --silent
 }
 ```
 
-Core element tools use explicit operations such as `canvas_upsert_element`, `canvas_patch_element_frame`, and `canvas_replace_element_data`. Plugin tools are derived as `<normalized-plugin-id>__<local-name>`, for example `agentcanvas_image_overlays__add_bbox`. See the [HTTP/MCP v0.2 mapping](docs/http-mcp-v0.2-mapping.md).
+Core element tools use explicit operations such as `canvas_upsert_element`, `canvas_patch_element_frame`, and `canvas_replace_element_data`. Plugin tools are derived as `<normalized-plugin-id>__<local-name>`, for example `agentcanvas_image_overlays__add_bbox`. Macro tools are generic: `macro_list`, `macro_get`, `macro_create`, `macro_create_version`, `macro_archive`, `macro_plan`, and `canvas_run_macro`. See the [HTTP/MCP v0.2 mapping](docs/http-mcp-v0.2-mapping.md).
 
 When upgrading an existing MCP client from v0.1, restart or reload that client's MCP server configuration after AgentCanvas restarts, then request a fresh `tools/list`. V0.1 feature aliases are removed; a cached tool catalog can continue showing names that the v0.2 server rejects.
 
@@ -286,6 +296,52 @@ the broker refreshes byte length, SHA-256, and dimensions after each load while
 continuing to enforce the registered MIME type, byte limit, and content response
 checks. Fixed registrations retain strict registration-time size and checksum
 validation.
+
+### Macros
+
+A macro is a host-owned, declarative creation definition: typed input plus an
+explicit anchor expands to canonical canvas elements. Definitions have immutable
+integer versions. V1 supports creation only; it does not provide selection
+authoring, linked instances, expressions, loops, conditionals, external calls,
+or extension planners. Create definitions through `POST /api/v1/macros` or
+`macro_create`; add an immutable version through the versions route or
+`macro_create_version`, and archive through the PATCH route or `macro_archive`.
+Installation definitions are available across canvases; canvas-scoped
+definitions resolve only with their owning `canvasId`. Archived definitions
+remain readable but cannot be planned or run.
+
+The plan-first flow uses the exact macro version and returns preview elements,
+an effect summary, named output keys, revision and input/plan digests, and a
+short-lived plan ID. Planning is pure: it does not persist preview elements,
+advance the canvas revision, call external services, or store raw inputs. A
+plan is executed with the expected canvas revision and an idempotency key. The
+host validates the plan again and commits its operations atomically as one
+revision and one undo/redo history unit. Direct `canvas_run_macro` mode performs
+the same internal planning and validation before committing; it does not bypass
+those guarantees. A retry of one logical execution must reuse the same bounded
+idempotency key; a new plan/execution gets a new key. Never generate a fresh
+key for a retry. `/whoami` reports host and active capability status; it does
+not report saved macros as dynamic tools.
+
+Macro definitions are limited to 256 KiB and 100 generated elements; a canvas
+may contain at most 2,000 elements after a run. The installed table element
+contract additionally limits comparison-table data to 50 columns, 500 rows, and
+2,000 characters per cell. Provenance contains exact version and digests plus
+an explicitly safe summary where applicable, never raw invocation inputs.
+
+The [standard comparison-table JSON example](docs/examples/standard-comparison-table.macro.json)
+keeps headers, frame, style, and the `agentcanvas.table/table@1` dependency
+fixed while binding only `rows` through a typed `$macroRef`. It is documentation
+and proof input only; it is not seeded into the macro catalog or any new
+installation.
+
+The browser runner consumes the same exact-version plan used by HTTP and MCP. It
+shows the effect summary and translucent ghost preview before a mutating
+confirmation, then refreshes the canvas and supports the resulting undo/redo
+history. Each successful browser run is one history unit and one canvas
+revision. Use
+`canvas_get` and `canvas_inspect` after the run when an agent needs persisted
+state and diagnostics rather than relying on the rendered preview.
 
 ### Agent guidance
 

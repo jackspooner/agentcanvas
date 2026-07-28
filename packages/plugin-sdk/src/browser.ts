@@ -73,10 +73,21 @@ export interface MountedBrowserElementRenderer {
   dispose(): void | Promise<void>;
 }
 
+/**
+ * Optional element-owned details workflow exposed through the editor's shared
+ * node affordance. The host owns the button; the extension owns the safe data
+ * projection and overlay content.
+ */
+export interface BrowserElementDetails {
+  label?: string;
+  open(context: RendererContext): void | Promise<void>;
+}
+
 export interface BrowserElementRenderer {
   type: ElementType;
   schemaVersions: readonly number[];
   placement: BrowserRendererPlacement;
+  details?: BrowserElementDetails;
   mount(root: ShadowRoot, context: RendererContext): MountedBrowserElementRenderer;
 }
 

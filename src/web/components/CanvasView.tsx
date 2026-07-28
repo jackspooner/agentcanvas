@@ -22,13 +22,15 @@ import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 import type { CanvasOperation } from '../../contracts';
+import type { MacroExecutionResult, MacroPlan, MacroServiceExecuteRequest } from '../../macros/types';
 import type { LoadedBrowserRegistry } from '../plugins/catalog';
-import { isPluginInteractiveEvent } from '../plugins/interaction';
 import { DomRendererOverlayService } from '../plugins/overlays';
 import { ShadowRendererHost, type RendererContextInput } from '../plugins/renderer-host';
 import type { CanvasBounds, CanvasDocument, CanvasViewport, CanvasViewportState } from '../v2-types';
 import { coerceViewport, DEFAULT_REPORTED_VIEWPORT_HEIGHT, DEFAULT_REPORTED_VIEWPORT_WIDTH } from '../viewport';
 import { CanvasBoundsControl } from './CanvasBoundsControl';
+import { MacroDrawer } from './MacroDrawer';
+import { MacroGhostPreview } from './MacroGhostPreview';
 
 interface CanvasViewProps {
   canvas: CanvasDocument;
@@ -40,6 +42,7 @@ interface CanvasViewProps {
   loadViewport?: () => Promise<CanvasViewportState>;
   onViewportChange?: (viewport: CanvasViewport) => void;
   onCanvasOperations?: (operations: readonly CanvasOperation[], expectedRevision: number) => Promise<CanvasDocument>;
+  onMacroExecute?: (request: MacroServiceExecuteRequest) => Promise<MacroExecutionResult>;
   onCanvasBoundsChange?: (bounds: CanvasBounds) => Promise<void> | void;
 }
 
@@ -58,6 +61,7 @@ interface PluginRendererSurfaceProps {
 function PluginRendererSurface(props: PluginRendererSurfaceProps) {
   const outer = useRef<HTMLDivElement | null>(null);
   const host = useRef<ShadowRendererHost | null>(null);
+  const detailsController = useRef<AbortController | null>(null);
   const context: RendererContextInput = useMemo(
     () => ({
       element: props.element,
@@ -87,6 +91,8 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
     host.current = rendererHost;
     void rendererHost.mount(props.renderer, context);
     return () => {
+      detailsController.current?.abort();
+      detailsController.current = null;
       host.current = null;
       void rendererHost.dispose();
     };
@@ -96,17 +102,49 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
     void host.current?.update(context);
   }, [context]);
 
+  useEffect(() => {
+    detailsController.current?.abort();
+    detailsController.current = null;
+  }, [props.element]);
+
+  const openDetails = () => {
+    if (!props.renderer?.details) return;
+    detailsController.current?.abort();
+    const controller = new AbortController();
+    detailsController.current = controller;
+    void Promise.resolve()
+      .then(() => props.renderer?.details?.open({ ...context, signal: controller.signal }))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          props.reportDiagnostic({
+            code: 'browser_element_details_failed',
+            severity: 'warning',
+            message: 'Element details could not be opened.',
+            retryable: true,
+            elementId: props.element.id
+          });
+        }
+      });
+  };
+
   return (
-    <div
-      ref={outer}
-      className="plugin-renderer-surface"
-      onPointerDownCapture={(event) => {
-        if (isPluginInteractiveEvent(event.nativeEvent, event.currentTarget)) event.stopPropagation();
-      }}
-      onWheelCapture={(event) => {
-        if (isPluginInteractiveEvent(event.nativeEvent, event.currentTarget)) event.stopPropagation();
-      }}
-    />
+    <div className="plugin-renderer-container">
+      <div
+        ref={outer}
+        className="plugin-renderer-surface agentcanvas-editor-no-drag agentcanvas-editor-no-pan agentcanvas-editor-no-wheel"
+      />
+      {props.renderer?.details && (
+        <button
+          type="button"
+          className="plugin-renderer-details agentcanvas-editor-no-drag agentcanvas-editor-no-pan"
+          data-agentcanvas-interactive=""
+          aria-label={`${props.renderer.details.label ?? 'Details'} for ${props.element.id}`}
+          onClick={openDetails}
+        >
+          {props.renderer.details.label ?? 'Details'}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -217,6 +255,7 @@ export function CanvasView({
   loadViewport,
   onViewportChange,
   onCanvasOperations,
+  onMacroExecute,
   onCanvasBoundsChange
 }: CanvasViewProps) {
   const theme = canvas.theme ?? DEFAULT_CANVAS_THEME;
@@ -225,6 +264,14 @@ export function CanvasView({
   const [gridSnapEnabled, setGridSnapEnabled] = useState(true);
   const [transientFrames, setTransientFrames] = useState<ReadonlyMap<string, EditorFrame>>(() => new Map());
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<PluginDiagnostic[]>([]);
+  const [macroDrawerOpen, setMacroDrawerOpen] = useState(false);
+  const [macroPlan, setMacroPlan] = useState<MacroPlan | null>(null);
+
+  // Browser renderer failures describe one rendered canvas revision. A later canvas
+  // mutation may replace the failing element, so retaining the old report is misleading.
+  useEffect(() => {
+    setRuntimeDiagnostics([]);
+  }, [canvas.revision]);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [viewportError, setViewportError] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
@@ -237,6 +284,7 @@ export function CanvasView({
   const mutationQueue = useRef<Promise<void>>(Promise.resolve());
   const clipboardElements = useRef<CanvasElement[]>([]);
   const history = useRef(new EditorHistory<CanvasOperation>(100));
+  const macroIdempotencyKeys = useRef(new Map<string, string>());
   const commands = useMemo(() => new EditorCommandService(), []);
   const commandState = useRef({
     canvas,
@@ -356,6 +404,47 @@ export function CanvasView({
       refreshCommandState();
     },
     [refreshCommandState, runCanvasOperations]
+  );
+
+  const runMacro = useCallback(
+    async (plan: MacroPlan): Promise<void> => {
+      if (readOnly) throw new Error('Macro execution is unavailable in read-only canvases.');
+      if (!onMacroExecute) throw new Error('Macro execution is unavailable.');
+      let result: MacroExecutionResult | null = null;
+      const task = mutationQueue.current.then(async () => {
+        pendingLocalMutations.current += 1;
+        try {
+          const idempotencyKey = macroIdempotencyKeys.current.get(plan.planId) ?? `macro_${nanoid(24)}`;
+          macroIdempotencyKeys.current.set(plan.planId, idempotencyKey);
+          result = await onMacroExecute({
+            canvasId: plan.canvasId,
+            planId: plan.planId,
+            expectedRevision: plan.canvasRevision,
+            idempotencyKey
+          });
+          const updatedCanvas = result.canvas as CanvasDocument;
+          confirmedCanvas.current = updatedCanvas;
+          lastLocalRevision.current = updatedCanvas.revision;
+        } finally {
+          pendingLocalMutations.current -= 1;
+        }
+      });
+      mutationQueue.current = task.catch(() => undefined);
+      await task;
+      const completed = result as MacroExecutionResult | null;
+      if (!completed) throw new Error('Macro execution did not return a result.');
+      history.current.record({
+        label: completed.history.label,
+        forward: completed.history.forward,
+        inverse: completed.history.inverse,
+        affectedElementIds: completed.history.affectedElementIds,
+        timestamp: Date.now()
+      });
+      macroIdempotencyKeys.current.delete(completed.provenance.planId);
+      setMacroPlan(null);
+      refreshCommandState();
+    },
+    [onMacroExecute, readOnly, refreshCommandState]
   );
 
   useEffect(() => setViewport(coerceViewport(initialViewport)), [canvas.id, initialViewport]);
@@ -832,10 +921,21 @@ export function CanvasView({
         </div>
         <div className="topbar-controls">
           {!readOnly && (
-            <EditorToolbar
-              commands={commands}
-              onCommandError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
-            />
+            <>
+              <button
+                type="button"
+                className="macro-trigger"
+                aria-expanded={macroDrawerOpen}
+                aria-controls="macro-drawer"
+                onClick={() => setMacroDrawerOpen((value) => !value)}
+              >
+                Macros
+              </button>
+              <EditorToolbar
+                commands={commands}
+                onCommandError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
+              />
+            </>
           )}
           <div className="viewport-status">
             center {Math.round(viewport.centerX)}, {Math.round(viewport.centerY)} · zoom{' '}
@@ -893,7 +993,27 @@ export function CanvasView({
             />
           )}
           worldUnderlay={renderWorldElements(worldUnderlays)}
-          worldOverlay={renderWorldElements(worldOverlays)}
+          worldOverlay={
+            <>
+              {renderWorldElements(worldOverlays)}
+              <MacroGhostPreview
+                elements={macroPlan?.canvasRevision === canvas.revision ? macroPlan.previewElements : []}
+                renderElement={(element) => (
+                  <PluginRendererSurface
+                    element={element}
+                    runtime={elementRuntime[element.id] ?? null}
+                    renderer={rendererFor(element)}
+                    geometry={geometry}
+                    overlays={overlays}
+                    readOnly
+                    selected={false}
+                    theme={theme}
+                    reportDiagnostic={reportDiagnostic}
+                  />
+                )}
+              />
+            </>
+          }
           onViewportChange={(next) =>
             setViewport((current) => {
               if (current.centerX === next.centerX && current.centerY === next.centerY && current.zoom === next.zoom) {
@@ -919,6 +1039,18 @@ export function CanvasView({
           onCommitError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
         />
       </main>
+      {!readOnly && (
+        <MacroDrawer
+          canvasId={canvas.id}
+          canvasRevision={canvas.revision}
+          viewport={viewport}
+          selectionInvalidationToken={selectedIds.join('\u001f')}
+          open={macroDrawerOpen}
+          onClose={() => setMacroDrawerOpen(false)}
+          onPlanChange={setMacroPlan}
+          onExecute={runMacro}
+        />
+      )}
     </div>
   );
 }

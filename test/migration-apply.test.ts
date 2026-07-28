@@ -169,7 +169,7 @@ describe('offline migration apply/verify/restore', () => {
     });
     expect(migrated.prepare('SELECT COUNT(*) AS count FROM canvas_share_links').get()).toEqual({ count: 1 });
     expect(migrated.prepare('SELECT COUNT(*) AS count FROM canvas_idempotency_keys').get()).toEqual({ count: 0 });
-    expect((migrated.prepare('PRAGMA user_version').get() as { user_version: number }).user_version).toBe(3);
+    expect((migrated.prepare('PRAGMA user_version').get() as { user_version: number }).user_version).toBe(4);
     migrated.close();
 
     expect(

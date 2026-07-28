@@ -5,6 +5,8 @@ import type { JsonObject } from '@agentcanvas/plugin-sdk';
 import { createRegistryOpenApiDocument } from '../api-v2/openapi.js';
 import { loadOfflinePluginRegistry } from '../plugin-runtime/offline.js';
 import { coreOpenApiPaths } from '../server-v2.js';
+import { CANVAS_BOUNDS_SCHEMA, CANVAS_RECORD_SCHEMA, SHARE_LINK_SCHEMA, VIEWPORT_SCHEMA } from '../api-v2/schemas.js';
+import { CANVAS_THEME_V1_SCHEMA } from '@agentcanvas/plugin-sdk';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
 const STANDARD_PLUGINS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
@@ -34,7 +36,14 @@ export async function standardOpenApiDocument(installationRoot = root()): Promis
     title: 'AgentCanvas API',
     version: AGENTCANVAS_VERSION,
     description: 'Standard AgentCanvas distribution contract. Runtime OpenAPI reflects the exact active extension set.',
-    corePaths: coreOpenApiPaths()
+    corePaths: coreOpenApiPaths(),
+    additionalSchemas: {
+      CanvasBounds: CANVAS_BOUNDS_SCHEMA,
+      CanvasThemeV1: CANVAS_THEME_V1_SCHEMA,
+      CanvasRecord: CANVAS_RECORD_SCHEMA,
+      Viewport: VIEWPORT_SCHEMA,
+      ShareLink: SHARE_LINK_SCHEMA
+    }
   });
 }
 

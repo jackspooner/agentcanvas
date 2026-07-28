@@ -23,6 +23,7 @@ The owning schemas live in the frozen registry. Plugins register JSON Schema 202
 | Sharing | `GET/POST .../share-links`, `DELETE .../share-links/{shareLinkId}`, `GET /api/v1/share/{token}` |
 | Snapshots | `POST /api/v1/canvases/{canvasId}/snapshot` |
 | Plugins | `GET /api/v1/plugins`, plugin detail, browser modules, and plugin procedures |
+| Macros | `GET/POST /api/v1/macros`, exact-version `GET /api/v1/macros/{macroId}/versions/{version}` (optional `canvasId`), `POST /api/v1/macros/{macroId}/versions`, `PATCH /api/v1/macros/{macroId}`, canvas-scoped plan, and `POST /api/v1/canvases/{canvasId}/macros:execute` |
 | Resources | `GET /api/v1/resources/{handle}/details`, `GET .../content` |
 | Host configuration | `GET/PATCH /api/v1/configuration` |
 
@@ -86,6 +87,35 @@ Example current-version element write:
 ```
 
 The owning plugin must be active for upserts and data/style replacement. `id`, `type`, and `schemaVersion` are immutable during normal patch operations. Type changes use delete plus upsert; schema changes use registered migrations.
+
+## Macro operations
+
+Macros are host-owned declarative creation definitions. Create and version them
+through the generic HTTP/MCP macro operations only; selection authoring and
+extension planners are not v1 creation surfaces. Fetch definitions by exact
+`macroId` and `macroVersion`, then plan with:
+
+```text
+POST /api/v1/canvases/{canvasId}/macros/{macroId}:plan
+
+{
+  "macroVersion": 1,
+  "anchor": { "x": 40, "y": 60 },
+  "input": { "rows": [] },
+  "label": "Optional history label"
+}
+```
+
+Planning validates typed input and dependencies, returns a short-lived plan,
+preview elements, an effect summary, and named outputs, and does not mutate the
+canvas or persist preview elements. Execute a plan with
+`POST /api/v1/canvases/{canvasId}/macros:execute`, supplying `planId`,
+`expectedRevision`, and `idempotencyKey` without duplicating `canvasId`. The
+commit is atomic and creates one
+canvas revision and one undo/redo history unit. Direct `canvas_run_macro` mode
+performs the same internal planning and validation before committing; it does
+not bypass those checks. Macro provenance retains exact-version and digest
+metadata, not raw invocation inputs.
 
 ## Plugin procedures
 
@@ -163,6 +193,17 @@ The kernel registers:
 - `canvas_clear`
 - `canvas_list_plugins`
 - `canvas_get_plugin`
+
+Macro tools are generic and remain stable when definitions are saved or
+versioned:
+
+- `macro_list`
+- `macro_get`
+- `macro_create`
+- `macro_create_version`
+- `macro_archive`
+- `macro_plan`
+- `canvas_run_macro`
 
 Plugin tools use `<normalized-plugin-id>__<normalized-local-name>`. For example, `agentcanvas.image-overlays` plus `add-bbox` becomes `agentcanvas_image_overlays__add_bbox`.
 

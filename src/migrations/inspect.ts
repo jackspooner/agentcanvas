@@ -71,6 +71,11 @@ export function intendedMigrationBackupPath(databasePath: string, now = new Date
   return path.join(parsed.dir, `${parsed.name}.v0.1-backup-${backupTimestamp(now)}${parsed.ext || '.sqlite'}`);
 }
 
+export function intendedMacroStorageBackupPath(databasePath: string, now = new Date()): string {
+  const parsed = path.parse(path.resolve(databasePath));
+  return path.join(parsed.dir, `${parsed.name}.macro-storage-${backupTimestamp(now)}${parsed.ext || '.sqlite'}.bak`);
+}
+
 /** Opens SQLite in read-only mode and produces the complete preflight report without changing database state. */
 export function inspectMigrationDatabase(
   databasePath: string,
@@ -231,10 +236,13 @@ export function inspectMigrationDatabase(
         options.intendedBackupPath ??
         (databaseVersion.kind === 'v2-theme-migration-required'
           ? intendedCanvasThemeSchemaBackupPath(absolutePath, undefined, options.now ?? new Date())
-          : intendedMigrationBackupPath(absolutePath, options.now)),
+          : databaseVersion.kind === 'v2' && databaseVersion.physicalVersion === 3
+            ? intendedMacroStorageBackupPath(absolutePath, options.now ?? new Date())
+            : intendedMigrationBackupPath(absolutePath, options.now)),
       generatedAt,
       sourceVersion,
       targetVersion: 2,
+      targetPhysicalVersion: 4,
       versions,
       checks: { integrity, foreignKeyViolations },
       counts: {
@@ -250,7 +258,9 @@ export function inspectMigrationDatabase(
       groupBlockers,
       issues,
       canApply:
-        (sourceVersion === 1 || databaseVersion.kind === 'v2-theme-migration-required') &&
+        (sourceVersion === 1 ||
+          databaseVersion.kind === 'v2-theme-migration-required' ||
+          (databaseVersion.kind === 'v2' && databaseVersion.physicalVersion === 3)) &&
         !issues.some((issue) => issue.severity === 'blocker')
     };
   } finally {

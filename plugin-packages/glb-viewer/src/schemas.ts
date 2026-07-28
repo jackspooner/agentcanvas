@@ -81,3 +81,25 @@ export const mutationOutputSchema: JsonSchema = {
     result: { type: 'object' }
   }
 };
+
+export const detailsInputSchema: JsonSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  additionalProperties: false,
+  required: ['assetRef'],
+  properties: {
+    assetRef: assetReferenceSchema,
+    posterAssetRef: { anyOf: [assetReferenceSchema, { type: 'null' }] }
+  }
+};
+
+export const detailsOutputSchema: JsonSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  additionalProperties: false,
+  required: ['ok', 'details'],
+  properties: {
+    ok: { const: true },
+    details: { type: 'object' }
+  }
+};

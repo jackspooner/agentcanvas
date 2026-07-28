@@ -6,8 +6,9 @@ import { AGENTCANVAS_VERSION } from '../version.js';
 import { inspectDatabaseVersion } from '../store/version.js';
 import { createBackupManifest, verifyBackupManifest, writeBackupManifest } from './backup.js';
 import type { MigrationCounts } from './types.js';
+import { MACRO_STORAGE_SCHEMA_SQL } from '../store/v2-schema.js';
 
-const MIGRATION_ID = 'agentcanvas:physical-2-to-3-canvas-theme';
+const MIGRATION_ID = 'agentcanvas:physical-2-to-4-canvas-theme-and-macro-storage';
 
 function count(db: DatabaseSync, table: string): number {
   return Number((db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number | bigint }).count);
@@ -78,6 +79,8 @@ export async function applyCanvasThemeSchemaMigration(input: {
       backupPath,
       sourceVersion: 2,
       targetVersion: 2,
+      sourcePhysicalVersion: 2,
+      targetPhysicalVersion: 4,
       createdAt,
       counts: before,
       toolVersion
@@ -92,11 +95,12 @@ export async function applyCanvasThemeSchemaMigration(input: {
       throw new Error('database version changed while the theme schema backup was created');
     }
     db.exec('ALTER TABLE canvases ADD COLUMN theme_json TEXT; DELETE FROM canvas_idempotency_keys;');
+    db.exec(MACRO_STORAGE_SCHEMA_SQL);
     db.prepare(
       `UPDATE agent_canvas_installation_metadata
-       SET physical_version=3, document_version=2, migrated_at=?, tool_version=? WHERE id=1`
+       SET physical_version=4, document_version=2, migrated_at=?, tool_version=? WHERE id=1`
     ).run(createdAt, toolVersion);
-    db.exec('PRAGMA user_version = 3;');
+    db.exec('PRAGMA user_version = 4;');
 
     const migrationRunId = `migration_${createHash('sha256')
       .update(`${MIGRATION_ID}:${createdAt}`)
@@ -107,7 +111,7 @@ export async function applyCanvasThemeSchemaMigration(input: {
       sourceVersion: 2,
       targetVersion: 2,
       sourcePhysicalVersion: 2,
-      targetPhysicalVersion: 3,
+      targetPhysicalVersion: 4,
       documentVersion: 2,
       countsBefore: before,
       countsAfter: after,
@@ -123,7 +127,7 @@ export async function applyCanvasThemeSchemaMigration(input: {
       `INSERT INTO agent_canvas_migration_runs
        (id,migration_id,source_physical_version,target_physical_version,source_document_version,
         target_document_version,started_at,completed_at,backup_path,backup_sha256,summary_json)
-       VALUES (?,?,2,3,2,2,?,?,?,?,?)`
+       VALUES (?,?,2,4,2,2,?,?,?,?,?)`
     ).run(migrationRunId, MIGRATION_ID, createdAt, createdAt, backupPath, manifest.sha256, JSON.stringify(summary));
 
     const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(

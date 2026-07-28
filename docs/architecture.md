@@ -60,7 +60,12 @@ Both sources deliver browser and snapshot bytes through opaque content handles. 
 
 ## Persistence
 
-V0.2 uses physical schema version 3 and document version 2. Physical version 3 adds first-class `theme_json` storage without changing element document envelopes. Tables cover canvases, events, share links, document-versioned idempotency, viewports, configuration, installation metadata, host migration runs, plugin migration runs, and plugin KV.
+V0.3 uses physical schema version 4 and document version 2. Physical version 4
+adds first-class `theme_json` and host-owned macro storage without changing
+element document envelopes. Tables cover canvases, events, share links,
+document-versioned idempotency, viewports, configuration, installation
+metadata, host migration runs, plugin migration runs, plugin KV, macro
+definitions, immutable macro versions, and macro invocations.
 
 Historical v0.1 event bodies are audit records and remain document version 1 after migration. Current canvas documents are canonical version 2 envelopes.
 
@@ -71,4 +76,7 @@ Historical v0.1 event bodies are audit records and remain document version 1 aft
 - Browser plugin modules: build-hash-keyed same-origin `/api/v1/plugin-modules/...`.
 - Binary resources: opaque `/api/v1/resources/:handle/...`.
 
-See [HTTP and MCP](http-and-mcp.md) for the current public surfaces and [HTTP/MCP migration mapping](http-mcp-v0.2-mapping.md) for the historical v0.1 replacement table.
+See [HTTP and MCP](http-and-mcp.md) for the current public surfaces, [physical
+schema 4 migration](physical-schema-4-migration.md) for offline upgrade paths,
+and [HTTP/MCP migration mapping](http-mcp-v0.2-mapping.md) for the historical
+v0.1 replacement table.

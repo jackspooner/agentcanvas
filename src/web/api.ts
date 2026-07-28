@@ -2,17 +2,36 @@ import type { AgentCanvasConfiguration } from '../configuration';
 import type { CanvasThemeV1 } from '@agentcanvas/plugin-sdk';
 import type { CanvasBounds, CanvasOperation, CanvasViewport, CanvasViewportState } from '../contracts';
 import type { CanvasDocument, CanvasProjection } from './v2-types';
+import type {
+  MacroDefinitionRecord,
+  MacroExecutionResult,
+  MacroGetRequest,
+  MacroListRequest,
+  MacroListResponse,
+  MacroServiceExecuteRequest,
+  MacroServicePlanRequest,
+  MacroPlan
+} from '../macros/types';
 
-async function jsonResponse(response: Response, label: string): Promise<Record<string, unknown>> {
+async function jsonResponse<T>(response: Response, label: string): Promise<T> {
   if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new Error(detail || `${label}: ${response.status}`);
+    const body = await response.text().catch(() => '');
+    let message = '';
+    if (body) {
+      try {
+        const parsed = JSON.parse(body) as { message?: unknown };
+        if (typeof parsed.message === 'string') message = parsed.message;
+      } catch {
+        message = body;
+      }
+    }
+    throw new Error(message || `${label}: ${response.status}`);
   }
-  return response.json() as Promise<Record<string, unknown>>;
+  return response.json() as Promise<T>;
 }
 
 export async function fetchCanvasList(limit = 200): Promise<CanvasDocument[]> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ canvases?: CanvasDocument[] }>(
     await fetch(`/api/v1/canvases?limit=${encodeURIComponent(String(limit))}`),
     'failed to load canvases'
   );
@@ -20,14 +39,17 @@ export async function fetchCanvasList(limit = 200): Promise<CanvasDocument[]> {
 }
 
 export async function fetchAgentCanvasConfiguration(): Promise<AgentCanvasConfiguration> {
-  const body = await jsonResponse(await fetch('/api/v1/configuration'), 'failed to load AgentCanvas configuration');
+  const body = await jsonResponse<{ configuration: AgentCanvasConfiguration }>(
+    await fetch('/api/v1/configuration'),
+    'failed to load AgentCanvas configuration'
+  );
   return body.configuration as AgentCanvasConfiguration;
 }
 
 export async function updateAgentCanvasConfiguration(
   defaultCanvasSize: CanvasBounds
 ): Promise<AgentCanvasConfiguration> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ configuration: AgentCanvasConfiguration }>(
     await fetch('/api/v1/configuration', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -42,10 +64,11 @@ export async function fetchCanvasFromLocation(): Promise<CanvasProjection & { re
   const current = window.location.pathname;
   if (current.startsWith('/c/')) {
     const token = current.split('/').pop();
-    const body = await jsonResponse(
-      await fetch(`/api/v1/share/${encodeURIComponent(token ?? '')}`),
-      'failed to load share canvas'
-    );
+    const body = await jsonResponse<{
+      canvas: CanvasDocument;
+      elementRuntime?: CanvasProjection['elementRuntime'];
+      diagnostics?: CanvasProjection['diagnostics'];
+    }>(await fetch(`/api/v1/share/${encodeURIComponent(token ?? '')}`), 'failed to load share canvas');
     return {
       canvas: body.canvas as CanvasDocument,
       elementRuntime: (body.elementRuntime ?? {}) as CanvasProjection['elementRuntime'],
@@ -55,10 +78,11 @@ export async function fetchCanvasFromLocation(): Promise<CanvasProjection & { re
   }
   const match = current.match(/^\/canvases\/([^/]+)/);
   if (match) {
-    const body = await jsonResponse(
-      await fetch(`/api/v1/canvases/${encodeURIComponent(match[1])}`),
-      'failed to load canvas'
-    );
+    const body = await jsonResponse<{
+      canvas: CanvasDocument;
+      elementRuntime?: CanvasProjection['elementRuntime'];
+      diagnostics?: CanvasProjection['diagnostics'];
+    }>(await fetch(`/api/v1/canvases/${encodeURIComponent(match[1])}`), 'failed to load canvas');
     return {
       canvas: body.canvas as CanvasDocument,
       elementRuntime: (body.elementRuntime ?? {}) as CanvasProjection['elementRuntime'],
@@ -92,7 +116,7 @@ export async function updateCanvasBounds(
   bounds: CanvasBounds,
   expectedRevision?: number
 ): Promise<CanvasDocument> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ canvas: CanvasDocument }>(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -108,7 +132,7 @@ export async function updateCanvasTheme(
   theme: CanvasThemeV1 | null,
   expectedRevision?: number
 ): Promise<CanvasDocument> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ canvas: CanvasDocument }>(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/theme`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -120,7 +144,7 @@ export async function updateCanvasTheme(
 }
 
 export async function fetchViewportState(canvasId: string): Promise<CanvasViewportState> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ userViewport: CanvasViewport; agentViewport?: CanvasViewport | null }>(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/viewport`),
     'failed to load viewport'
   );
@@ -151,7 +175,7 @@ export async function applyCanvasOperations(
   operations: readonly CanvasOperation[],
   expectedRevision?: number
 ): Promise<CanvasDocument> {
-  const body = await jsonResponse(
+  const body = await jsonResponse<{ canvas: CanvasDocument }>(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -164,4 +188,61 @@ export async function applyCanvasOperations(
     'failed to update canvas elements'
   );
   return body.canvas as CanvasDocument;
+}
+
+export async function fetchMacroList(request: MacroListRequest = {}): Promise<MacroListResponse> {
+  const query = new URLSearchParams();
+  if (request.canvasId) query.set('canvasId', request.canvasId);
+  if (request.includeArchived !== undefined) query.set('includeArchived', String(request.includeArchived));
+  if (request.limit !== undefined) query.set('limit', String(request.limit));
+  if (request.cursor) query.set('cursor', request.cursor);
+  const suffix = query.toString();
+  return jsonResponse<MacroListResponse>(
+    await fetch(`/api/v1/macros${suffix ? `?${suffix}` : ''}`),
+    'failed to load macros'
+  );
+}
+
+export async function fetchMacroDefinition(request: MacroGetRequest): Promise<MacroDefinitionRecord> {
+  const query = request.canvasId === undefined ? '' : `?canvasId=${encodeURIComponent(request.canvasId)}`;
+  return jsonResponse<MacroDefinitionRecord>(
+    await fetch(
+      `/api/v1/macros/${encodeURIComponent(request.macroId)}/versions/${encodeURIComponent(String(request.macroVersion))}${query}`
+    ),
+    'failed to load macro version'
+  );
+}
+
+export async function planMacro(request: Omit<MacroServicePlanRequest, 'now'>): Promise<MacroPlan> {
+  return jsonResponse<MacroPlan>(
+    await fetch(
+      `/api/v1/canvases/${encodeURIComponent(request.canvasId)}/macros/${encodeURIComponent(request.macroId)}:plan`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          macroVersion: request.macroVersion,
+          anchor: request.anchor,
+          input: request.input,
+          ...(request.label === undefined ? {} : { label: request.label })
+        })
+      }
+    ),
+    'failed to preview macro'
+  );
+}
+
+export async function executeMacro(request: MacroServiceExecuteRequest): Promise<MacroExecutionResult> {
+  return jsonResponse<MacroExecutionResult>(
+    await fetch(`/api/v1/canvases/${encodeURIComponent(request.canvasId)}/macros:execute`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        planId: request.planId,
+        expectedRevision: request.expectedRevision,
+        idempotencyKey: request.idempotencyKey
+      })
+    }),
+    'failed to run macro'
+  );
 }

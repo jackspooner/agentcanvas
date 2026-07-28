@@ -8,6 +8,12 @@ The host owns the outer frame, transforms, selection, drag handle, locking, opac
 
 Use the `RendererContext` abort signal, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. `theme` is a complete `CanvasThemeV1`, including when the canvas has no persisted theme. Map semantic roles to its tokens and keep explicit element styles as overrides. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
 
+For element metadata, add the renderer's optional `details.open(context)` hook
+instead of drawing a private button inside the ShadowRoot. The editor supplies
+one consistent Details affordance. The hook should open through
+`context.overlays`, close on `context.signal`, and return only a safe
+user-facing projection.
+
 Snapshot renderers receive the identical resolved theme in `SnapshotRendererContext`. Browser and snapshot
 output must not maintain separate color or typography defaults.
 

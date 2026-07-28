@@ -1,0 +1,51 @@
+{
+  "scope": "installation",
+  "title": "Standard comparison table",
+  "description": "Example-only declarative macro: fixed comparison headers and frame, variable rows supplied at invocation time.",
+  "category": "example",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["rows"],
+    "properties": {
+      "rows": {
+        "type": "array",
+        "maxItems": 500,
+        "items": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "type": "string", "maxLength": 2000 }
+        }
+      }
+    }
+  },
+  "dependencies": [
+    { "elementType": "agentcanvas.table/table", "schemaVersion": 1 }
+  ],
+  "elements": [
+    {
+      "key": "table",
+      "type": "agentcanvas.table/table",
+      "schemaVersion": 1,
+      "x": 0,
+      "y": 0,
+      "width": 640,
+      "height": 320,
+      "data": {
+        "columns": ["Criterion", "Option A", "Option B", "Recommendation"],
+        "rows": { "$macroRef": "input", "pointer": "/rows" },
+        "caption": "Comparison",
+        "allowScroll": true
+      },
+      "style": {
+        "fontSize": 14,
+        "headerBackground": "#1e3a8a",
+        "headerColor": "#ffffff",
+        "borderColor": "#93c5fd",
+        "borderWidth": 1
+      },
+      "metadata": {}
+    }
+  ],
+  "outputs": { "table": "table" }
+}

@@ -4,6 +4,7 @@ export * from './inspect';
 export * from './legacy';
 export * from './plugin-schema';
 export * from './restore';
+export * from './schema4';
 export * from './theme-schema';
 export * from './types';
 export * from './v1-schema';

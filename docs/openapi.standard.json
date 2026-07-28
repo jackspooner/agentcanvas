@@ -33,6 +33,44 @@
         ],
         "type": "object"
       },
+      "CanvasBounds": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "const": "unlimited"
+              }
+            },
+            "required": [
+              "mode"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "height": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              "mode": {
+                "const": "fixed"
+              },
+              "width": {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "mode",
+              "width",
+              "height"
+            ],
+            "type": "object"
+          }
+        ]
+      },
       "CanvasElement": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
@@ -122,6 +160,646 @@
           "x",
           "y",
           "data"
+        ],
+        "type": "object"
+      },
+      "CanvasRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "background": {
+            "oneOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bounds": {
+            "$ref": "#/components/schemas/CanvasBounds"
+          },
+          "conversationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "enum": [
+              "agent",
+              "user",
+              "system"
+            ],
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documentVersion": {
+            "const": 2
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/CanvasElement"
+            },
+            "type": "array"
+          },
+          "height": {
+            "type": "number"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "theme": {
+            "oneOf": [
+              {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "colors": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "accent": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "accentText": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "border": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "canvas": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "highlight": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "highlightText": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "surface": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "surfaceMuted": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "text": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      },
+                      "textMuted": {
+                        "pattern": "^#[0-9a-fA-F]{6}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "canvas",
+                      "surface",
+                      "surfaceMuted",
+                      "text",
+                      "textMuted",
+                      "border",
+                      "accent",
+                      "accentText",
+                      "highlight",
+                      "highlightText"
+                    ],
+                    "type": "object"
+                  },
+                  "name": {
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "schemaVersion": {
+                    "const": 1
+                  },
+                  "shape": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "borderWidth": {
+                        "maximum": 8,
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "radius": {
+                        "maximum": 32,
+                        "minimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "borderWidth",
+                      "radius"
+                    ],
+                    "type": "object"
+                  },
+                  "typography": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "bodyFont": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                        "type": "string"
+                      },
+                      "headingFont": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                        "type": "string"
+                      },
+                      "monoFont": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "bodyFont",
+                      "headingFont",
+                      "monoFont"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "schemaVersion",
+                  "name",
+                  "colors",
+                  "typography",
+                  "shape"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "bounds",
+          "elements",
+          "revision",
+          "documentVersion"
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroDirectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "label": {
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mode": {
+            "const": "direct"
+          }
+        },
+        "required": [
+          "mode",
+          "canvasId",
+          "macroId",
+          "macroVersion",
+          "anchor",
+          "input",
+          "expectedRevision",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroDirectResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroPlanRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "mode": {
+            "const": "plan"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "canvasId",
+          "planId",
+          "expectedRevision",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroPlanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroRequest": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "anchor": {
+                "$ref": "#/components/schemas/MacroMacroAnchor"
+              },
+              "canvasId": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "expectedRevision": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "idempotencyKey": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "input": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              "label": {
+                "type": "string"
+              },
+              "macroId": {
+                "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+                "type": "string"
+              },
+              "macroVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "mode": {
+                "const": "direct"
+              }
+            },
+            "required": [
+              "mode",
+              "canvasId",
+              "macroId",
+              "macroVersion",
+              "anchor",
+              "input",
+              "expectedRevision",
+              "idempotencyKey"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "canvasId": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "expectedRevision": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "idempotencyKey": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "mode": {
+                "const": "plan"
+              },
+              "planId": {
+                "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "mode",
+              "canvasId",
+              "planId",
+              "expectedRevision",
+              "idempotencyKey"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "CanvasRunMacroResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "CanvasThemeV1": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "colors": {
+            "additionalProperties": false,
+            "properties": {
+              "accent": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "accentText": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "border": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "canvas": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "highlight": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "highlightText": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "surface": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "surfaceMuted": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "text": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              "textMuted": {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "canvas",
+              "surface",
+              "surfaceMuted",
+              "text",
+              "textMuted",
+              "border",
+              "accent",
+              "accentText",
+              "highlight",
+              "highlightText"
+            ],
+            "type": "object"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": 1
+          },
+          "shape": {
+            "additionalProperties": false,
+            "properties": {
+              "borderWidth": {
+                "maximum": 8,
+                "minimum": 0,
+                "type": "number"
+              },
+              "radius": {
+                "maximum": 32,
+                "minimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "borderWidth",
+              "radius"
+            ],
+            "type": "object"
+          },
+          "typography": {
+            "additionalProperties": false,
+            "properties": {
+              "bodyFont": {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                "type": "string"
+              },
+              "headingFont": {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                "type": "string"
+              },
+              "monoFont": {
+                "maxLength": 200,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "bodyFont",
+              "headingFont",
+              "monoFont"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "name",
+          "colors",
+          "typography",
+          "shape"
         ],
         "type": "object"
       },
@@ -1592,6 +2270,2765 @@
         "additionalProperties": true,
         "type": "object"
       },
+      "MacroAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "MacroArchiveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroArchiveResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "currentVersion",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroCanvasElement": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "height": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "locked": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "opacity": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rotation": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "style": {
+            "oneOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "width": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "zIndex": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "schemaVersion",
+          "x",
+          "y",
+          "data"
+        ],
+        "type": "object"
+      },
+      "MacroCreateRequest": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroCreateResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/MacroMacroDefinitionV1"
+          }
+        },
+        "required": [
+          "definition",
+          "currentVersion",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroCreateVersionRequest": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "expectedCurrentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroCreateVersionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/MacroMacroDefinitionV1"
+          }
+        },
+        "required": [
+          "definition",
+          "currentVersion",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroDefinitionAuthoringV1": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroDefinitionV1": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroDependency": {
+        "additionalProperties": false,
+        "properties": {
+          "elementType": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "elementType",
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
+      "MacroEffectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "affectedElementIds": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "generatedElementCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "operationCount": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "operationCount",
+          "generatedElementCount",
+          "affectedElementIds"
+        ],
+        "type": "object"
+      },
+      "MacroElementTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "height": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "key": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "style": {
+            "oneOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "type",
+          "schemaVersion",
+          "x",
+          "y",
+          "width",
+          "height",
+          "data"
+        ],
+        "type": "object"
+      },
+      "MacroErrorEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "macro_definition_invalid",
+              "macro_definition_too_large",
+              "macro_input_invalid",
+              "macro_input_too_large",
+              "macro_unsafe",
+              "macro_ref_invalid",
+              "macro_ref_pointer_invalid",
+              "macro_ref_missing",
+              "macro_scope_denied",
+              "macro_not_found",
+              "macro_version_not_found",
+              "macro_archived",
+              "macro_version_mismatch",
+              "macro_dependency_invalid",
+              "macro_dependency_missing",
+              "macro_element_invalid",
+              "macro_limit_exceeded",
+              "macro_canvas_limit_exceeded",
+              "macro_plan_not_found",
+              "macro_plan_expired",
+              "macro_plan_stale",
+              "macro_revision_conflict",
+              "macro_idempotency_invalid",
+              "macro_idempotency_conflict",
+              "macro_execution_invalid"
+            ]
+          },
+          "details": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "message": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "ok": {
+            "const": false
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "stage": {
+            "enum": [
+              "definition",
+              "input",
+              "planning",
+              "repository",
+              "plan",
+              "execution",
+              "revision",
+              "idempotency"
+            ]
+          },
+          "status": {
+            "maximum": 599,
+            "minimum": 400,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "code",
+          "message",
+          "stage",
+          "retryable",
+          "status"
+        ],
+        "type": "object"
+      },
+      "MacroExecuteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "canvasId",
+          "planId",
+          "expectedRevision",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "MacroExecuteResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "MacroExecutionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "MacroGetRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "macroId",
+          "macroVersion"
+        ],
+        "type": "object"
+      },
+      "MacroGetResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/MacroMacroDefinitionV1"
+          }
+        },
+        "required": [
+          "definition",
+          "currentVersion",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "affectedElementIds": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "forward": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroOperation"
+            },
+            "type": "array"
+          },
+          "inverse": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroOperation"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "forward",
+          "inverse",
+          "affectedElementIds"
+        ],
+        "type": "object"
+      },
+      "MacroHttpArchiveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroHttpCreateVersionRequest": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "expectedCurrentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroHttpExecuteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "planId",
+          "expectedRevision",
+          "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "MacroHttpPlanRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "input": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "label": {
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "macroVersion",
+          "anchor",
+          "input"
+        ],
+        "type": "object"
+      },
+      "MacroInputSchemaObject": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/MacroJsonValue"
+        },
+        "properties": {
+          "type": {
+            "const": "object"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "MacroJsonObject": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/MacroJsonValue"
+        },
+        "type": "object"
+      },
+      "MacroJsonValue": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "array"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "MacroListRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "cursor": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "includeArchived": {
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "MacroListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroSummary"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "MacroMacroAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "MacroMacroCanvasRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "background": {
+            "oneOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bounds": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "unlimited"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "height": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  },
+                  "mode": {
+                    "const": "fixed"
+                  },
+                  "width": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "conversationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "createdBy": {
+            "enum": [
+              "agent",
+              "user",
+              "system"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documentVersion": {
+            "const": 2
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroCanvasElement"
+            },
+            "type": "array"
+          },
+          "height": {
+            "type": "number"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "theme": {
+            "oneOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "bounds",
+          "elements",
+          "revision",
+          "documentVersion"
+        ],
+        "type": "object"
+      },
+      "MacroMacroCanvasSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "bounds": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "unlimited"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "height": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  },
+                  "mode": {
+                    "const": "fixed"
+                  },
+                  "width": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroCanvasElement"
+            },
+            "type": "array"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "elements",
+          "bounds"
+        ],
+        "type": "object"
+      },
+      "MacroMacroDefinitionAuthoringV1": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroMacroDefinitionRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/MacroMacroDefinitionV1"
+          }
+        },
+        "required": [
+          "definition",
+          "currentVersion",
+          "archived"
+        ],
+        "type": "object"
+      },
+      "MacroMacroDefinitionV1": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroDependency"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroElementTemplate"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "inputSchema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "scope",
+          "title",
+          "inputSchema",
+          "elements"
+        ],
+        "type": "object"
+      },
+      "MacroMacroDependency": {
+        "additionalProperties": false,
+        "properties": {
+          "elementType": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "elementType",
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
+      "MacroMacroEffectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "affectedElementIds": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "generatedElementCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "operationCount": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "operationCount",
+          "generatedElementCount",
+          "affectedElementIds"
+        ],
+        "type": "object"
+      },
+      "MacroMacroElementTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "height": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "key": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "schemaVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "style": {
+            "oneOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "type",
+          "schemaVersion",
+          "x",
+          "y",
+          "width",
+          "height",
+          "data"
+        ],
+        "type": "object"
+      },
+      "MacroMacroErrorEnvelope": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "macro_definition_invalid",
+              "macro_definition_too_large",
+              "macro_input_invalid",
+              "macro_input_too_large",
+              "macro_unsafe",
+              "macro_ref_invalid",
+              "macro_ref_pointer_invalid",
+              "macro_ref_missing",
+              "macro_scope_denied",
+              "macro_not_found",
+              "macro_version_not_found",
+              "macro_archived",
+              "macro_version_mismatch",
+              "macro_dependency_invalid",
+              "macro_dependency_missing",
+              "macro_element_invalid",
+              "macro_limit_exceeded",
+              "macro_canvas_limit_exceeded",
+              "macro_plan_not_found",
+              "macro_plan_expired",
+              "macro_plan_stale",
+              "macro_revision_conflict",
+              "macro_idempotency_invalid",
+              "macro_idempotency_conflict",
+              "macro_execution_invalid"
+            ]
+          },
+          "details": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "message": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "ok": {
+            "const": false
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "stage": {
+            "enum": [
+              "definition",
+              "input",
+              "planning",
+              "repository",
+              "plan",
+              "execution",
+              "revision",
+              "idempotency"
+            ]
+          },
+          "status": {
+            "maximum": 599,
+            "minimum": 400,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "code",
+          "message",
+          "stage",
+          "retryable",
+          "status"
+        ],
+        "type": "object"
+      },
+      "MacroMacroExecutionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "canvas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasSnapshot"
+              },
+              {
+                "$ref": "#/components/schemas/MacroMacroCanvasRecord"
+              }
+            ]
+          },
+          "history": {
+            "$ref": "#/components/schemas/MacroMacroHistory"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/MacroMacroProvenance"
+          }
+        },
+        "required": [
+          "canvas",
+          "provenance",
+          "outputs",
+          "history"
+        ],
+        "type": "object"
+      },
+      "MacroMacroHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "affectedElementIds": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "forward": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroOperation"
+            },
+            "type": "array"
+          },
+          "inverse": {
+            "items": {
+              "$ref": "#/components/schemas/MacroMacroOperation"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "forward",
+          "inverse",
+          "affectedElementIds"
+        ],
+        "type": "object"
+      },
+      "MacroMacroOperation": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "element": {
+                "$ref": "#/components/schemas/MacroCanvasElement"
+              },
+              "op": {
+                "const": "upsertElement"
+              }
+            },
+            "required": [
+              "op",
+              "element"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "elementId": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "op": {
+                "const": "deleteElement"
+              }
+            },
+            "required": [
+              "op",
+              "elementId"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "elementId": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "frame": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MacroJsonValue"
+                },
+                "type": "object"
+              },
+              "op": {
+                "const": "patchElementFrame"
+              }
+            },
+            "required": [
+              "op",
+              "elementId",
+              "frame"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "op": {
+                "const": "clear"
+              }
+            },
+            "required": [
+              "op"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "MacroMacroPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "canvasRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "effectSummary": {
+            "$ref": "#/components/schemas/MacroMacroEffectSummary"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "inputDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element": {
+                  "$ref": "#/components/schemas/MacroCanvasElement"
+                },
+                "op": {
+                  "const": "upsertElement"
+                }
+              },
+              "required": [
+                "op",
+                "element"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "planDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          },
+          "previewElements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroCanvasElement"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "planId",
+          "macroId",
+          "macroVersion",
+          "canvasId",
+          "canvasRevision",
+          "anchor",
+          "inputDigest",
+          "planDigest",
+          "createdAt",
+          "expiresAt",
+          "operations",
+          "previewElements",
+          "outputs",
+          "effectSummary"
+        ],
+        "type": "object"
+      },
+      "MacroMacroProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "inputDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "planDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "macroVersion",
+          "planId",
+          "inputDigest",
+          "planDigest"
+        ],
+        "type": "object"
+      },
+      "MacroMacroRef": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "$macroRef": {
+                "const": "input"
+              },
+              "pointer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "$macroRef",
+              "pointer"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "$macroRef": {
+                "const": "generatedElementId"
+              },
+              "elementKey": {
+                "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "$macroRef",
+              "elementKey"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "MacroMacroSummary": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "createdAt": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "updatedAt": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "currentVersion",
+          "archived",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "MacroPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "canvasRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "effectSummary": {
+            "$ref": "#/components/schemas/MacroMacroEffectSummary"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "inputDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element": {
+                  "$ref": "#/components/schemas/MacroCanvasElement"
+                },
+                "op": {
+                  "const": "upsertElement"
+                }
+              },
+              "required": [
+                "op",
+                "element"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "planDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          },
+          "previewElements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroCanvasElement"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "planId",
+          "macroId",
+          "macroVersion",
+          "canvasId",
+          "canvasRevision",
+          "anchor",
+          "inputDigest",
+          "planDigest",
+          "createdAt",
+          "expiresAt",
+          "operations",
+          "previewElements",
+          "outputs",
+          "effectSummary"
+        ],
+        "type": "object"
+      },
+      "MacroPlanRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MacroJsonValue"
+            },
+            "type": "object"
+          },
+          "label": {
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "canvasId",
+          "macroId",
+          "macroVersion",
+          "anchor",
+          "input"
+        ],
+        "type": "object"
+      },
+      "MacroPlanResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "$ref": "#/components/schemas/MacroMacroAnchor"
+          },
+          "canvasId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "canvasRevision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "effectSummary": {
+            "$ref": "#/components/schemas/MacroMacroEffectSummary"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "inputDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element": {
+                  "$ref": "#/components/schemas/MacroCanvasElement"
+                },
+                "op": {
+                  "const": "upsertElement"
+                }
+              },
+              "required": [
+                "op",
+                "element"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "planDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          },
+          "previewElements": {
+            "items": {
+              "$ref": "#/components/schemas/MacroCanvasElement"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "planId",
+          "macroId",
+          "macroVersion",
+          "canvasId",
+          "canvasRevision",
+          "anchor",
+          "inputDigest",
+          "planDigest",
+          "createdAt",
+          "expiresAt",
+          "operations",
+          "previewElements",
+          "outputs",
+          "effectSummary"
+        ],
+        "type": "object"
+      },
+      "MacroProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "inputDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "macroId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "macroVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "planDigest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "planId": {
+            "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "macroVersion",
+          "planId",
+          "inputDigest",
+          "planDigest"
+        ],
+        "type": "object"
+      },
+      "MacroRef": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "$macroRef": {
+                "const": "input"
+              },
+              "pointer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "$macroRef",
+              "pointer"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "$macroRef": {
+                "const": "generatedElementId"
+              },
+              "elementKey": {
+                "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "$macroRef",
+              "elementKey"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "MacroSummary": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "canvas"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "properties": {
+                "canvasId": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "canvasId"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "canvasId"
+                ]
+              }
+            }
+          }
+        ],
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "canvasId": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}$",
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "createdAt": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "installation",
+              "canvas"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "updatedAt": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "currentVersion",
+          "archived",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "PluginDiagnostic": {
         "additionalProperties": false,
         "properties": {
@@ -2179,6 +5616,100 @@
         ],
         "type": "object"
       },
+      "ShareLink": {
+        "additionalProperties": false,
+        "properties": {
+          "canvasId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "const": "read"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "canvasId",
+          "mode",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "Viewport": {
+        "additionalProperties": false,
+        "properties": {
+          "centerX": {
+            "type": "number"
+          },
+          "centerY": {
+            "type": "number"
+          },
+          "height": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "source": {
+            "enum": [
+              "default",
+              "user",
+              "agent"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "width": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "zoom": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "source",
+          "centerX",
+          "centerY",
+          "zoom",
+          "width",
+          "height",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "WritableCanvasElement": {
         "oneOf": [
           {
@@ -2760,6 +6291,399 @@
           "retry": "Retry only when the returned error marks retryable=true.",
           "sideEffects": [
             "Mutates element envelopes and increments the canvas revision."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/macros:execute": {
+      "post": {
+        "operationId": "macroExecute",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "expectedRevision": 1,
+                "idempotencyKey": "request-example",
+                "planId": "macro_plan_example"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MacroHttpExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "canvas": {
+                    "bounds": {
+                      "mode": "unlimited"
+                    },
+                    "elements": [],
+                    "id": "canvas_example",
+                    "revision": 2
+                  },
+                  "history": {
+                    "affectedElementIds": [],
+                    "forward": [],
+                    "inverse": [],
+                    "label": "Insert card"
+                  },
+                  "outputs": {},
+                  "provenance": {
+                    "inputDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "macroId": "macro_example",
+                    "macroVersion": 1,
+                    "planDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "planId": "macro_plan_example"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroExecuteResponse"
+                }
+              }
+            },
+            "description": "Complete macro execution result"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Execute a previously stored macro plan",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Refresh the affected macro catalog or canvas after success."
+            ]
+          },
+          "doNotUseWhen": [],
+          "sideEffects": [
+            "Updates canvas elements, canvas events, macro invocation provenance, and the idempotent replay record atomically."
+          ],
+          "useWhen": [
+            "Use when the macro workflow requires this mutation."
+          ]
+        }
+      }
+    },
+    "/api/v1/canvases/{canvasId}/macros/{macroId}:plan": {
+      "post": {
+        "operationId": "macroPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "anchor": {
+                  "x": 0,
+                  "y": 0
+                },
+                "input": {},
+                "macroVersion": 1
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MacroHttpPlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "anchor": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "canvasId": "canvas_example",
+                  "canvasRevision": 1,
+                  "createdAt": "2026-01-01T00:00:00.000Z",
+                  "effectSummary": {
+                    "affectedElementIds": [],
+                    "generatedElementCount": 0,
+                    "label": "Insert card",
+                    "operationCount": 0
+                  },
+                  "expiresAt": "2026-01-01T00:05:00.000Z",
+                  "inputDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "macroId": "macro_example",
+                  "macroVersion": 1,
+                  "operations": [],
+                  "outputs": {},
+                  "planDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "planId": "macro_plan_example",
+                  "previewElements": []
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroPlanResponse"
+                }
+              }
+            },
+            "description": "Pure macro plan"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Plan an exact macro version without mutation",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "doNotUseWhen": [
+            "Do not use to mutate canvas state."
+          ],
+          "sideEffects": [],
+          "useWhen": [
+            "Use for a deterministic macro preview or catalog operation."
           ]
         }
       }
@@ -3621,6 +7545,898 @@
         }
       }
     },
+    "/api/v1/macros": {
+      "get": {
+        "operationId": "macroList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "canvasId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeArchived",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": []
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroListResponse"
+                }
+              }
+            },
+            "description": "Macro catalog page"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "List available macro templates",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "doNotUseWhen": [
+            "Do not use to mutate canvas state."
+          ],
+          "sideEffects": [],
+          "useWhen": [
+            "Use for a deterministic macro preview or catalog operation."
+          ]
+        }
+      },
+      "post": {
+        "operationId": "macroCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "elements": [],
+                "inputSchema": {
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "scope": "installation",
+                "title": "Insert card"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MacroCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "archived": false,
+                  "currentVersion": 1,
+                  "definition": {
+                    "elements": [],
+                    "id": "macro_example",
+                    "inputSchema": {
+                      "additionalProperties": false,
+                      "type": "object"
+                    },
+                    "scope": "installation",
+                    "title": "Insert card",
+                    "version": 1
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroCreateResponse"
+                }
+              }
+            },
+            "description": "Created macro"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Create a version-one macro template",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Refresh the affected macro catalog or canvas after success."
+            ]
+          },
+          "doNotUseWhen": [],
+          "sideEffects": [
+            "Creates a macro definition and immutable version one."
+          ],
+          "useWhen": [
+            "Use when the macro workflow requires this mutation."
+          ]
+        }
+      }
+    },
+    "/api/v1/macros/{macroId}": {
+      "patch": {
+        "operationId": "macroArchive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "archived": true
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MacroHttpArchiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "archived": true,
+                  "currentVersion": 1,
+                  "macroId": "macro_example"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroArchiveResponse"
+                }
+              }
+            },
+            "description": "Updated macro archive state"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Archive or unarchive a macro",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Refresh the affected macro catalog or canvas after success."
+            ]
+          },
+          "doNotUseWhen": [],
+          "sideEffects": [
+            "Changes only the archive state; existing versions remain immutable."
+          ],
+          "useWhen": [
+            "Use when the macro workflow requires this mutation."
+          ]
+        }
+      }
+    },
+    "/api/v1/macros/{macroId}/versions": {
+      "post": {
+        "operationId": "macroCreateVersion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "elements": [],
+                "expectedCurrentVersion": 1,
+                "inputSchema": {
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "scope": "installation",
+                "title": "Insert card"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MacroHttpCreateVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "archived": false,
+                  "currentVersion": 2,
+                  "definition": {
+                    "elements": [],
+                    "id": "macro_example",
+                    "inputSchema": {
+                      "additionalProperties": false,
+                      "type": "object"
+                    },
+                    "scope": "installation",
+                    "title": "Insert card",
+                    "version": 2
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroCreateVersionResponse"
+                }
+              }
+            },
+            "description": "Created macro version"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Create the next immutable macro version",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Refresh the affected macro catalog or canvas after success."
+            ]
+          },
+          "doNotUseWhen": [],
+          "sideEffects": [
+            "Adds a new immutable version while preserving scope and canvas identity."
+          ],
+          "useWhen": [
+            "Use when the macro workflow requires this mutation."
+          ]
+        }
+      }
+    },
+    "/api/v1/macros/{macroId}/versions/{version}": {
+      "get": {
+        "operationId": "macroGet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "canvasId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "archived": false,
+                  "currentVersion": 1,
+                  "definition": {
+                    "elements": [],
+                    "id": "macro_example",
+                    "inputSchema": {
+                      "additionalProperties": false,
+                      "type": "object"
+                    },
+                    "scope": "installation",
+                    "title": "Insert card",
+                    "version": 1
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroGetResponse"
+                }
+              }
+            },
+            "description": "Exact macro version"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_definition_invalid",
+                  "message": "request is invalid",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "definition",
+                  "status": 400
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro request validation failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_scope_denied",
+                  "message": "macro is scoped to another canvas",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 403
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro scope does not permit this canvas"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_not_found",
+                  "message": "macro was not found",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "repository",
+                  "status": 404
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro or exact macro version was not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_revision_conflict",
+                  "message": "canvas revision changed",
+                  "ok": false,
+                  "retryable": true,
+                  "stage": "revision",
+                  "status": 409
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro revision, version, scope, or idempotency conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_plan_expired",
+                  "message": "macro plan expired",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "plan",
+                  "status": 410
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro plan has expired"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "macro_execution_invalid",
+                  "message": "macro execution failed",
+                  "ok": false,
+                  "retryable": false,
+                  "stage": "execution",
+                  "status": 500
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MacroErrorEnvelope"
+                }
+              }
+            },
+            "description": "Macro execution failed"
+          }
+        },
+        "summary": "Get one exact macro version",
+        "tags": [
+          "Macros"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "doNotUseWhen": [
+            "Do not use to mutate canvas state."
+          ],
+          "sideEffects": [],
+          "useWhen": [
+            "Use for a deterministic macro preview or catalog operation."
+          ]
+        }
+      }
+    },
     "/api/v1/plugin-modules/{pluginId}/{buildHash}/{modulePath}": {
       "get": {
         "operationId": "canvasGetPluginModule",
@@ -3960,6 +8776,18 @@
     },
     {
       "name": "Resources"
+    },
+    {
+      "name": "Macros"
+    },
+    {
+      "name": "Canvases"
+    },
+    {
+      "name": "Service"
+    },
+    {
+      "name": "Configuration"
     }
   ]
 }

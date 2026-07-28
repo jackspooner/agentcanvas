@@ -19,7 +19,7 @@
   "contributes": {
     "elements": [{ "name": "model", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
     "tools": ["place"],
-    "procedures": [],
+    "procedures": ["details"],
     "migrations": ["legacy-glb-v1"]
   }
 }

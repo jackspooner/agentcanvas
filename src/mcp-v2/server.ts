@@ -21,6 +21,23 @@ import {
   type CoreJsonSchemaTool,
   type McpJsonSchemaTool
 } from '../api-v2/index.js';
+import {
+  MACRO_ARCHIVE_REQUEST_SCHEMA,
+  MACRO_ARCHIVE_RESPONSE_SCHEMA,
+  MACRO_CREATE_REQUEST_SCHEMA,
+  MACRO_CREATE_RESPONSE_SCHEMA,
+  MACRO_CREATE_VERSION_REQUEST_SCHEMA,
+  MACRO_CREATE_VERSION_RESPONSE_SCHEMA,
+  MACRO_GET_REQUEST_SCHEMA,
+  MACRO_GET_RESPONSE_SCHEMA,
+  MACRO_LIST_REQUEST_SCHEMA,
+  MACRO_LIST_RESPONSE_SCHEMA,
+  MACRO_PLAN_REQUEST_SCHEMA,
+  MACRO_PLAN_RESPONSE_SCHEMA,
+  CANVAS_RUN_MACRO_REQUEST_SCHEMA,
+  CANVAS_RUN_MACRO_RESPONSE_SCHEMA
+} from '../macros/index.js';
+import type { MacroRuntime } from '../macros/runtime.js';
 import type { BrowserPluginCatalog, FrozenPluginRegistry, InspectableCanvas } from '../plugin-runtime/index.js';
 import { createPluginCanvasOperations, inspectCanvas } from '../plugin-runtime/index.js';
 import type { V2SqliteCanvasStore } from '../store/v2.js';
@@ -34,6 +51,7 @@ export interface McpV2Runtime {
   store: V2SqliteCanvasStore;
   browserCatalog: BrowserPluginCatalog;
   diagnostics(): readonly import('@agentcanvas/plugin-sdk').PluginDiagnostic[];
+  macros?: MacroRuntime;
 }
 
 const CANVAS_ID = { type: 'string', minLength: 1 };
@@ -392,6 +410,67 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
   ];
 }
 
+function macroTools(): readonly CoreJsonSchemaTool[] {
+  return [
+    {
+      name: 'macro_list',
+      title: 'List macros',
+      description: 'List installation macros and macros scoped to one canvas.',
+      inputSchema: MACRO_LIST_REQUEST_SCHEMA,
+      outputSchema: MACRO_LIST_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'macro_get',
+      title: 'Get exact macro version',
+      description: 'Get one exact immutable macro version.',
+      inputSchema: MACRO_GET_REQUEST_SCHEMA,
+      outputSchema: MACRO_GET_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'macro_create',
+      title: 'Create macro',
+      description: 'Create a macro; the host assigns its opaque ID and version one.',
+      inputSchema: MACRO_CREATE_REQUEST_SCHEMA,
+      outputSchema: MACRO_CREATE_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: false, idempotentHint: false }
+    },
+    {
+      name: 'macro_create_version',
+      title: 'Create macro version',
+      description: 'Create the next immutable version without changing scope or canvas identity.',
+      inputSchema: MACRO_CREATE_VERSION_REQUEST_SCHEMA,
+      outputSchema: MACRO_CREATE_VERSION_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: false, idempotentHint: false }
+    },
+    {
+      name: 'macro_archive',
+      title: 'Archive macro',
+      description: 'Archive or unarchive a macro without changing its immutable versions.',
+      inputSchema: MACRO_ARCHIVE_REQUEST_SCHEMA,
+      outputSchema: MACRO_ARCHIVE_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: false, idempotentHint: false }
+    },
+    {
+      name: 'macro_plan',
+      title: 'Plan macro',
+      description: 'Purely expand and validate an exact macro version for a canvas.',
+      inputSchema: MACRO_PLAN_REQUEST_SCHEMA,
+      outputSchema: MACRO_PLAN_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_run_macro',
+      title: 'Run macro',
+      description: 'Execute an existing plan or directly plan and execute one exact macro version.',
+      inputSchema: CANVAS_RUN_MACRO_REQUEST_SCHEMA,
+      outputSchema: CANVAS_RUN_MACRO_RESPONSE_SCHEMA,
+      annotations: { readOnlyHint: false, idempotentHint: false }
+    }
+  ];
+}
+
 function mutationTool(
   name: string,
   description: string,
@@ -426,17 +505,50 @@ function withInspectionAndUrl(canvas: InspectableCanvas, runtime: McpV2Runtime):
   return { ...withInspection(canvas, runtime.registry), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
 }
 
-function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): JsonObject {
+async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Promise<JsonObject> {
   const store = runtime.store;
   const canvasId = input.canvasId as string;
   const expectedRevision = input.expectedRevision as number | undefined;
   if (name === 'canvas_get_guidance') {
-    const coreToolCount = coreTools(runtime.registry).length;
+    const coreToolCount = coreTools(runtime.registry).length + macroTools().length;
     const pluginToolCount = runtime.registry.plugins.reduce((count, plugin) => count + plugin.tools.length, 0);
     return json({
       ...AGENTCANVAS_AGENT_GUIDANCE,
       mcpCatalog: { coreToolCount, pluginToolCount, totalToolCount: coreToolCount + pluginToolCount }
     });
+  }
+  if (name === 'macro_list') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.list(input as never) as unknown as JsonObject;
+  }
+  if (name === 'macro_get') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.get(
+      input.macroId as string,
+      input.macroVersion as number,
+      (input.canvasId as string | undefined) ?? ''
+    ) as unknown as JsonObject;
+  }
+  if (name === 'macro_create') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.create(input as never) as unknown as JsonObject;
+  }
+  if (name === 'macro_create_version') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.createVersion(input as never) as unknown as JsonObject;
+  }
+  if (name === 'macro_archive') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.archive(input.macroId as string, input.archived as boolean) as unknown as JsonObject;
+  }
+  if (name === 'macro_plan') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    return runtime.macros.plan(input as never) as unknown as JsonObject;
+  }
+  if (name === 'canvas_run_macro') {
+    if (!runtime.macros) throw new Error('macro runtime is unavailable');
+    if (input.mode === 'plan') return (await runtime.macros.execute(input as never)) as unknown as JsonObject;
+    return (await runtime.macros.direct(input as never)) as unknown as JsonObject;
   }
   if (name === 'canvas_create') return withInspectionAndUrl(store.createCanvas(input as never), runtime);
   if (name === 'canvas_list')
@@ -557,7 +669,7 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
   server: Server;
   tools: readonly McpJsonSchemaTool[];
 } {
-  const tools = createMcpToolCatalog(runtime.registry, coreTools(runtime.registry));
+  const tools = createMcpToolCatalog(runtime.registry, [...coreTools(runtime.registry), ...macroTools()]);
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
   const validators = new Map<string, { input: ValidateFunction; output: ValidateFunction }>(
     tools.map((tool) => [tool.name, { input: ajv.compile(tool.inputSchema), output: ajv.compile(tool.outputSchema) }])
@@ -586,7 +698,7 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
     const validation = validators.get(tool.name) as { input: ValidateFunction; output: ValidateFunction };
     if (!validation.input(input)) throw new Error(`tool input failed schema validation: ${tool.name}`);
     let output: JsonObject;
-    if (tool.source === 'core') output = invokeCore(tool.name, input, runtime);
+    if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime);
     else {
       const pluginId = tool.pluginId as string;
       const plugin = runtime.registry.getPlugin(pluginId);

@@ -9,7 +9,14 @@ import type {
 import { modelData } from './data.js';
 import { importLegacyModel } from './legacy.js';
 import { resourceProjection } from './resources.js';
-import { modelDataSchema, modelStyleSchema, mutationOutputSchema, placeModelInputSchema } from './schemas.js';
+import {
+  detailsInputSchema,
+  detailsOutputSchema,
+  modelDataSchema,
+  modelStyleSchema,
+  mutationOutputSchema,
+  placeModelInputSchema
+} from './schemas.js';
 import { renderModelSnapshot } from './snapshot.js';
 
 function optionalNumber(input: JsonObject, key: string): number | null | undefined {
@@ -136,6 +143,24 @@ const plugin: AgentCanvasServerPlugin = {
           input.expectedRevision as number | undefined
         );
         return { ok: true, canvasId, elementId: element.id, result };
+      }
+    });
+    host.registerProcedure({
+      name: 'details',
+      description: 'Read safe Assets-2 metadata for a GLB model and its optional poster.',
+      inputSchema: detailsInputSchema,
+      outputSchema: detailsOutputSchema,
+      async invoke(input, context) {
+        const modelReference = assets.validateReference(input.assetRef);
+        const posterReference =
+          input.posterAssetRef === undefined || input.posterAssetRef === null
+            ? null
+            : assets.validateReference(input.posterAssetRef);
+        const [model, poster] = await Promise.all([
+          assets.details(modelReference, context.signal),
+          posterReference ? assets.details(posterReference, context.signal) : Promise.resolve(null)
+        ]);
+        return { ok: true, details: { model, poster } };
       }
     });
     host.registerMigration({

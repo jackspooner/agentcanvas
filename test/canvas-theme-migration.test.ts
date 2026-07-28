@@ -77,7 +77,7 @@ describe('canvas theme physical schema migration', () => {
     expect(fs.existsSync(result.backupPath)).toBe(true);
     expect(fs.existsSync(result.manifestPath)).toBe(true);
     const migrated = new DatabaseSync(databasePath);
-    expect(inspectDatabaseVersion(migrated)).toEqual({ kind: 'v2', physicalVersion: 3, documentVersion: 2 });
+    expect(inspectDatabaseVersion(migrated)).toEqual({ kind: 'v2', physicalVersion: 4, documentVersion: 2 });
     expect(
       migrated.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('canvases') WHERE name='theme_json'").get()
     ).toEqual({ count: 1 });
@@ -87,6 +87,12 @@ describe('canvas theme physical schema migration', () => {
       theme_json: null,
       revision: 1
     });
+    expect(
+      JSON.parse(
+        (migrated.prepare('SELECT summary_json FROM agent_canvas_migration_runs').get() as { summary_json: string })
+          .summary_json
+      )
+    ).toMatchObject({ targetPhysicalVersion: 4 });
     migrated.close();
     expect(verifyMigrationDatabase({ databasePath })).toMatchObject({ ok: true, errors: [] });
 

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { ElementTypeDescriptor, PluginManifest } from '@agentcanvas/plugin-sdk';
 import { describe, expect, it } from 'vitest';
 import { PluginElementValidator } from '../src/plugin-runtime/elements';
@@ -135,6 +136,41 @@ describe('v0.2 canonical store', () => {
     store.close();
   });
 
+  it('keeps element-batch idempotency replay and conflict behavior unchanged', () => {
+    const store = makeStore();
+    const canvas = store.createCanvas({ title: 'Idempotency' });
+    const request = {
+      idempotencyKey: 'same-request',
+      operations: [
+        {
+          op: 'upsertElement' as const,
+          element: { id: 'card_1', type: 'fixture.cards/card', schemaVersion: 1, x: 0, y: 0, data: { title: 'A' } }
+        }
+      ]
+    };
+    const first = store.applyOperations(canvas.id, request);
+    expect(store.applyOperations(canvas.id, request)).toEqual(first);
+    expect(store.db.prepare('SELECT request_hash FROM canvas_idempotency_keys').get()).toEqual({
+      request_hash: createHash('sha256')
+        .update(
+          JSON.stringify({
+            canvasId: canvas.id,
+            documentVersion: 2,
+            operations: request.operations
+          })
+        )
+        .digest('hex')
+    });
+    expect(() =>
+      store.applyOperations(canvas.id, {
+        ...request,
+        operations: [{ ...request.operations[0], element: { ...request.operations[0].element, x: 1 } }]
+      })
+    ).toThrowError('idempotency key was reused with a different request');
+    expect(store.getCanvas(canvas.id).revision).toBe(first.revision);
+    store.close();
+  });
+
   it('rejects identity changes during upsert', () => {
     const store = makeStore();
     const canvas = store.createCanvas({ title: 'Identity' });
@@ -156,6 +192,138 @@ describe('v0.2 canonical store', () => {
         ]
       })
     ).toThrowError();
+    store.close();
+  });
+
+  it('rolls back the canvas batch when the optional transaction callback fails', () => {
+    const store = makeStore();
+    const canvas = store.createCanvas({ title: 'Atomic callback' });
+    expect(() =>
+      store.applyOperationsWithTransaction(
+        canvas.id,
+        {
+          idempotencyKey: 'callback-failure',
+          operations: [
+            {
+              op: 'upsertElement',
+              element: { id: 'card_1', type: 'fixture.cards/card', schemaVersion: 1, x: 0, y: 0, data: { title: 'A' } }
+            }
+          ]
+        },
+        ({ db }) => {
+          db.prepare(
+            `INSERT INTO macro_definitions
+             (id,scope_kind,canvas_id,current_version,archived_at,created_at,updated_at)
+             VALUES ('macro_1','installation',NULL,1,NULL,'now','now')`
+          ).run();
+          throw new Error('callback failed');
+        }
+      )
+    ).toThrowError('callback failed');
+    expect(store.getCanvas(canvas.id)).toMatchObject({ revision: 1, elements: [] });
+    expect(store.db.prepare('SELECT COUNT(*) AS count FROM canvas_events').get()).toEqual({ count: 0 });
+    expect(store.db.prepare('SELECT COUNT(*) AS count FROM canvas_idempotency_keys').get()).toEqual({ count: 0 });
+    expect(store.db.prepare('SELECT COUNT(*) AS count FROM macro_definitions').get()).toEqual({ count: 0 });
+    store.close();
+  });
+
+  it('uses a macro-namespaced digest for callback responses and replays without rerunning the callback', () => {
+    const store = makeStore();
+    const canvas = store.createCanvas({ title: 'Callback response' });
+    const request = {
+      idempotencyKey: 'callback-response',
+      operations: [
+        {
+          op: 'upsertElement' as const,
+          element: { id: 'card_1', type: 'fixture.cards/card', schemaVersion: 1, x: 0, y: 0, data: { title: 'A' } }
+        }
+      ]
+    };
+    const ordinaryDigest = createHash('sha256')
+      .update(JSON.stringify({ canvasId: canvas.id, documentVersion: 2, operations: request.operations }))
+      .digest('hex');
+    const macroDigest = createHash('sha256').update(`macro:${ordinaryDigest}`).digest('hex');
+    let callbackCalls = 0;
+    const first = store.applyOperationsWithTransaction(
+      canvas.id,
+      request,
+      ({ response }) => {
+        callbackCalls += 1;
+        return { revision: response.revision, elementCount: response.elements.length, responseKind: 'macro' };
+      },
+      { idempotencyRequestDigest: macroDigest }
+    );
+    const replay = store.applyOperationsWithTransaction(
+      canvas.id,
+      request,
+      () => {
+        callbackCalls += 1;
+        return { revision: -1, elementCount: -1, responseKind: 'wrong' };
+      },
+      { idempotencyRequestDigest: macroDigest }
+    );
+    expect(first).toEqual({ revision: 2, elementCount: 1, responseKind: 'macro' });
+    expect(replay).toEqual(first);
+    expect(callbackCalls).toBe(1);
+    expect(macroDigest).not.toBe(ordinaryDigest);
+    expect(store.db.prepare('SELECT request_hash FROM canvas_idempotency_keys').get()).toEqual({
+      request_hash: macroDigest
+    });
+    expect(() => store.applyOperations(canvas.id, request)).toThrowError(
+      'idempotency key was reused with a different request'
+    );
+    store.close();
+  });
+
+  it('rejects malformed explicit transaction idempotency digests', () => {
+    const store = makeStore();
+    const canvas = store.createCanvas({ title: 'Digest validation' });
+    expect(() =>
+      store.applyOperationsWithTransaction(canvas.id, { operations: [] }, undefined, {
+        idempotencyRequestDigest: 'ABC'
+      })
+    ).toThrowError('idempotencyRequestDigest must be a 64-character lowercase SHA-256 hex string');
+    store.close();
+  });
+
+  it('requires invocation idempotency keys and protects macro version records', () => {
+    const store = makeStore();
+    const canvas = store.createCanvas({ title: 'Macro schema constraints' });
+    store.db
+      .prepare(
+        `INSERT INTO macro_definitions
+         (id,scope_kind,canvas_id,current_version,archived_at,created_at,updated_at)
+         VALUES ('macro_1','canvas',?,1,NULL,'created','updated')`
+      )
+      .run(canvas.id);
+    store.db
+      .prepare(
+        `INSERT INTO macro_versions
+         (macro_id,version,definition_json,definition_sha256,created_at)
+         VALUES ('macro_1',1,'{}',?, 'created')`
+      )
+      .run('a'.repeat(64));
+    expect(() =>
+      store.db
+        .prepare(
+          `INSERT INTO macro_invocations
+           (id,canvas_id,resulting_revision,macro_id,macro_version,plan_sha256,input_sha256,safe_summary_json,outputs_json,idempotency_key,created_at)
+           VALUES ('invocation_null',?,2,'macro_1',1,?,?, '{}','{}',NULL,'created')`
+        )
+        .run(canvas.id, 'b'.repeat(64), 'c'.repeat(64))
+    ).toThrowError(/NOT NULL constraint failed: macro_invocations\.idempotency_key/);
+    expect(() => store.db.prepare('UPDATE macro_versions SET created_at=?').run('changed')).toThrowError(
+      'macro version records are immutable'
+    );
+    expect(() => store.db.prepare('DELETE FROM macro_versions').run()).toThrowError(
+      'macro version records are immutable'
+    );
+    store.db
+      .prepare('UPDATE macro_definitions SET current_version=2, archived_at=? WHERE id=?')
+      .run('archived', 'macro_1');
+    expect(
+      store.db.prepare('SELECT current_version, archived_at FROM macro_definitions WHERE id=?').get('macro_1')
+    ).toEqual({ current_version: 2, archived_at: 'archived' });
     store.close();
   });
 });

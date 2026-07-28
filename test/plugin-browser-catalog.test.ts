@@ -63,6 +63,36 @@ describe('browser plugin catalog', () => {
     expect(registry.renderers.get('acme.cards/hello')).toBe(renderer);
   });
 
+  it('accepts an optional renderer details hook and rejects malformed hooks', async () => {
+    const detailsRenderer = { ...renderer, details: { label: 'Inspect', open: vi.fn() } };
+    const valid = await loadBrowserPluginRegistry({
+      catalog: catalog(),
+      baseUrl: 'http://127.0.0.1:23003/',
+      importer: async () => ({
+        default: {
+          activate(host: { registerRenderer(value: BrowserElementRenderer): void }) {
+            host.registerRenderer(detailsRenderer);
+          }
+        }
+      })
+    });
+    expect(valid.renderers.get(renderer.type)?.details?.label).toBe('Inspect');
+
+    const invalid = await loadBrowserPluginRegistry({
+      catalog: catalog(),
+      baseUrl: 'http://127.0.0.1:23003/',
+      importer: async () => ({
+        default: {
+          activate(host: { registerRenderer(value: BrowserElementRenderer): void }) {
+            host.registerRenderer({ ...renderer, details: { label: '' } } as unknown as BrowserElementRenderer);
+          }
+        }
+      })
+    });
+    expect(invalid.renderers.size).toBe(0);
+    expect(invalid.diagnostics[0]?.code).toBe('browser_plugin_activation_failed');
+  });
+
   it('loads declared browser commands into the same frozen registry', async () => {
     const command: BrowserCommandDescriptor = {
       name: 'reset-card',

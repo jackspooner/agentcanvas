@@ -25,6 +25,23 @@ import {
   SHARE_LINK_SCHEMA,
   VIEWPORT_SCHEMA
 } from './api-v2/index.js';
+import {
+  MACRO_ARCHIVE_RESPONSE_SCHEMA,
+  MACRO_CREATE_REQUEST_SCHEMA,
+  MACRO_CREATE_RESPONSE_SCHEMA,
+  MACRO_HTTP_CREATE_VERSION_REQUEST_SCHEMA,
+  MACRO_CREATE_VERSION_RESPONSE_SCHEMA,
+  MACRO_HTTP_EXECUTE_REQUEST_SCHEMA,
+  MACRO_EXECUTE_RESPONSE_SCHEMA,
+  MACRO_GET_REQUEST_SCHEMA,
+  MACRO_GET_RESPONSE_SCHEMA,
+  MACRO_LIST_REQUEST_SCHEMA,
+  MACRO_LIST_RESPONSE_SCHEMA,
+  MACRO_HTTP_PLAN_REQUEST_SCHEMA,
+  MACRO_PLAN_RESPONSE_SCHEMA,
+  MACRO_HTTP_ARCHIVE_REQUEST_SCHEMA
+} from './macros/index.js';
+import { MacroError, MacroRuntime, MACRO_RUNTIME_LIMITS } from './macros/index.js';
 import { loadConfig, type AgentCanvasConfig } from './config.js';
 import { CanvasError, toCanvasError } from './errors.js';
 import { canvasPageUrl } from './canvas-url.js';
@@ -54,6 +71,7 @@ interface V2Runtime {
   browserCatalog: BrowserPluginCatalog;
   resources: ResourceBroker;
   store: V2SqliteCanvasStore;
+  macros: MacroRuntime;
   openapi: JsonObject;
   developmentReloadVersion?: string;
 }
@@ -196,13 +214,13 @@ async function assetsProviderStatus(
 
 export function coreOpenApiPaths(): Record<string, JsonObject> {
   const canvasId = { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } };
-  const jsonBody = (schema: JsonObject): JsonObject => ({
+  const jsonBody = (schema: JsonObject, example?: JsonObject): JsonObject => ({
     required: true,
-    content: { 'application/json': { schema } }
+    content: { 'application/json': { schema, ...(example ? { example } : {}) } }
   });
-  const response = (description: string, schema?: JsonObject): JsonObject => ({
+  const response = (description: string, schema?: JsonObject, example?: JsonObject): JsonObject => ({
     description,
-    ...(schema ? { content: { 'application/json': { schema } } } : {})
+    ...(schema ? { content: { 'application/json': { schema, ...(example ? { example } : {}) } } } : {})
   });
   const errorResponses = {
     400: response('Request validation failed', { $ref: '#/components/schemas/ApiError' }),
@@ -210,6 +228,136 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     409: response('Revision or idempotency conflict', { $ref: '#/components/schemas/ApiError' }),
     500: response('AgentCanvas failed to complete the request', { $ref: '#/components/schemas/ApiError' })
   };
+  const macroErrors = {
+    400: response(
+      'Macro request validation failed',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_definition_invalid',
+        message: 'request is invalid',
+        stage: 'definition',
+        retryable: false,
+        status: 400
+      }
+    ),
+    403: response(
+      'Macro scope does not permit this canvas',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_scope_denied',
+        message: 'macro is scoped to another canvas',
+        stage: 'repository',
+        retryable: false,
+        status: 403
+      }
+    ),
+    404: response(
+      'Macro or exact macro version was not found',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_not_found',
+        message: 'macro was not found',
+        stage: 'repository',
+        retryable: false,
+        status: 404
+      }
+    ),
+    409: response(
+      'Macro revision, version, scope, or idempotency conflict',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_revision_conflict',
+        message: 'canvas revision changed',
+        stage: 'revision',
+        retryable: true,
+        status: 409
+      }
+    ),
+    410: response(
+      'Macro plan has expired',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_plan_expired',
+        message: 'macro plan expired',
+        stage: 'plan',
+        retryable: false,
+        status: 410
+      }
+    ),
+    500: response(
+      'Macro execution failed',
+      { $ref: '#/components/schemas/MacroErrorEnvelope' },
+      {
+        ok: false,
+        code: 'macro_execution_invalid',
+        message: 'macro execution failed',
+        stage: 'execution',
+        retryable: false,
+        status: 500
+      }
+    )
+  };
+  const authoringExample = {
+    scope: 'installation',
+    title: 'Insert card',
+    inputSchema: { type: 'object', additionalProperties: false },
+    elements: []
+  };
+  const recordExample = {
+    definition: {
+      id: 'macro_example',
+      version: 1,
+      scope: 'installation',
+      title: 'Insert card',
+      inputSchema: { type: 'object', additionalProperties: false },
+      elements: []
+    },
+    currentVersion: 1,
+    archived: false
+  };
+  const planExample = {
+    planId: 'macro_plan_example',
+    macroId: 'macro_example',
+    macroVersion: 1,
+    canvasId: 'canvas_example',
+    canvasRevision: 1,
+    anchor: { x: 0, y: 0 },
+    inputDigest: 'a'.repeat(64),
+    planDigest: 'b'.repeat(64),
+    createdAt: '2026-01-01T00:00:00.000Z',
+    expiresAt: '2026-01-01T00:05:00.000Z',
+    operations: [],
+    previewElements: [],
+    outputs: {},
+    effectSummary: { label: 'Insert card', operationCount: 0, generatedElementCount: 0, affectedElementIds: [] }
+  };
+  const executionExample = {
+    canvas: { id: 'canvas_example', revision: 2, elements: [], bounds: { mode: 'unlimited' } },
+    provenance: {
+      macroId: 'macro_example',
+      macroVersion: 1,
+      planId: 'macro_plan_example',
+      inputDigest: 'a'.repeat(64),
+      planDigest: 'b'.repeat(64)
+    },
+    outputs: {},
+    history: { label: 'Insert card', forward: [], inverse: [], affectedElementIds: [] }
+  };
+  const macroNotes = (sideEffects: string[] = [], pure = false): JsonObject => ({
+    useWhen: [
+      pure
+        ? 'Use for a deterministic macro preview or catalog operation.'
+        : 'Use when the macro workflow requires this mutation.'
+    ],
+    doNotUseWhen: pure ? ['Do not use to mutate canvas state.'] : [],
+    sideEffects,
+    consistency: { refresh: sideEffects.length ? ['Refresh the affected macro catalog or canvas after success.'] : [] }
+  });
   const canvasProjection = {
     type: 'object',
     required: ['ok', 'canvas', 'elementRuntime', 'diagnostics'],
@@ -228,6 +376,134 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     retry: retry ? 'Retry only when the returned error marks retryable=true.' : 'No retry is normally required.'
   });
   return {
+    '/api/v1/macros': {
+      get: {
+        operationId: 'macroList',
+        summary: 'List available macro templates',
+        tags: ['Macros'],
+        parameters: [
+          { name: 'canvasId', in: 'query', schema: { type: 'string' } },
+          { name: 'includeArchived', in: 'query', schema: { type: 'boolean' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          { name: 'cursor', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          200: response('Macro catalog page', { $ref: '#/components/schemas/MacroListResponse' }, { items: [] }),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes([], true)
+      },
+      post: {
+        operationId: 'macroCreate',
+        summary: 'Create a version-one macro template',
+        tags: ['Macros'],
+        requestBody: jsonBody({ $ref: '#/components/schemas/MacroCreateRequest' }, authoringExample),
+        responses: {
+          201: response('Created macro', { $ref: '#/components/schemas/MacroCreateResponse' }, recordExample),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes(['Creates a macro definition and immutable version one.'])
+      }
+    },
+    '/api/v1/macros/{macroId}/versions/{version}': {
+      get: {
+        operationId: 'macroGet',
+        summary: 'Get one exact macro version',
+        tags: ['Macros'],
+        parameters: [
+          { name: 'macroId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'version', in: 'path', required: true, schema: { type: 'integer', minimum: 1 } },
+          { name: 'canvasId', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          200: response('Exact macro version', { $ref: '#/components/schemas/MacroGetResponse' }, recordExample),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes([], true)
+      }
+    },
+    '/api/v1/macros/{macroId}/versions': {
+      post: {
+        operationId: 'macroCreateVersion',
+        summary: 'Create the next immutable macro version',
+        tags: ['Macros'],
+        parameters: [{ name: 'macroId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: jsonBody(
+          { $ref: '#/components/schemas/MacroHttpCreateVersionRequest' },
+          { ...authoringExample, expectedCurrentVersion: 1 }
+        ),
+        responses: {
+          201: response(
+            'Created macro version',
+            { $ref: '#/components/schemas/MacroCreateVersionResponse' },
+            { ...recordExample, currentVersion: 2, definition: { ...recordExample.definition, version: 2 } }
+          ),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes(['Adds a new immutable version while preserving scope and canvas identity.'])
+      }
+    },
+    '/api/v1/macros/{macroId}': {
+      patch: {
+        operationId: 'macroArchive',
+        summary: 'Archive or unarchive a macro',
+        tags: ['Macros'],
+        parameters: [{ name: 'macroId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: jsonBody({ $ref: '#/components/schemas/MacroHttpArchiveRequest' }, { archived: true }),
+        responses: {
+          200: response(
+            'Updated macro archive state',
+            { $ref: '#/components/schemas/MacroArchiveResponse' },
+            { macroId: 'macro_example', currentVersion: 1, archived: true }
+          ),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes(['Changes only the archive state; existing versions remain immutable.'])
+      }
+    },
+    '/api/v1/canvases/{canvasId}/macros/{macroId}:plan': {
+      post: {
+        operationId: 'macroPlan',
+        summary: 'Plan an exact macro version without mutation',
+        tags: ['Macros'],
+        parameters: [
+          { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'macroId', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        requestBody: jsonBody(
+          { $ref: '#/components/schemas/MacroHttpPlanRequest' },
+          { macroVersion: 1, anchor: { x: 0, y: 0 }, input: {} }
+        ),
+        responses: {
+          200: response('Pure macro plan', { $ref: '#/components/schemas/MacroPlanResponse' }, planExample),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes([], true)
+      }
+    },
+    '/api/v1/canvases/{canvasId}/macros:execute': {
+      post: {
+        operationId: 'macroExecute',
+        summary: 'Execute a previously stored macro plan',
+        tags: ['Macros'],
+        parameters: [{ name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: jsonBody(
+          { $ref: '#/components/schemas/MacroHttpExecuteRequest' },
+          { planId: 'macro_plan_example', expectedRevision: 1, idempotencyKey: 'request-example' }
+        ),
+        responses: {
+          200: response(
+            'Complete macro execution result',
+            { $ref: '#/components/schemas/MacroExecuteResponse' },
+            executionExample
+          ),
+          ...macroErrors
+        },
+        'x-agent-notes': macroNotes([
+          'Updates canvas elements, canvas events, macro invocation provenance, and the idempotent replay record atomically.'
+        ])
+      }
+    },
     '/health': {
       get: {
         operationId: 'canvasHealth',
@@ -584,6 +860,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
   const config = loadConfig({ ...options.config, databasePath: options.databasePath ?? options.config?.databasePath });
   const plugins = await preparePluginRuntime(options.pluginsRoot);
   const store = new V2SqliteCanvasStore(new PluginElementValidator(plugins.registry), config.databasePath, config);
+  const macros = new MacroRuntime(store, plugins.registry);
   plugins.bindDatabase(store.db);
   assertPluginSchemasReady(store.db, plugins.registry, config.databasePath, plugins.pluginsRoot);
   const browserCatalog = await createBrowserPluginCatalog(plugins.registry);
@@ -608,13 +885,40 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     browserCatalog,
     resources: plugins.resources,
     store,
+    macros,
     openapi,
     ...(options.developmentReloadVersion ? { developmentReloadVersion: options.developmentReloadVersion } : {})
   };
 }
 
+async function readMacroJson(c: Context, validator: ValidateFunction, label: string): Promise<JsonObject> {
+  let value: unknown;
+  try {
+    value = await c.req.json();
+  } catch {
+    throw new MacroError('macro_definition_invalid', `${label} must be valid JSON`, 'definition');
+  }
+  if (!validator(value))
+    throw new MacroError(
+      'macro_definition_invalid',
+      `${label} does not match the canonical macro schema`,
+      'definition'
+    );
+  return value as JsonObject;
+}
+
+function validateMacroResult(value: unknown, validator: ValidateFunction): void {
+  if (!validator(value))
+    throw new MacroError(
+      'macro_execution_invalid',
+      'macro service returned data outside the canonical response schema',
+      'execution',
+      { status: 500 }
+    );
+}
+
 export function createV2App(runtime: V2Runtime): Hono {
-  const { config, registry, browserCatalog, resources, store } = runtime;
+  const { config, registry, browserCatalog, resources, store, macros } = runtime;
   const app = new Hono();
   const procedures = createProcedureCatalog(registry);
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
@@ -624,8 +928,39 @@ export function createV2App(runtime: V2Runtime): Hono {
       { input: ajv.compile(procedure.descriptor.inputSchema), output: ajv.compile(procedure.descriptor.outputSchema) }
     ])
   );
+  const macroValidators = new Map<string, ValidateFunction>([
+    ['list', ajv.compile(MACRO_LIST_REQUEST_SCHEMA)],
+    ['create', ajv.compile(MACRO_CREATE_REQUEST_SCHEMA)],
+    ['get', ajv.compile(MACRO_GET_REQUEST_SCHEMA)],
+    ['createVersionHttp', ajv.compile(MACRO_HTTP_CREATE_VERSION_REQUEST_SCHEMA)],
+    ['archive', ajv.compile(MACRO_HTTP_ARCHIVE_REQUEST_SCHEMA)],
+    ['planHttp', ajv.compile(MACRO_HTTP_PLAN_REQUEST_SCHEMA)],
+    ['executeHttp', ajv.compile(MACRO_HTTP_EXECUTE_REQUEST_SCHEMA)]
+  ]);
+  const macroResponseValidators = new Map<string, ValidateFunction>([
+    ['list', ajv.compile(MACRO_LIST_RESPONSE_SCHEMA)],
+    ['create', ajv.compile(MACRO_CREATE_RESPONSE_SCHEMA)],
+    ['get', ajv.compile(MACRO_GET_RESPONSE_SCHEMA)],
+    ['createVersion', ajv.compile(MACRO_CREATE_VERSION_RESPONSE_SCHEMA)],
+    ['archive', ajv.compile(MACRO_ARCHIVE_RESPONSE_SCHEMA)],
+    ['plan', ajv.compile(MACRO_PLAN_RESPONSE_SCHEMA)],
+    ['execute', ajv.compile(MACRO_EXECUTE_RESPONSE_SCHEMA)]
+  ]);
 
   app.onError((error, c) => {
+    if (error instanceof MacroError) {
+      return c.json(
+        {
+          ok: false,
+          code: error.code,
+          message: error.message,
+          stage: error.stage,
+          retryable: error.retryable,
+          status: error.status
+        },
+        error.status as 400 | 404 | 409 | 410 | 500
+      );
+    }
     const projected = toCanvasError(error);
     return c.json(projected.toPayload(), projected.status as 400 | 404 | 409 | 500 | 503 | 504);
   });
@@ -649,6 +984,7 @@ export function createV2App(runtime: V2Runtime): Hono {
       pluginApi: AGENTCANVAS_HOST_API_VERSION,
       plugins: registry.plugins.map((plugin) => plugin.plugin.manifest.id),
       dependencies: { ...(assets ? { assets } : {}) },
+      macros: MACRO_RUNTIME_LIMITS,
       mcp: { endpoint: `${config.publicBaseUrl}/mcp`, transport: 'streamable-http' },
       host: config.host,
       port: config.port
@@ -712,6 +1048,81 @@ setInterval(async () => {
         'cross-origin-resource-policy': 'same-origin'
       }
     });
+  });
+
+  app.get('/api/v1/macros', (c) => {
+    const raw = {
+      ...(c.req.query('canvasId') !== undefined ? { canvasId: c.req.query('canvasId') } : {}),
+      ...(c.req.query('includeArchived') !== undefined
+        ? { includeArchived: c.req.query('includeArchived') === 'true' }
+        : {}),
+      ...(c.req.query('limit') !== undefined ? { limit: Number(c.req.query('limit')) } : {}),
+      ...(c.req.query('cursor') !== undefined ? { cursor: c.req.query('cursor') } : {})
+    };
+    const validator = macroValidators.get('list') as ValidateFunction;
+    if (!validator(raw)) throw new MacroError('macro_definition_invalid', 'macro list query is invalid', 'definition');
+    const result = macros.list(raw);
+    validateMacroResult(result, macroResponseValidators.get('list') as ValidateFunction);
+    return c.json(result);
+  });
+  app.post('/api/v1/macros', async (c) => {
+    const body = await readMacroJson(c, macroValidators.get('create') as ValidateFunction, 'macro create request');
+    const result = macros.create(body as never);
+    validateMacroResult(result, macroResponseValidators.get('create') as ValidateFunction);
+    return c.json(result, 201);
+  });
+  app.get('/api/v1/macros/:macroId/versions/:version', (c) => {
+    const macroId = c.req.param('macroId') ?? '';
+    const macroVersion = Number(c.req.param('version'));
+    const request = {
+      macroId,
+      macroVersion,
+      ...(c.req.query('canvasId') !== undefined ? { canvasId: c.req.query('canvasId') } : {})
+    };
+    if (!(macroValidators.get('get') as ValidateFunction)(request))
+      throw new MacroError('macro_definition_invalid', 'macro get path is invalid', 'definition');
+    const result = macros.get(request.macroId, request.macroVersion, request.canvasId ?? '');
+    validateMacroResult(result, macroResponseValidators.get('get') as ValidateFunction);
+    return c.json(result);
+  });
+  app.post('/api/v1/macros/:macroId/versions', async (c) => {
+    const macroId = c.req.param('macroId') ?? '';
+    const body = await readMacroJson(
+      c,
+      macroValidators.get('createVersionHttp') as ValidateFunction,
+      'macro version request'
+    );
+    const result = macros.createVersion({ ...body, macroId } as never);
+    validateMacroResult(result, macroResponseValidators.get('createVersion') as ValidateFunction);
+    return c.json(result, 201);
+  });
+  app.patch('/api/v1/macros/:macroId', async (c) => {
+    const macroId = c.req.param('macroId');
+    const body = await readMacroJson(c, macroValidators.get('archive') as ValidateFunction, 'macro archive request');
+    const result = macros.archive(macroId, body.archived as boolean);
+    validateMacroResult(result, macroResponseValidators.get('archive') as ValidateFunction);
+    return c.json(result);
+  });
+  app.post('/api/v1/canvases/:canvasId/macros/*', async (c) => {
+    const match = c.req.path.match(/^\/api\/v1\/canvases\/([^/]+)\/macros\/([^/]+):plan$/);
+    if (!match) throw new MacroError('macro_definition_invalid', 'macro plan route is invalid', 'definition');
+    const canvasId = decodeURIComponent(match[1]);
+    const macroId = decodeURIComponent(match[2]);
+    const body = await readMacroJson(c, macroValidators.get('planHttp') as ValidateFunction, 'macro plan request');
+    const result = macros.plan({ ...body, canvasId, macroId } as never);
+    validateMacroResult(result, macroResponseValidators.get('plan') as ValidateFunction);
+    return c.json(result);
+  });
+  app.post('/api/v1/canvases/:canvasId/macros:execute', async (c) => {
+    const canvasId = c.req.param('canvasId');
+    const body = await readMacroJson(
+      c,
+      macroValidators.get('executeHttp') as ValidateFunction,
+      'macro execute request'
+    );
+    const result = await macros.execute({ ...body, canvasId } as never);
+    validateMacroResult(result, macroResponseValidators.get('execute') as ValidateFunction);
+    return c.json(result);
   });
 
   app.get('/api/v1/configuration', (c) => c.json({ ok: true, configuration: store.getConfiguration() }));
@@ -895,6 +1306,7 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
         publicBaseUrl: runtime.config.publicBaseUrl,
         registry: runtime.registry,
         store: runtime.store,
+        macros: runtime.macros,
         browserCatalog: runtime.browserCatalog,
         diagnostics: () => runtime.plugins.diagnostics.list()
       });
