@@ -113,7 +113,10 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
     const controller = new AbortController();
     detailsController.current = controller;
     void Promise.resolve()
-      .then(() => props.renderer?.details?.open({ ...context, signal: controller.signal }))
+      .then(() => {
+        const rendererContext = host.current?.contextFor(context, controller.signal);
+        if (rendererContext) return props.renderer?.details?.open(rendererContext);
+      })
       .catch(() => {
         if (!controller.signal.aborted) {
           props.reportDiagnostic({

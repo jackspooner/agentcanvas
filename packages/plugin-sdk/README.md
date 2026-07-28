@@ -20,6 +20,12 @@ Export an object implementing `AgentCanvasBrowserPlugin`. Browser renderers use 
 host and return `update` and `dispose` lifecycle methods. Plugins must bundle their browser dependencies and
 must not import the host's React runtime.
 
+Host API `1.1.0` adds `RendererContext.lifecycle` and the shared
+`RendererContext.frames` browser scheduler. The operation `signal` still
+aborts superseded mount/update work; `lifecycle.signal` survives updates and
+aborts only when the renderer is disposed. Extensions using the new fields
+must require `hostApi: "^1.1.0"`.
+
 ## Persisted elements
 
 The host owns the stable `CanvasElement` envelope. A plugin owns only the JSON data and optional style schemas

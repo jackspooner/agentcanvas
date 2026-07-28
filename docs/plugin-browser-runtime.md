@@ -24,6 +24,34 @@ interface BrowserElementRenderer {
 }
 ```
 
+`RendererContext.signal` belongs to the current mount or update operation and
+may abort when a newer update is queued. `RendererContext.lifecycle.signal` is
+stable for the renderer's lifetime and aborts only when the host disposes or
+fails that renderer. `RendererContext.lifecycle.active` reports whether the
+surface is mounted, connected, intersecting the visible browser viewport, and
+in a visible document. `reducedMotion` is the host's current media preference.
+
+`RendererContext.frames` is a stable renderer-lifetime scheduler:
+
+```ts
+interface RendererFrame {
+  timestamp: number;
+  deltaMs: number;
+}
+
+interface RendererFrameScheduler {
+  subscribe(callback: (frame: RendererFrame) => void): () => void;
+}
+```
+
+All renderers share one browser animation clock. Subscribers receive frames
+only while their renderer is active. The first frame and first frame after
+reactivation have `deltaMs: 0`; no fixed frame rate is guaranteed.
+Subscriptions are removed automatically on disposal. A callback that throws is
+removed on its own and produces `browser_renderer_frame_failed` without
+stopping other callbacks. Subscription changes made during a frame take effect
+on the next frame.
+
 Node renderers may opt into the shared Details affordance. The editor owns the
 button and its interaction isolation; the extension receives a current
 `RendererContext` and owns the safe metadata projection plus overlay content.
@@ -58,7 +86,7 @@ own their per-element `mount`/`update`/`dispose` lifecycle separately.
 
 - create the outer frame and open ShadowRoot;
 - own frame position, size, rotation, opacity, z-index, selection, movement, locking, and read-only state;
-- provide CSS theme tokens, read-only geometry, an overlay service, diagnostics, and abort signals;
+- provide CSS theme tokens, read-only geometry, an overlay service, diagnostics, operation/lifetime abort signals, activity, reduced-motion state, and the shared frame scheduler;
 - mount once per element ID/type/renderer and update on context changes;
 - abort prior work, serialize updates, and dispose once;
 - catch mount/update/dispose failures and render a diagnostic card;
@@ -71,7 +99,8 @@ Native controls and elements marked `data-agentcanvas-interactive` do not initia
 ## Plugin responsibilities
 
 - render content only inside the supplied ShadowRoot;
-- honor `readOnly`, `signal`, and current `schemaVersion`;
+- honor `readOnly`, operation `signal`, renderer `lifecycle`, and current `schemaVersion`;
+- render a stable state instead of motion when `lifecycle.reducedMotion` is true;
 - mark custom interactive regions;
 - close host overlays and release media/object URLs/listeners during update or dispose;
 - avoid reading host-private DOM or React state;
@@ -82,3 +111,7 @@ Native controls and elements marked `data-agentcanvas-interactive` do not initia
 Shadow DOM provides style and lifecycle isolation, not security. If browser activation fails, the plugin receives `browser_plugin_activation_failed` and its elements use kernel diagnostic cards; other plugins remain active.
 
 Current limitation: the host aborts and serializes updates, but a renderer that ignores its abort signal can still complete stale work before the queued update runs. Plugins must implement abort-aware async work.
+
+Frames are ephemeral browser state. They do not mutate canvas data, create
+revisions or history, persist, or perform network operations. The frame
+scheduler is not available to server or snapshot renderers.

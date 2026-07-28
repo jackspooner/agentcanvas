@@ -46,6 +46,8 @@ function context(): RendererContext {
     readOnly: false,
     selected: false,
     signal: new AbortController().signal,
+    lifecycle: { signal: new AbortController().signal, active: true, reducedMotion: false },
+    frames: { subscribe: () => () => {} },
     theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update() {}, close() {} }) },
@@ -54,10 +56,6 @@ function context(): RendererContext {
 }
 
 beforeEach(() => {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
-  );
   vi.stubGlobal(
     'fetch',
     vi.fn(

@@ -6,7 +6,7 @@
   "description": "External-tree fixture proving the public plugin API is sufficient.",
   "license": "MIT",
   "entrypoints": { "server": "dist/server.mjs", "browser": "dist/browser/entry.mjs" },
-  "requires": { "hostApi": "^1.0.0", "plugins": {}, "capabilities": {} },
+  "requires": { "hostApi": "^1.1.0", "plugins": {}, "capabilities": {} },
   "provides": { "capabilities": {} },
   "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
   "contributes": {

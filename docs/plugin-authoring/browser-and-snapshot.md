@@ -6,7 +6,7 @@ Browser plugins are framework-neutral. They must not import the host React runti
 
 The host owns the outer frame, transforms, selection, drag handle, locking, opacity, z-order, read-only behavior, and error boundary. It mounts the renderer into a ShadowRoot and calls `update` without unnecessary remounts. The renderer owns only its content and must release media, event listeners, handles, and asynchronous work in `dispose`.
 
-Use the `RendererContext` abort signal, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. `theme` is a complete `CanvasThemeV1`, including when the canvas has no persisted theme. Map semantic roles to its tokens and keep explicit element styles as overrides. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
+Use the `RendererContext` abort signals, lifecycle state, frame scheduler, theme tokens, read-only geometry service, diagnostic reporter, and overlay service. `signal` is scoped to the current mount or update; `lifecycle.signal` survives updates and aborts only on renderer disposal. `theme` is a complete `CanvasThemeV1`, including when the canvas has no persisted theme. Map semantic roles to its tokens and keep explicit element styles as overrides. Mark interactive controls and media with `data-agentcanvas-interactive`; host pointer handling uses the composed event path through Shadow DOM. A plugin needing a UI outside canvas clipping must use the overlay service rather than reaching into host DOM.
 
 For element metadata, add the renderer's optional `details.open(context)` hook
 instead of drawing a private button inside the ShadowRoot. The editor supplies
@@ -18,6 +18,58 @@ Snapshot renderers receive the identical resolved theme in `SnapshotRendererCont
 output must not maintain separate color or typography defaults.
 
 Browser bundles execute same-origin code. Shadow DOM isolates styling and lifecycle, not security.
+
+## Dynamic renderer recipe
+
+An extension using the shared scheduler must require host API `^1.1.0`.
+Subscribe once during `mount`, retain the latest context from `update`, and
+unsubscribe during normal cleanup. The host also removes subscriptions
+automatically if disposal or renderer failure interrupts cleanup.
+
+```ts
+const renderer: BrowserElementRenderer = {
+  type: 'acme.monitor/frame-counter',
+  schemaVersions: [1],
+  placement: 'node',
+  mount(root, initial) {
+    const output = document.createElement('output');
+    root.replaceChildren(output);
+    let context = initial;
+    let count = 0;
+
+    const renderStable = () => {
+      output.textContent = context.lifecycle.reducedMotion ? 'Motion paused' : `Frame ${count}`;
+    };
+    renderStable();
+
+    const unsubscribe = context.frames.subscribe(({ deltaMs }) => {
+      if (context.lifecycle.reducedMotion) return;
+      count += 1;
+      output.dataset.deltaMs = String(deltaMs);
+      renderStable();
+    });
+
+    return {
+      update(next) {
+        context = next;
+        renderStable();
+      },
+      dispose() {
+        unsubscribe();
+        root.replaceChildren();
+      }
+    };
+  }
+};
+```
+
+The host stops callbacks while the surface is offscreen, disconnected, or the
+document is hidden, then resumes with `deltaMs: 0`. Do not derive persisted
+state from frame count or timestamps. Motion-producing renderers must present a
+stable reduced-motion state and must follow the
+[W3C guidance for flashes](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes.html).
+Use `ManualRendererFrameScheduler` from `@agentcanvas/extension-testkit` for
+deterministic renderer tests.
 
 ## Browser commands
 

@@ -30,6 +30,21 @@ export interface RendererOverlayService {
   open(content: Node, options?: { modal?: boolean; label?: string }): RendererOverlayHandle;
 }
 
+export interface RendererLifecycle {
+  signal: AbortSignal;
+  active: boolean;
+  reducedMotion: boolean;
+}
+
+export interface RendererFrame {
+  timestamp: number;
+  deltaMs: number;
+}
+
+export interface RendererFrameScheduler {
+  subscribe(callback: (frame: RendererFrame) => void): () => void;
+}
+
 export type BrowserOwnCanvasOperation =
   | { op: 'upsertElement'; element: CanvasElement }
   | { op: 'replaceElementData'; elementId: string; data: JsonObject; style?: JsonObject | null }
@@ -62,6 +77,8 @@ export interface RendererContext {
   readOnly: boolean;
   selected: boolean;
   signal: AbortSignal;
+  lifecycle: Readonly<RendererLifecycle>;
+  frames: RendererFrameScheduler;
   theme: Readonly<CanvasThemeV1>;
   geometry: RendererGeometryService;
   overlays: RendererOverlayService;

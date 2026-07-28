@@ -57,20 +57,32 @@ describe('external plugin fixture', () => {
     const root = document.createElement('div').attachShadow({ mode: 'open' });
     const renderer = renderers[0];
     if (!renderer) throw new Error('External plugin did not register its browser renderer.');
+    const frameCallbacks = new Set<(frame: { timestamp: number; deltaMs: number }) => void>();
+    const lifetime = new AbortController();
     const mounted = renderer.mount(root, {
       element,
       runtime: null,
       readOnly: false,
       selected: false,
       signal: new AbortController().signal,
+      lifecycle: { signal: lifetime.signal, active: true, reducedMotion: false },
+      frames: {
+        subscribe(callback) {
+          frameCallbacks.add(callback);
+          return () => frameCallbacks.delete(callback);
+        }
+      },
       theme: DEFAULT_CANVAS_THEME,
       geometry: { getElementFrame: () => null, resolveAnchor: () => null },
       overlays: { open: () => ({ update() {}, close() {} }) },
       reportDiagnostic() {}
     });
     expect(root.textContent).toContain('Build · active');
+    for (const callback of frameCallbacks) callback({ timestamp: 10, deltaMs: 0 });
+    expect(root.querySelector<HTMLElement>('[data-role="frame-counter"]')?.textContent).toBe('1');
     await mounted.dispose();
     expect(root.childNodes).toHaveLength(0);
+    expect(frameCallbacks.size).toBe(0);
     expect(commands.map((command) => command.name)).toEqual(['toggle-status']);
     let operations: unknown;
     await commands[0]?.execute({

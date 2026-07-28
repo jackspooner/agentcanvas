@@ -9,7 +9,7 @@ describe('public version contract', () => {
     expect(AGENTCANVAS_VERSION).toBe(packageJson.version);
   });
 
-  it('uses a stable semantic host API version', () => {
-    expect(AGENTCANVAS_HOST_API_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+  it('advertises the additive renderer lifecycle host API', () => {
+    expect(AGENTCANVAS_HOST_API_VERSION).toBe('1.1.0');
   });
 });

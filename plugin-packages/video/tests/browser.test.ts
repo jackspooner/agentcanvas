@@ -17,6 +17,8 @@ function context(runtime: RendererContext['runtime']): RendererContext {
     readOnly: false,
     selected: false,
     signal: new AbortController().signal,
+    lifecycle: { signal: new AbortController().signal, active: true, reducedMotion: false },
+    frames: { subscribe: () => () => {} },
     theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update() {}, close() {} }) },

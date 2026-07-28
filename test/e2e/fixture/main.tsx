@@ -130,6 +130,10 @@ const optionalElements: CanvasElement[] = [
     showControls: true,
     showIndicators: true
   }),
+  element('dynamic-1', 'external.signal-card/signal-card', -250, 100, 260, 120, {
+    label: 'Dynamic fixture',
+    status: 'active'
+  }),
   element('fail-1', 'fixture.fail/card', 490, 100, 190, 110, { label: 'This renderer fails' })
 ];
 
@@ -224,6 +228,7 @@ function App() {
     () => new URLSearchParams(window.location.search).get('video') !== 'missing'
   );
   const [glbPresent, setGlbPresent] = useState(true);
+  const [dynamicPresent, setDynamicPresent] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -250,9 +255,11 @@ function App() {
   const visibleCanvas = useMemo(
     () => ({
       ...canvas,
-      elements: glbPresent ? canvas.elements : canvas.elements.filter((candidate) => candidate.id !== 'glb-1')
+      elements: canvas.elements.filter(
+        (candidate) => (glbPresent || candidate.id !== 'glb-1') && (dynamicPresent || candidate.id !== 'dynamic-1')
+      )
     }),
-    [canvas, glbPresent]
+    [canvas, dynamicPresent, glbPresent]
   );
   const visibleRegistry = useMemo(
     () => (registry && !videoPluginAvailable ? withoutRenderer(registry, 'agentcanvas.video/video') : registry),
@@ -303,6 +310,9 @@ function App() {
         </button>
         <button type="button" data-testid="toggle-glb" onClick={() => setGlbPresent((value) => !value)}>
           Toggle GLB element
+        </button>
+        <button type="button" data-testid="remove-dynamic" onClick={() => setDynamicPresent(false)}>
+          Remove dynamic element
         </button>
       </nav>
       <output data-testid="canvas-revision">{canvas.revision}</output>

@@ -89,7 +89,7 @@ The registry object and activated descriptors are deeply frozen. HTTP, MCP, brow
 
 ## Browser and snapshot boundary
 
-Browser plugins register framework-neutral renderers. The host owns the outer frame, transforms, movement, selection, read-only state, geometry service, overlays, abort signals, and error cards. See [Browser plugin runtime](plugin-browser-runtime.md).
+Browser plugins register framework-neutral renderers. The host owns the outer frame, transforms, movement, selection, read-only state, geometry service, overlays, operation and renderer-lifetime abort signals, activity/reduced-motion policy, one shared browser frame scheduler, and error cards. See [Browser plugin runtime](plugin-browser-runtime.md).
 
 Snapshot plugins return a bounded typed scene. They never return raw SVG, HTML, CSS, URLs, or data URLs. The kernel validates and serializes the scene and resolves only opaque resource handles. See [Snapshot plugin runtime](plugin-snapshot-runtime.md).
 

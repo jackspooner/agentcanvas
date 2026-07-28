@@ -39,6 +39,8 @@ function context(value: CanvasElement, signal: AbortSignal, diagnostics: PluginD
     readOnly: false,
     selected: false,
     signal,
+    lifecycle: { signal: new AbortController().signal, active: true, reducedMotion: false },
+    frames: { subscribe: () => () => {} },
     theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
     overlays: { open: () => ({ update: vi.fn(), close: vi.fn() }) },

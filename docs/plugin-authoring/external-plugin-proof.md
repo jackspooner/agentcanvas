@@ -15,7 +15,7 @@ npm run pack:plugin
 npm run agentcanvas:verify
 ```
 
-Install `plugin-dist/external.signal-card`, restart the host, and verify its element, browser renderer, snapshot renderer, procedure, MCP tool, and schemas in runtime OpenAPI. Disable it while the service is stopped, restart, and verify stored envelopes remain unchanged with missing-plugin diagnostics. Reinstall the same compatible distribution and restart; rendering must return without a document revision or rewrite.
+Install `plugin-dist/external.signal-card`, restart the host, and verify its element, shared-frame-scheduler browser renderer, snapshot renderer, procedure, MCP tool, and schemas in runtime OpenAPI. The fixture requires host API `^1.1.0`; its frame counter is test-only browser state and never enters the document. Disable it while the service is stopped, restart, and verify stored envelopes remain unchanged with missing-plugin diagnostics. Reinstall the same compatible distribution and restart; rendering must return without a document revision or rewrite.
 
 The repository automates the public-package build and distribution checks through `npm run test:external-plugin`. `test/external-plugin-host.test.ts` also exercises install, restart-equivalent registry recreation, missing-plugin preservation, and compatible reinstall against a disposable runtime and database. A real service/browser smoke remains part of release acceptance because it verifies production module delivery without rebuilding the host.
 

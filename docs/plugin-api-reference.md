@@ -77,6 +77,16 @@ renderer context. Extensions must fetch only safe projections, use the host
 overlay service, honor the abort signal, and avoid exposing provider-local
 paths or credentials.
 
+Renderer contexts distinguish short-lived operation cancellation from the
+renderer lifetime. `signal` aborts superseded mount/update work;
+`lifecycle.signal` remains stable through updates and aborts on disposal.
+`lifecycle.active` and `lifecycle.reducedMotion` are delivered through the
+serialized update path. `frames.subscribe` uses the host's shared,
+activity-gated browser clock and starts or resumes with `deltaMs: 0`. Frame
+callbacks are browser-local and cannot create document mutations, revisions,
+history, persistence, or network operations. Server and snapshot contexts do
+not expose the scheduler.
+
 Browser entries may also register declared `BrowserCommandDescriptor` values.
 Command IDs are namespaced as `<extension-id>.<local-name>`. A command receives:
 

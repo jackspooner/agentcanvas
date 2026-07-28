@@ -98,7 +98,7 @@ The `v0.3.0-alpha.1` implementation completed all five delivery waves:
 - an external generated extension passes type checking, conformance tests,
   packing, and host verification outside the repository workspace;
 - the reference Workspace2 deployment reports `v0.3.0-alpha.1`, the stable
-  plugin API `1.0.0`, its exact active extension set, and optional provider
+  plugin API `1.1.0`, its exact active extension set, and optional provider
   status without making core readiness provider-dependent;
 - live SQLite-backed browser acceptance verified movement, resize, undo, redo,
   reload persistence, read-only sharing, and zero uncaught browser errors.

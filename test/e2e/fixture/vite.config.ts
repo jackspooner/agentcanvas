@@ -16,6 +16,7 @@ const browserEntries = new Map([
   ['agentcanvas.image-overlays', 'plugin-packages/image-overlays/src/browser/entry.mts'],
   ['agentcanvas.video', 'plugin-packages/video/src/browser/entry.mts'],
   ['agentcanvas.glb-viewer', 'plugin-packages/glb-viewer/src/browser/entry.ts'],
+  ['external.signal-card', 'test/external-plugin-fixture/src/browser/entry.mts'],
   ['fixture.fail', 'test/e2e/fixture/failing-plugin.mts']
 ]);
 
@@ -40,6 +41,7 @@ const declarations = new Map<string, Array<{ type: string; schemaVersion: number
   ],
   ['agentcanvas.video', [{ type: 'agentcanvas.video/video', schemaVersion: 1 }]],
   ['agentcanvas.glb-viewer', [{ type: 'agentcanvas.glb-viewer/model', schemaVersion: 1 }]],
+  ['external.signal-card', [{ type: 'external.signal-card/signal-card', schemaVersion: 1 }]],
   ['fixture.fail', [{ type: 'fixture.fail/card', schemaVersion: 1 }]]
 ]);
 
@@ -82,7 +84,7 @@ function minimalGlb(): Uint8Array {
 function catalog() {
   return {
     plugins: [...browserEntries.keys()].map((id, index) => {
-      const buildHash = `${index + 1}`.repeat(8);
+      const buildHash = (index + 1).toString(16).padStart(8, '0');
       return {
         id,
         version: '0.2.0',
@@ -90,6 +92,7 @@ function catalog() {
         buildHash,
         browserEntryUrl: `/api/v1/plugin-modules/${id}/${buildHash}/entry.mjs`,
         elements: declarations.get(id),
+        commands: id === 'external.signal-card' ? ['toggle-status'] : [],
         diagnostics: []
       };
     })

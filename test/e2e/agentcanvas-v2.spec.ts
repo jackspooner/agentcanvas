@@ -5,6 +5,7 @@ declare global {
     __revokedObjectUrls: string[];
     __textSurface?: HTMLElement;
     __textRoot?: ShadowRoot;
+    __dynamicCounter?: HTMLOutputElement;
   }
 }
 
@@ -32,7 +33,7 @@ async function persistedElement(page: Page, id: string): Promise<PersistedElemen
 async function openFixture(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -64,6 +65,7 @@ test('loads the registry catalog and browser modules from same-origin build-hash
     'agentcanvas.image-overlays',
     'agentcanvas.video',
     'agentcanvas.glb-viewer',
+    'external.signal-card',
     'fixture.fail'
   ]);
   expect(catalog.plugins.every((plugin) => plugin.browserEntryUrl.startsWith('/api/v1/plugin-modules/'))).toBe(true);
@@ -143,6 +145,50 @@ test('updates a Shadow DOM renderer without remounting its surface or root', asy
       return current === window.__textSurface && current?.shadowRoot === window.__textRoot;
     })
   ).toBe(true);
+});
+
+test('runs an external dynamic renderer only while visible and disposes it permanently', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/?canvas=all');
+  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
+  const dynamic = page.locator('[data-element-id="dynamic-1"]');
+  const counter = dynamic.locator('[data-role="frame-counter"]');
+  await expect(dynamic.locator('[data-read-only]')).toHaveAttribute('data-read-only', 'false');
+  await expect.poll(async () => Number(await counter.textContent())).toBeGreaterThan(2);
+
+  await page.getByTestId('toggle-readonly').click();
+  await expect(dynamic.locator('[data-read-only]')).toHaveAttribute('data-read-only', 'true');
+  const readOnlyCount = Number(await counter.textContent());
+  await expect.poll(async () => Number(await counter.textContent())).toBeGreaterThan(readOnlyCount);
+  await page.getByTestId('toggle-readonly').click();
+  await expect(dynamic.locator('[data-read-only]')).toHaveAttribute('data-read-only', 'false');
+
+  await counter.evaluate((node) => node.removeAttribute('data-resume-delta-ms'));
+  const pane = page.locator('.react-flow__pane');
+  const paneBox = await pane.boundingBox();
+  if (!paneBox) throw new Error('Canvas pane has no bounding box');
+  await page.mouse.move(paneBox.x + paneBox.width * 0.9, paneBox.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(paneBox.x + 10, paneBox.y + 50, { steps: 10 });
+  await page.mouse.up();
+  await expect(dynamic).not.toBeInViewport();
+  const offscreenCount = Number(await counter.textContent());
+  await page.waitForTimeout(150);
+  expect(Number(await counter.textContent())).toBe(offscreenCount);
+
+  await page.getByRole('button', { name: 'Fit canvas' }).click();
+  await expect(dynamic).toBeInViewport();
+  await expect.poll(async () => Number(await counter.textContent())).toBeGreaterThan(offscreenCount);
+  await expect(counter).toHaveAttribute('data-resume-delta-ms', '0');
+
+  await counter.evaluate((node) => {
+    window.__dynamicCounter = node as HTMLOutputElement;
+  });
+  await page.getByTestId('remove-dynamic').click();
+  await expect(dynamic).toHaveCount(0);
+  const removedCount = await page.evaluate(() => Number(window.__dynamicCounter?.textContent));
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => Number(window.__dynamicCounter?.textContent))).toBe(removedCount);
 });
 
 test('uses the host drag handle but leaves composed-path interactive media alone', async ({ page }) => {
@@ -333,14 +379,14 @@ test('preserves optional-plugin data while missing and restores rendering withou
   const before = JSON.stringify(await persistedElement(page, 'video-1'));
 
   await page.goto('/?canvas=all&video=missing');
-  await expect(page.getByTestId('registry-count')).toHaveText('12 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
   const missingCard = page.locator('[data-element-id="video-1"] [role="status"]');
   await expect(missingCard).toContainText('Plugin unavailable');
   await expect(missingCard).toContainText('No active browser renderer is available for agentcanvas.video/video.');
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
   await expect(page.locator('[data-element-id="video-1"] video')).toHaveAttribute('src', /^blob:/);
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 });

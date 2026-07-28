@@ -109,7 +109,6 @@ export function createGalleryRenderer(): BrowserElementRenderer {
       let focused = false;
       let disposed = false;
       let requestVersion = 0;
-      const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
       const revoke = () => {
         request?.abort();
@@ -186,7 +185,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
       const restartTimer = () => {
         if (timer) clearInterval(timer);
         timer = null;
-        if (!data.autoplay || data.items.length < 2 || hovered || focused || motion.matches) return;
+        if (!data.autoplay || data.items.length < 2 || hovered || focused || context.lifecycle.reducedMotion) return;
         timer = setInterval(() => {
           activeIndex = (activeIndex + 1) % data.items.length;
           activeItemId = data.items[activeIndex].id;
@@ -232,8 +231,6 @@ export function createGalleryRenderer(): BrowserElementRenderer {
       frame.addEventListener('pointerleave', onPointerLeave);
       frame.addEventListener('focusin', onFocusIn);
       frame.addEventListener('focusout', onFocusOut);
-      motion.addEventListener('change', restartTimer);
-
       const update = async (nextContext: RendererContext) => {
         context = nextContext;
         const nextData = galleryData(nextContext.element.data);
@@ -289,7 +286,6 @@ export function createGalleryRenderer(): BrowserElementRenderer {
           frame.removeEventListener('pointerleave', onPointerLeave);
           frame.removeEventListener('focusin', onFocusIn);
           frame.removeEventListener('focusout', onFocusOut);
-          motion.removeEventListener('change', restartTimer);
           revoke();
           root.replaceChildren();
         }

@@ -26,6 +26,9 @@ plugin API v1 runtime contracts.
 - Added browser command contributions with selection, viewport, reveal,
   scoped transactions, overlays, diagnostics, and cancellation.
 - Added browser activation disposables and registry teardown.
+- Added host API `1.1.0` renderer lifecycle/activity state and one shared,
+  visibility-gated browser frame scheduler for extension-owned dynamic visual
+  nodes, without changing document schemas or shipping built-in effects.
 - Added `create-agentcanvas-extension`; `create-agentcanvas-plugin` remains a
   compatibility entrypoint.
 

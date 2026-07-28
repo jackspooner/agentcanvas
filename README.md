@@ -211,6 +211,11 @@ editor command service. Commands receive selection, viewport, reveal,
 transaction, overlay, diagnostic, and cancellation services; they never
 receive a React Flow instance.
 
+Host API `1.1.0` adds a renderer-lifetime signal, activity/reduced-motion
+state, and one shared visibility-gated frame scheduler for dynamic visual
+nodes. Existing `^1.0.0` extensions remain compatible; extensions using the
+new lifecycle or frame fields require `^1.1.0`.
+
 Copy the resulting distribution into AgentCanvas with `npm run
 plugins:install -- <distribution-path>` and restart. Permissions constrain
 supported host services such as `canvas.read` and `canvas.mutate-own`, but they

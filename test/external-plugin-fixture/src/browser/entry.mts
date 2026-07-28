@@ -6,8 +6,11 @@ import type {
 } from '@agentcanvas/plugin-sdk';
 
 function update(card: HTMLElement, context: RendererContext): void {
-  card.textContent = `${String(context.element.data.label)} · ${String(context.element.data.status)}`;
+  const label = card.querySelector<HTMLElement>('[data-role="label"]');
+  if (label) label.textContent = `${String(context.element.data.label)} · ${String(context.element.data.status)}`;
   card.dataset.readOnly = String(context.readOnly);
+  card.dataset.active = String(context.lifecycle.active);
+  card.dataset.reducedMotion = String(context.lifecycle.reducedMotion);
 }
 export const renderer: BrowserElementRenderer = {
   type: 'external.signal-card/signal-card', schemaVersions: [1], placement: 'node',
@@ -15,8 +18,38 @@ export const renderer: BrowserElementRenderer = {
     const style = document.createElement('style');
     style.textContent = ':host{display:block;height:100%}div{box-sizing:border-box;height:100%;padding:16px;border:3px solid #7c3aed;border-radius:10px;background:#fff;font:700 18px system-ui}';
     const card = document.createElement('div');
-    root.append(style, card); update(card, context);
-    return { update: (next) => update(card, next), dispose: () => root.replaceChildren() };
+    const label = document.createElement('span');
+    label.dataset.role = 'label';
+    const counter = document.createElement('output');
+    counter.dataset.role = 'frame-counter';
+    counter.textContent = '0';
+    card.append(label, document.createTextNode(' · frame '), counter);
+    root.append(style, card);
+    let current = context;
+    let frameCount = 0;
+    let resumePending = false;
+    update(card, current);
+    const unsubscribe = context.frames.subscribe((frame) => {
+      if (current.lifecycle.reducedMotion) return;
+      frameCount += 1;
+      counter.textContent = String(frameCount);
+      counter.dataset.deltaMs = String(frame.deltaMs);
+      if (resumePending) {
+        counter.dataset.resumeDeltaMs = String(frame.deltaMs);
+        resumePending = false;
+      }
+    });
+    return {
+      update(next) {
+        if (current.lifecycle.active && !next.lifecycle.active) resumePending = true;
+        current = next;
+        update(card, current);
+      },
+      dispose() {
+        unsubscribe();
+        root.replaceChildren();
+      }
+    };
   }
 };
 export const toggleStatusCommand: BrowserCommandDescriptor = {

@@ -7,10 +7,15 @@ AgentCanvas plugins have three related but separate version domains.
 | Version | Example | Purpose |
 |---|---|---|
 | Plugin package version | `0.4.0` | Distribution release and plugin dependency matching |
-| Host API range | `^1.0.0` | Compatibility with the AgentCanvas plugin ABI |
+| Host API range | `^1.0.0` or `^1.1.0` | Compatibility with the AgentCanvas extension ABI |
 | Element schema version | `3` | Persisted data shape for one element type |
 
 Do not infer an element schema version from the plugin package version.
+
+AgentCanvas host API `1.1.0` adds renderer lifetime, activity, reduced-motion,
+and shared frame scheduling. Existing extensions declaring `^1.0.0` remain
+compatible. An extension that uses `RendererContext.lifecycle` or
+`RendererContext.frames` must declare `^1.1.0`.
 
 ## Plugin and capability dependencies
 

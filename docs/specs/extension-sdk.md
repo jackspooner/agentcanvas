@@ -106,6 +106,11 @@ mount(root: ShadowRoot, context: RendererContext): {
 ```
 
 The renderer context grows additively. Existing v0.2 renderers remain valid.
+Host API `1.1.0` adds a renderer-lifetime abort signal, host-owned activity and
+reduced-motion state, and one shared activity-gated frame scheduler. Existing
+extensions declaring `^1.0.0` remain compatible; extensions using these fields
+declare `^1.1.0`. Frames are browser-local and cannot create document
+mutations, revisions, history, persistence, or network operations.
 
 ## Framework policy
 

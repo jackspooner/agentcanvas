@@ -12,3 +12,7 @@ npm run agentcanvas:verify
 ```
 
 The installable directory is `plugin-dist/external.signal-card`. Installing, disabling, and reinstalling it exercises host discovery and missing-plugin data preservation without rebuilding AgentCanvas.
+
+Its browser renderer requires host API `^1.1.0` and uses the public shared
+frame scheduler to expose a test-only counter. This proves dynamic rendering
+without adding a built-in AgentCanvas effect or persisted animation state.
