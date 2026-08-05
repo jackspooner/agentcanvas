@@ -52,6 +52,32 @@ container service account.
 
 ## Windows service
 
+### Simple background launcher
+
+For an agent or a local user who wants AgentCanvas running in the background
+without installing a Windows service, prepare the checkout once:
+
+```powershell
+npm ci
+npm run plugins:build
+npm run plugins:materialize -- --defaults
+npm run build
+```
+
+Then start it from the repository root:
+
+```powershell
+npm run start:background
+```
+
+The bundled `scripts\agentcanvas-background.ps1` also supports `Status`,
+`Stop`, and `Restart`. It records the PID and redirects stdout/stderr to the
+ignored `tmp\` directory, verifies the process command line before stopping a
+PID, and waits for `/health` after startup. Pass `-HealthUrl` when the service
+uses a non-default public base URL. This launcher is tied to the current user
+session; use the Windows service helper below for machine-start and
+least-privilege service behavior.
+
 The Windows helper uses the built-in Service Control Manager and compiles a
 small local service host from `deploy/windows/AgentCanvasServiceHost.cs`; it
 does not require Servy, NSSM, or another downloaded service wrapper.

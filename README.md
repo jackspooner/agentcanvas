@@ -69,6 +69,18 @@ npm run build
 npm run dev
 ```
 
+On Windows, start the already-prepared checkout in the background with:
+
+```powershell
+npm run start:background
+```
+
+Check or stop it with `.\scripts\agentcanvas-background.ps1 -Action Status` and
+`.\scripts\agentcanvas-background.ps1 -Action Stop`. The launcher keeps its
+PID and logs under the ignored `tmp/` directory and waits for `/health` before
+reporting success. It is a lightweight user-session launcher, not a replacement
+for the built-in Windows Service deployment.
+
 The commands in [Verification](#verification) are optional checks for a
 checkout; they are not required before the first local launch.
 
