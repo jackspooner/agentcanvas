@@ -22,9 +22,10 @@ Show the new user these capabilities when the active runtime supports them:
 2. Core text, shapes, and connectors arranged as a simple agent workflow.
 3. A Markdown card for richer explanatory content.
 4. A table for compact structured comparison.
-5. Agent-facing persistence and diagnostics: create, inspect, repair, and report
+5. Image cards sourced from the user or image search, when available.
+6. Agent-facing persistence and diagnostics: create, inspect, repair, and report
    a direct canvas URL.
-6. Host-owned macros when the generic macro tools are present: create or use a
+7. Host-owned macros when the generic macro tools are present: create or use a
    tiny versioned definition, preview it, then execute it as one atomic action.
 
 Do not claim that a capability is available because it exists in documentation
@@ -41,6 +42,12 @@ GLB, and image-source extensions, but the runtime response is authoritative.
 - Call `canvas_list_plugins` and record active element types, tools, and
   diagnostics capabilities.
 - Start a new canvas unless the user supplied an existing canvas to tour.
+- Ask the user for two to four images they would like displayed, or ask for a
+  visual theme if they do not have specific images. If they provide local files,
+  URLs, or asset references, use those references according to the active
+  runtime contract. If they do not provide images or prefer the agent to choose,
+  use the available web/image search tools to find a small, coherent set of
+  suitable image URLs. Do not silently invent image sources.
 - Explain internally that this is a demonstration board and that generated copy
   is illustrative, not product documentation or researched fact.
 
@@ -74,6 +81,10 @@ Create the following content, adapting element types to the active registry:
 - Structured card: a small table with columns `Capability`, `What it shows`,
   and `Proof`. Use statements such as `Canvas state / persisted elements /
   canvas_get`; label any product opinions as `Demonstration` rather than fact.
+- Image gallery: add one Markdown element per selected image, with a concise
+  title and caption identifying the source as `User-supplied` or `Web search`.
+  Use `allowImages: true` only for the selected image URLs. Keep image cards
+  separate from explanatory Markdown so each image has a readable frame.
 - Workflow strip: four concise nodes - `Ask`, `Compose`, `Inspect`, `Iterate` -
   connected left to right. Create nodes first, retain their returned IDs, then
   create connectors using only those IDs.
@@ -81,9 +92,26 @@ Create the following content, adapting element types to the active registry:
   inspect what is actually there.`
 
 Prefer core text and shapes when a richer extension is absent. Do not make the
-demo depend on Assets-2, remote URLs, local files, or a media provider. Do not
-add an image merely to make the board look impressive: remote image loading
-requires a separate rendered check and can distract from the core product tour.
+demo depend on Assets-2 or a media provider. For web-found images, preserve the
+source URL and mention that the Markdown card is a remote reference, not a
+copied durable asset; do not use suspicious, inaccessible, or private URLs.
+Respect the image search tool's licensing/source information and avoid claiming
+ownership or permanence. If no suitable image can be found, continue with a
+text-only demonstration and say so.
+
+### Image verification
+
+An image element persisted in the canvas does not prove that the image loaded.
+When the demonstration contains images:
+
+1. Read the mutation diagnostics and confirm the Markdown element contains the
+   intended image reference without exposing binary data or data URLs.
+2. Open the returned canvas URL in the available browser surface and visually
+   confirm each selected image is present, not broken, clipped, or obscured.
+3. If an image fails, replace it with a working selected URL or remove that card;
+   never report a broken remote image as demonstrated capability.
+4. Record the visual check in the final handoff and distinguish `rendered and
+   visible` from merely `persisted as Markdown`.
 
 ### 3. Optional macro moment
 
