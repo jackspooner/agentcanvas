@@ -47,7 +47,7 @@ model.
 ## Requirements
 
 - Node.js 24 or newer and npm 11 or newer.
-- An empty database, which AgentCanvas initializes at physical schema 4 / document schema 2, or an older database upgraded with the offline CLI before startup.
+- A new database, which AgentCanvas initializes at physical schema 4 / document schema 2, or an existing supported database upgraded with the offline CLI before startup.
 
 No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
 Markdown documents render HTTP(S) and same-origin relative image URLs by default;
@@ -82,8 +82,8 @@ curl http://127.0.0.1:23003/openapi.json
 
 `/health` reports AgentCanvas core readiness. When the optional Assets-2 extension is installed, its current readiness is reported under `dependencies.assets` without making the core host unavailable.
 
-For a long-running installation, run the already-built application from the
-repository root under any supervisor that can set the working directory,
+For a long-running installation, run AgentCanvas from the repository root under
+any supervisor that can set the working directory,
 environment, restart policy, and log destinations:
 
 ```bash
@@ -363,6 +363,11 @@ the runtime but recommended for agents: it covers runtime discovery, layout,
 frame sizing, diagrams, images, and evidence-based reporting. See [Agent
 readiness](docs/agent-readiness.md) for Hermes installation, eight broad
 acceptance objectives, and the verification rubric.
+
+For a first-time-user product tour, use the bundled
+[`skills/agentcanvas-demonstration/SKILL.md`](skills/agentcanvas-demonstration/SKILL.md)
+skill. It creates a guided showcase using the capabilities active in the
+default installation and can include user-supplied or web-found images.
 
 For Hermes, connect the resident MCP endpoint and install the published skill:
 
