@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config';
 import { loadAgentCanvasDotenv } from '../src/dotenv';
 
@@ -24,6 +24,7 @@ describe('AgentCanvas dotenv bootstrap', () => {
   });
 
   it('loads a local .env file before configuration is read', () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-canvas-dotenv-'));
     fs.writeFileSync(
       path.join(dir, '.env'),
@@ -62,6 +63,8 @@ describe('AgentCanvas dotenv bootstrap', () => {
         allowedOrigins: ['http://example.test:29123']
       }
     });
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
   });
 
   it('uses unlimited as the default canvas size and accepts the legacy infinite setting', () => {
