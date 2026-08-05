@@ -58,7 +58,11 @@ if (
   failures.push('plugins:build must compile public packages before first-party plugins and catalog assembly.');
 }
 const browserTestCommand = rootManifest.scripts?.['test:e2e'];
-if (typeof browserTestCommand !== 'string' || !browserTestCommand.startsWith('npm run build:packages && ')) {
+const browserBuildsPackages =
+  typeof browserTestCommand === 'string' &&
+  (browserTestCommand.startsWith('npm run build:packages && ') ||
+    browserTestCommand.startsWith('npm run plugins:build && '));
+if (!browserBuildsPackages) {
   failures.push('test:e2e must build public packages before the source-based browser fixture starts.');
 }
 if (rootManifest.scripts?.['check:extension-packages'] !== 'node scripts/verify-extension-package-artifacts.mjs') {
@@ -72,7 +76,7 @@ if (!readme.includes('https://github.com/jackspooner/assets2')) {
 if (!/No media service is required\./.test(readme)) {
   failures.push('README must state that AgentCanvas core requires no media service.');
 }
-if (!/physical\/document version 3\/2/.test(readme)) {
+if (!/physical\/document version 4\/2/.test(readme)) {
   failures.push('README must state the current physical/document database version.');
 }
 
@@ -81,7 +85,7 @@ const releaseChecklist = read('PUBLIC_RELEASE_CHECKLIST.md');
 if (/Assets-2 service is a required local dependency/i.test(`${securityPolicy}\n${releaseChecklist}`)) {
   failures.push('Current security and release documentation must not describe Assets-2 as required.');
 }
-if (!/physical schema 3 \/ document schema 2/.test(releaseChecklist)) {
+if (!/physical schema 4 \/ document schema 2/.test(releaseChecklist)) {
   failures.push('Release checklist must state the current physical/document database contract.');
 }
 

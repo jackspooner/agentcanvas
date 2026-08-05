@@ -41,7 +41,7 @@ AgentCanvas should be public as an agent-operable browser canvas and MCP surface
 - [x] MCP upgrade docs require client/stdio restart or reload plus a fresh `tools/list` after v0.1 aliases are removed.
 - [x] Documentation has an audience-based home, getting-started, operations, troubleshooting, current HTTP/MCP, and complete plugin tutorial/testing/versioning/configuration paths.
 - [x] `npm run check:docs` validates required pages, internal links/anchors, package README links, and stale live-cutover status text.
-- [x] Current database docs consistently identify physical schema 3 / document schema 2 and the offline 2/2 theme migration.
+- [x] Current database docs consistently identify physical schema 4 / document schema 2 and the offline migrations from 2/2 and 3/2.
 - [x] Manifest-verified restore covers both v0.1 backups and physical/document 2/2 theme-migration backups.
 
 ## Verification
