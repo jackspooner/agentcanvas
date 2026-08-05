@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applySecurityHeaders, assertTrustedRequest, loadSecurityConfig } from '../src/security';
+import {
+  applySecurityHeaders,
+  assertTrustedRequest,
+  loadSecurityConfig,
+  securityResponseHeaders
+} from '../src/security';
 
 const defaults = {
   host: '127.0.0.1',
@@ -42,5 +47,16 @@ describe('local security policy', () => {
     expect(headers.get('referrer-policy')).toBe('no-referrer');
     expect(headers.get('x-content-type-options')).toBe('nosniff');
     expect(headers.get('x-frame-options')).toBe('DENY');
+  });
+
+  it('scopes an embed document to one exact parent origin without relaxing ordinary pages', () => {
+    const headers = securityResponseHeaders(['https://app.example.test']);
+    expect(headers['content-security-policy']).toContain('frame-ancestors https://app.example.test');
+    expect(headers['content-security-policy']).not.toContain("frame-ancestors 'none'");
+    expect(headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(headers).not.toHaveProperty('x-frame-options');
+    expect(() => securityResponseHeaders(['https://app.example.test/path'])).toThrowError(
+      expect.objectContaining({ code: 'invalid_parent_origin' })
+    );
   });
 });

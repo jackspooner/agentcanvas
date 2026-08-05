@@ -12,6 +12,7 @@ import type {
   MacroServicePlanRequest,
   MacroPlan
 } from '../macros/types';
+import type { EmbedSessionSummary } from '../embed-sessions';
 
 async function jsonResponse<T>(response: Response, label: string): Promise<T> {
   if (!response.ok) {
@@ -60,8 +61,26 @@ export async function updateAgentCanvasConfiguration(
   return body.configuration as AgentCanvasConfiguration;
 }
 
-export async function fetchCanvasFromLocation(): Promise<CanvasProjection & { readOnly: boolean }> {
+export async function fetchCanvasFromLocation(): Promise<
+  CanvasProjection & { readOnly: boolean; embedSession?: EmbedSessionSummary }
+> {
   const current = window.location.pathname;
+  if (current.startsWith('/embed/')) {
+    const token = current.split('/').pop();
+    const selectedCanvasId = new URLSearchParams(window.location.search).get('canvasId');
+    const query = selectedCanvasId ? `?canvasId=${encodeURIComponent(selectedCanvasId)}` : '';
+    const body = await jsonResponse<CanvasProjection & { session: EmbedSessionSummary; readOnly: boolean }>(
+      await fetch(`/api/v1/embed-sessions/${encodeURIComponent(token ?? '')}${query}`),
+      'failed to load embedded canvas'
+    );
+    return {
+      canvas: body.canvas as CanvasDocument,
+      elementRuntime: (body.elementRuntime ?? {}) as CanvasProjection['elementRuntime'],
+      diagnostics: (body.diagnostics ?? []) as CanvasProjection['diagnostics'],
+      readOnly: body.readOnly,
+      embedSession: body.session
+    };
+  }
   if (current.startsWith('/c/')) {
     const token = current.split('/').pop();
     const body = await jsonResponse<{

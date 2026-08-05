@@ -8,7 +8,8 @@ extensions own media references and byte resolution. Normal element
 implementations are trusted extensions discovered from `plugins/`.
 
 The kernel does not provide a marketplace, remote loading, production hot
-reload, sandboxing, user accounts, or real-time multi-user editing.
+reload, sandboxing, user accounts, or real-time multi-user editing. Short-lived
+embed sessions provide origin-scoped iframe authority, not user authentication.
 
 ## System map
 
@@ -71,7 +72,7 @@ Historical v0.1 event bodies are audit records and remain document version 1 aft
 
 ## Public surfaces
 
-- Unversioned: `/health`, `/whoami`, `/openapi.json`, `/mcp`, `/`, `/canvases`, `/canvases/:canvasId`, `/c/:shareToken`.
+- Unversioned: `/health`, `/whoami`, `/openapi.json`, `/mcp`, `/`, `/canvases`, `/canvases/:canvasId`, `/c/:shareToken`, `/embed/:token`.
 - JSON API: `/api/v1/...`.
 - Browser plugin modules: build-hash-keyed same-origin `/api/v1/plugin-modules/...`.
 - Binary resources: opaque `/api/v1/resources/:handle/...`.

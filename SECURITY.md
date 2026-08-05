@@ -16,6 +16,13 @@ AgentCanvas is a local application. It defaults to `127.0.0.1`, has no built-in 
 
 Share URLs are bearer-style capabilities. Anyone who can access a share URL can read the shared canvas, so treat these URLs as sensitive and do not publish them in logs, issues, or screenshots.
 
+Embed URLs are also bearer-style capabilities. Each one is process-memory,
+expires within at most 24 hours, names one exact parent origin, and limits the
+browser to an explicit canvas set and `read` or `edit` mode. Ordinary routes
+retain frame denial. These constraints do not authenticate the HTTP or MCP API;
+create embed sessions from a trusted backend and keep their URLs out of logs,
+prompts, analytics, issues, and screenshots.
+
 ## Plugin trust model
 
 Plugins are trusted executable dependencies, not sandboxed extensions.

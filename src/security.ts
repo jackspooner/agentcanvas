@@ -68,6 +68,15 @@ function normalizedOrigin(value: string): string {
   return url.origin.toLowerCase();
 }
 
+export function normalizeAllowedOrigin(value: string): string {
+  try {
+    return normalizedOrigin(value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'parent origin is invalid';
+    throw new SecurityPolicyError('invalid_parent_origin', message, 400);
+  }
+}
+
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
@@ -150,16 +159,29 @@ export function assertTrustedRequest(headers: Headers, config: AgentCanvasSecuri
   }
 }
 
-export const SECURITY_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
-  'content-security-policy':
-    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: blob:; media-src 'self' blob:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-  'cross-origin-resource-policy': 'same-origin',
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-  'referrer-policy': 'no-referrer',
-  'x-content-type-options': 'nosniff',
-  'x-frame-options': 'DENY'
-};
+const CONTENT_SECURITY_POLICY_PREFIX =
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: blob:; media-src 'self' blob:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'";
 
-export function applySecurityHeaders(headers: Headers): void {
-  for (const [name, value] of Object.entries(SECURITY_RESPONSE_HEADERS)) headers.set(name, value);
+export function securityResponseHeaders(frameAncestors: readonly string[] = []): Readonly<Record<string, string>> {
+  const normalizedAncestors = frameAncestors.map(normalizeAllowedOrigin);
+  return {
+    'content-security-policy': `${CONTENT_SECURITY_POLICY_PREFIX}; frame-ancestors ${
+      normalizedAncestors.length ? normalizedAncestors.join(' ') : "'none'"
+    }; form-action 'self'`,
+    'cross-origin-resource-policy': normalizedAncestors.length ? 'cross-origin' : 'same-origin',
+    'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+    'referrer-policy': 'no-referrer',
+    'x-content-type-options': 'nosniff',
+    ...(normalizedAncestors.length ? {} : { 'x-frame-options': 'DENY' })
+  };
+}
+
+export const SECURITY_RESPONSE_HEADERS: Readonly<Record<string, string>> = securityResponseHeaders();
+
+/*
+ * The default remains non-frameable. Embed documents opt into one validated
+ * parent origin through securityResponseHeaders; no route may relax this globally.
+ */
+export function applySecurityHeaders(headers: Headers, frameAncestors: readonly string[] = []): void {
+  for (const [name, value] of Object.entries(securityResponseHeaders(frameAncestors))) headers.set(name, value);
 }

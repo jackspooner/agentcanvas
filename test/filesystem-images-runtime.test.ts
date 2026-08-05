@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { createMcpV2Server } from '../src/mcp-v2/server';
 import { createV2App, createV2Runtime } from '../src/server-v2';
 
 const temporaryRoots: string[] = [];
@@ -106,6 +109,31 @@ describe('filesystem image runtime without Assets-2', () => {
       })
     });
     expect(unsafe.status).toBe(400);
+
+    const mcp = createMcpV2Server({
+      publicBaseUrl: runtime.config.publicBaseUrl,
+      registry: runtime.registry,
+      store: runtime.store,
+      browserCatalog: runtime.browserCatalog,
+      diagnostics: () => runtime.plugins.diagnostics.list()
+    });
+    const client = new Client({ name: 'test-client', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
+    const invalidPath = await client.callTool({
+      name: 'agentcanvas_filesystem_images__place',
+      arguments: {
+        canvasId,
+        x: 10,
+        y: 20,
+        source: { rootId: 'images', path: 'folder\\sample.png' }
+      }
+    });
+    expect(invalidPath.isError).toBe(true);
+    expect(invalidPath.content).toEqual([
+      expect.objectContaining({ text: expect.stringContaining('filesystem image path must be normalized') })
+    ]);
+    await Promise.all([client.close(), mcp.server.close()]);
 
     const snapshotResponse = await app.request(`/api/v1/canvases/${canvasId}/snapshot`, { method: 'POST' });
     expect(snapshotResponse.status).toBe(200);

@@ -1,5 +1,11 @@
 # AgentCanvas Agent Guide
 
+## Assets-2 usage
+
+- `agentcanvas.assets2` is an optional image-source extension. AgentCanvas stores the durable reference envelope; Assets-2 owns media identity and bytes.
+- Preserve canonical refs as `{type: "asset", project, assetId}`. Do not copy Assets-2 bytes into AgentCanvas or add provider-specific fallbacks to core.
+- Use the native Assets-2 surface or the shared client for asset operations, and never return local paths, signed URLs, or inline binary data to agents.
+
 ## Plugin architecture
 
 - The public product term is extension. Keep `plugin`, `plugins/`, and

@@ -11,6 +11,12 @@ the AgentCanvas kernel. Extensions contribute element schemas, renderers,
 commands, tools, procedures, migrations, and snapshots without importing the
 editor implementation.
 
+Trusted host applications can embed one explicitly bounded set of canvases
+through a short-lived, origin-scoped iframe session. The iframe is the human
+surface; LLMs continue to use the canonical HTTP or MCP contracts. Ordinary
+AgentCanvas pages remain non-frameable. See [Embedding
+AgentCanvas](docs/embedding.md).
+
 Browser renderers can optionally hook into the editor-owned node Details
 affordance. The extension supplies the safe metadata workflow and overlay;
 AgentCanvas supplies the consistent button and interaction behavior.
@@ -247,6 +253,7 @@ JSON document APIs are under `/api/v1`. Human canvas routes, `/health`, `/whoami
 Important routes:
 
 - `GET/POST /api/v1/canvases`
+- `POST /api/v1/embed-sessions` and `GET/DELETE /api/v1/embed-sessions/:token`
 - `GET/PATCH /api/v1/canvases/:canvasId`
 - `POST /api/v1/canvases/:canvasId/elements:batch`
 - `POST /api/v1/canvases/:canvasId/snapshot`
@@ -381,6 +388,11 @@ AGENT_CANVAS_ALLOW_REMOTE=false
 AGENT_CANVAS_DB=./data/agent-canvas.sqlite
 AGENT_CANVAS_DEFAULT_SIZE=unlimited
 ```
+
+Set `AGENT_CANVAS_PLUGINS_ROOT` when multiple AgentCanvas runtimes share one
+code installation but require separate active extensions and
+`plugin.config.json` files. If omitted, AgentCanvas continues to use the
+installation's `plugins/` directory.
 
 The stdio MCP bridge uses `AGENT_CANVAS_BASE_URL` when set and otherwise connects to `AGENT_CANVAS_PUBLIC_BASE_URL`:
 

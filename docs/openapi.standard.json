@@ -7545,6 +7545,475 @@
         }
       }
     },
+    "/api/v1/embed-sessions": {
+      "post": {
+        "description": "Creates an in-memory bearer session for one through 25 canvases and one exact parent origin. Sessions are invalidated when AgentCanvas restarts.",
+        "operationId": "embedSessionCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "canvasIds": [
+                  "canvas_example"
+                ],
+                "expiresInSeconds": 3600,
+                "mode": "read",
+                "parentOrigin": "http://127.0.0.1:3000"
+              },
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "canvasIds": {
+                    "items": {
+                      "maxLength": 200,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "maxItems": 25,
+                    "minItems": 1,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "expiresInSeconds": {
+                    "maximum": 86400,
+                    "minimum": 60,
+                    "type": "integer"
+                  },
+                  "mode": {
+                    "enum": [
+                      "read",
+                      "edit"
+                    ]
+                  },
+                  "parentOrigin": {
+                    "maxLength": 2048,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "canvasIds",
+                  "mode",
+                  "parentOrigin",
+                  "expiresInSeconds"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "session": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "canvasIds": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 25,
+                          "minItems": 1,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "read",
+                            "edit"
+                          ]
+                        },
+                        "parentOrigin": {
+                          "format": "uri",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "canvasIds",
+                        "mode",
+                        "parentOrigin",
+                        "createdAt",
+                        "expiresAt"
+                      ],
+                      "type": "object"
+                    },
+                    "url": {
+                      "format": "uri",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "session",
+                    "url"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created embed session"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request"
+          }
+        },
+        "summary": "Create a short-lived app-scoped embed session",
+        "tags": [
+          "Embedding"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Recreate the iframe or discard its URL after session revocation or expiry."
+            ]
+          },
+          "doNotUseWhen": [
+            "Do not use as LLM mutation transport; use the canvas HTTP or MCP operations.",
+            "Do not expose the bearer URL in logs, prompts, analytics, or untrusted client state."
+          ],
+          "sideEffects": [
+            "Creates process-memory embed authority until expiry, revocation, or restart."
+          ],
+          "useWhen": [
+            "Embedding one or more explicitly allowed AgentCanvas canvases inside a trusted host application."
+          ],
+          "workflow": [
+            "Create the session server-side, set the returned URL as the iframe src, and listen for the versioned postMessage bridge.",
+            "Ordinary AgentCanvas pages remain non-frameable."
+          ]
+        }
+      }
+    },
+    "/api/v1/embed-sessions/{token}": {
+      "delete": {
+        "operationId": "embedSessionRevoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "session": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "canvasIds": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 25,
+                          "minItems": 1,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "read",
+                            "edit"
+                          ]
+                        },
+                        "parentOrigin": {
+                          "format": "uri",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "canvasIds",
+                        "mode",
+                        "parentOrigin",
+                        "createdAt",
+                        "expiresAt"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "session"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Revoked embed session"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Embed session expired"
+          }
+        },
+        "summary": "Revoke an embed session",
+        "tags": [
+          "Embedding"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Recreate the iframe or discard its URL after session revocation or expiry."
+            ]
+          },
+          "doNotUseWhen": [
+            "Do not use as LLM mutation transport; use the canvas HTTP or MCP operations.",
+            "Do not expose the bearer URL in logs, prompts, analytics, or untrusted client state."
+          ],
+          "sideEffects": [
+            "Immediately removes the process-memory embed authority."
+          ],
+          "useWhen": [
+            "Embedding one or more explicitly allowed AgentCanvas canvases inside a trusted host application."
+          ],
+          "workflow": [
+            "Create the session server-side, set the returned URL as the iframe src, and listen for the versioned postMessage bridge.",
+            "Ordinary AgentCanvas pages remain non-frameable."
+          ]
+        }
+      },
+      "get": {
+        "description": "Used by the AgentCanvas iframe shell. The optional canvasId must belong to the session.",
+        "operationId": "embedSessionResolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "canvasId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "canvas": {
+                      "$ref": "#/components/schemas/CanvasRecord"
+                    },
+                    "diagnostics": {
+                      "items": {
+                        "$ref": "#/components/schemas/PluginDiagnostic"
+                      },
+                      "type": "array"
+                    },
+                    "elementRuntime": {
+                      "additionalProperties": {
+                        "type": "object"
+                      },
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    },
+                    "readOnly": {
+                      "type": "boolean"
+                    },
+                    "session": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "canvasIds": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 25,
+                          "minItems": 1,
+                          "type": "array",
+                          "uniqueItems": true
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "read",
+                            "edit"
+                          ]
+                        },
+                        "parentOrigin": {
+                          "format": "uri",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "canvasIds",
+                        "mode",
+                        "parentOrigin",
+                        "createdAt",
+                        "expiresAt"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "session",
+                    "canvas",
+                    "elementRuntime",
+                    "diagnostics",
+                    "readOnly"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Embed session and canvas projection"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Canvas is outside the embed session"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Resource was not found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Embed session expired"
+          }
+        },
+        "summary": "Resolve an embed session and selected canvas",
+        "tags": [
+          "Embedding"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": []
+          },
+          "doNotUseWhen": [
+            "Do not use as LLM mutation transport; use the canvas HTTP or MCP operations.",
+            "Do not expose the bearer URL in logs, prompts, analytics, or untrusted client state."
+          ],
+          "sideEffects": [],
+          "useWhen": [
+            "Embedding one or more explicitly allowed AgentCanvas canvases inside a trusted host application."
+          ],
+          "workflow": [
+            "Create the session server-side, set the returned URL as the iframe src, and listen for the versioned postMessage bridge.",
+            "Ordinary AgentCanvas pages remain non-frameable."
+          ]
+        }
+      }
+    },
     "/api/v1/macros": {
       "get": {
         "operationId": "macroList",

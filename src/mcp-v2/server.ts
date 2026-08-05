@@ -693,28 +693,36 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
   }));
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const tool = tools.find((candidate) => candidate.name === request.params.name);
-    if (!tool) throw new Error(`unknown tool: ${request.params.name}`);
-    const input = (request.params.arguments ?? {}) as JsonObject;
-    const validation = validators.get(tool.name) as { input: ValidateFunction; output: ValidateFunction };
-    if (!validation.input(input)) throw new Error(`tool input failed schema validation: ${tool.name}`);
-    let output: JsonObject;
-    if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime);
-    else {
-      const pluginId = tool.pluginId as string;
-      const plugin = runtime.registry.getPlugin(pluginId);
-      if (!plugin) throw new Error(`plugin is not active: ${pluginId}`);
-      const context: PluginInvocationContext = {
-        signal: extra.signal,
-        correlationId: `mcp_${nanoid(16)}`,
-        canvas: createPluginCanvasOperations(runtime.store, pluginId, plugin.plugin.manifest.permissions)
+    try {
+      if (!tool) throw new Error(`unknown tool: ${request.params.name}`);
+      const input = (request.params.arguments ?? {}) as JsonObject;
+      const validation = validators.get(tool.name) as { input: ValidateFunction; output: ValidateFunction };
+      if (!validation.input(input)) throw new Error(`tool input failed schema validation: ${tool.name}`);
+      let output: JsonObject;
+      if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime);
+      else {
+        const pluginId = tool.pluginId as string;
+        const plugin = runtime.registry.getPlugin(pluginId);
+        if (!plugin) throw new Error(`plugin is not active: ${pluginId}`);
+        const context: PluginInvocationContext = {
+          signal: extra.signal,
+          correlationId: `mcp_${nanoid(16)}`,
+          canvas: createPluginCanvasOperations(runtime.store, pluginId, plugin.plugin.manifest.permissions)
+        };
+        output = await (tool.descriptor as NonNullable<McpJsonSchemaTool['descriptor']>).invoke(input, context);
+      }
+      if (!validation.output(output)) throw new Error(`tool output failed schema validation: ${tool.name}`);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }],
+        structuredContent: output
       };
-      output = await (tool.descriptor as NonNullable<McpJsonSchemaTool['descriptor']>).invoke(input, context);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'tool execution failed';
+      return {
+        content: [{ type: 'text' as const, text: `Tool ${request.params.name} failed: ${message}` }],
+        isError: true
+      };
     }
-    if (!validation.output(output)) throw new Error(`tool output failed schema validation: ${tool.name}`);
-    return {
-      content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }],
-      structuredContent: output
-    };
   });
   return { server, tools };
 }

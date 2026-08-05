@@ -21,13 +21,17 @@ The owning schemas live in the frozen registry. Plugins register JSON Schema 202
 | Elements | `POST /api/v1/canvases/{canvasId}/elements:batch` |
 | Viewports | `GET/POST .../viewport`, `POST .../viewport/focus` |
 | Sharing | `GET/POST .../share-links`, `DELETE .../share-links/{shareLinkId}`, `GET /api/v1/share/{token}` |
+| Embedding | `POST /api/v1/embed-sessions`, `GET/DELETE /api/v1/embed-sessions/{token}` |
 | Snapshots | `POST /api/v1/canvases/{canvasId}/snapshot` |
 | Plugins | `GET /api/v1/plugins`, plugin detail, browser modules, and plugin procedures |
 | Macros | `GET/POST /api/v1/macros`, exact-version `GET /api/v1/macros/{macroId}/versions/{version}` (optional `canvasId`), `POST /api/v1/macros/{macroId}/versions`, `PATCH /api/v1/macros/{macroId}`, canvas-scoped plan, and `POST /api/v1/canvases/{canvasId}/macros:execute` |
 | Resources | `GET /api/v1/resources/{handle}/details`, `GET .../content` |
 | Host configuration | `GET/PATCH /api/v1/configuration` |
 
-Human routes `/`, `/canvases`, `/canvases/{canvasId}`, and `/c/{shareToken}` serve the browser application and remain unversioned.
+Human routes `/`, `/canvases`, `/canvases/{canvasId}`, `/c/{shareToken}`, and
+`/embed/{token}` serve the browser application and remain unversioned. Only the
+embed route is frameable, and only by the exact parent origin in its active
+session. See [Embedding AgentCanvas](embedding.md).
 
 ## Canvas read projection
 

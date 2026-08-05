@@ -24,6 +24,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Understand macro definitions and execution | [Macros](proposals/macros.md) |
 | Operate the service or manage extensions | [Operations](operations.md) |
 | Use the HTTP API or MCP tools | [HTTP and MCP](http-and-mcp.md) |
+| Embed selected canvases in another application | [Embedding AgentCanvas](embedding.md) |
 | Prepare or evaluate an AI agent | [Agent readiness](agent-readiness.md) |
 | Understand the system | [Architecture](architecture.md) |
 | Understand how extensions load | [How extensions load](plugins.md) |
@@ -64,6 +65,7 @@ runtime](plugin-snapshot-runtime.md).
 - [Physical schema 4 migration](physical-schema-4-migration.md): offline macro-storage migration paths, backup manifests, preservation verification, and restore.
 - [Operations](operations.md): source/catalog/runtime layout, install/disable/replace procedures, service lifecycle, backups, and health checks.
 - [HTTP and MCP](http-and-mcp.md): current routes, discovery, mutation operations, MCP transports, and contract ownership.
+- [Embedding AgentCanvas](embedding.md): scoped iframe sessions, browser messaging, LLM integration, and security boundaries.
 - [Agent readiness](agent-readiness.md): bundled operational skill, Hermes setup, eight acceptance objectives, and evidence rules.
 - [Troubleshooting](troubleshooting.md): startup, plugin, browser, Assets-2, database, and MCP failure guides.
 - [Standard OpenAPI](openapi.standard.json): generated contract for the three default extensions.

@@ -30,11 +30,15 @@ export function defaultPluginsRoot(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'plugins');
 }
 
+export function configuredPluginsRoot(pluginsRoot?: string): string {
+  return path.resolve(pluginsRoot ?? process.env.AGENT_CANVAS_PLUGINS_ROOT ?? defaultPluginsRoot());
+}
+
 export async function loadPluginRuntime(input: {
   db: DatabaseSync;
   pluginsRoot?: string;
 }): Promise<LoadedPluginRuntime> {
-  const pluginsRoot = path.resolve(input.pluginsRoot ?? defaultPluginsRoot());
+  const pluginsRoot = configuredPluginsRoot(input.pluginsRoot);
   const discovered = await discoverPlugins({ pluginsRoot });
   const host = createHostCapabilitySet();
   const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);
@@ -44,8 +48,8 @@ export async function loadPluginRuntime(input: {
   return { registry, diagnostics: services.diagnosticsStore, pluginsRoot, resources: host.resources };
 }
 
-export async function preparePluginRuntime(pluginsRoot = defaultPluginsRoot()): Promise<PreparedPluginRuntime> {
-  const resolvedRoot = path.resolve(pluginsRoot);
+export async function preparePluginRuntime(pluginsRoot?: string): Promise<PreparedPluginRuntime> {
+  const resolvedRoot = configuredPluginsRoot(pluginsRoot);
   const discovered = await discoverPlugins({ pluginsRoot: resolvedRoot });
   const host = createHostCapabilitySet();
   const ordered = orderPlugins(discovered, AGENTCANVAS_HOST_API_VERSION, HOST_CAPABILITY_VERSIONS);

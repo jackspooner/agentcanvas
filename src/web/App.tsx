@@ -16,11 +16,18 @@ import { CanvasView } from './components/CanvasView';
 import { fetchBrowserPluginCatalog, loadBrowserPluginRegistry, type LoadedBrowserRegistry } from './plugins/catalog';
 import type { CanvasBounds, CanvasDocument, CanvasProjection, CanvasViewport } from './v2-types';
 import type { MacroServiceExecuteRequest } from '../macros/types';
+import type { EmbedSessionSummary } from '../embed-sessions';
+import { embedCanvasUrl, embedTokenFromPath, isAgentCanvasHostMessage, postEmbedMessage } from './embed-bridge';
 import { coerceViewport, readViewportCookie, writeViewportCookie } from './viewport';
 
 type AppState =
   | { mode: 'index'; canvases: CanvasDocument[]; configuration: AgentCanvasConfiguration }
-  | (CanvasProjection & { mode: 'canvas'; readOnly: boolean; initialViewport: CanvasViewport });
+  | (CanvasProjection & {
+      mode: 'canvas';
+      readOnly: boolean;
+      initialViewport: CanvasViewport;
+      embedSession?: EmbedSessionSummary;
+    });
 
 function isCanvasIndexPath(pathname: string): boolean {
   return pathname === '/' || pathname === '/canvases' || pathname === '/canvases/';
@@ -36,6 +43,7 @@ export function App() {
     let cancelled = false;
     let activeRegistry: LoadedBrowserRegistry | null = null;
     const indexMode = isCanvasIndexPath(window.location.pathname);
+    const embedMode = window.location.pathname.startsWith('/embed/');
 
     function installRegistry(registry: LoadedBrowserRegistry): boolean {
       if (cancelled) {
@@ -98,9 +106,11 @@ export function App() {
     loadInitial().catch((cause) => setError(cause instanceof Error ? cause.message : String(cause)));
     const timer = window.setInterval(
       () =>
-        void refresh().catch((cause) =>
-          setWarning(`Canvas refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`)
-        ),
+        void refresh().catch((cause) => {
+          const message = `Canvas refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`;
+          if (embedMode) setError(message);
+          else setWarning(message);
+        }),
       indexMode ? 5_000 : 1_500
     );
     return () => {
@@ -109,6 +119,59 @@ export function App() {
       void activeRegistry?.dispose();
     };
   }, []);
+
+  useEffect(() => {
+    if (!state || state.mode !== 'canvas' || !state.embedSession) return;
+    const session = state.embedSession;
+    postEmbedMessage(session, 'ready', {
+      canvasId: state.canvas.id,
+      canvasIds: session.canvasIds,
+      mode: session.mode,
+      readOnly: state.readOnly,
+      expiresAt: session.expiresAt
+    });
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window.parent || event.origin !== session.parentOrigin) return;
+      if (!isAgentCanvasHostMessage(event.data)) return;
+      if (event.data.type === 'refresh') {
+        window.location.reload();
+        return;
+      }
+      const canvasId = event.data.canvasId;
+      if (!canvasId || !session.canvasIds.includes(canvasId)) {
+        postEmbedMessage(session, 'error', {
+          code: 'embed_canvas_forbidden',
+          message: 'The requested canvas is not part of this embed session.'
+        });
+        return;
+      }
+      const token = embedTokenFromPath(window.location.pathname);
+      if (!token) {
+        postEmbedMessage(session, 'error', {
+          code: 'embed_session_path_invalid',
+          message: 'The embed session path is invalid.'
+        });
+        return;
+      }
+      window.location.assign(embedCanvasUrl(token, canvasId));
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [state?.mode, state?.mode === 'canvas' ? state.canvas.id : null]);
+
+  useEffect(() => {
+    if (!state || state.mode !== 'canvas' || !state.embedSession) return;
+    postEmbedMessage(state.embedSession, 'canvas.updated', {
+      canvasId: state.canvas.id,
+      revision: state.canvas.revision,
+      updatedAt: state.canvas.updatedAt
+    });
+  }, [
+    state?.mode,
+    state?.mode === 'canvas' ? state.canvas.id : null,
+    state?.mode === 'canvas' ? state.canvas.revision : null
+  ]);
 
   if (error) return <div className="error">{error}</div>;
   if (!state || !browserRegistry) return <div className="loading">Loading AgentCanvas…</div>;

@@ -43,6 +43,12 @@ import {
 } from './macros/index.js';
 import { MacroError, MacroRuntime, MACRO_RUNTIME_LIMITS } from './macros/index.js';
 import { loadConfig, type AgentCanvasConfig } from './config.js';
+import {
+  EMBED_SESSION_CREATE_REQUEST_SCHEMA,
+  EMBED_SESSION_LIMITS,
+  EmbedSessionRegistry,
+  type CreateEmbedSessionInput
+} from './embed-sessions.js';
 import { CanvasError, toCanvasError } from './errors.js';
 import { canvasPageUrl } from './canvas-url.js';
 import {
@@ -58,7 +64,12 @@ import {
 } from './plugin-runtime/index.js';
 import type { ResourceBroker } from './resources/broker.js';
 import { collectSnapshotItems, composeSnapshot } from './snapshot-runtime/index.js';
-import { assertTrustedRequest, SECURITY_RESPONSE_HEADERS, SecurityPolicyError } from './security.js';
+import {
+  assertTrustedRequest,
+  securityResponseHeaders,
+  SECURITY_RESPONSE_HEADERS,
+  SecurityPolicyError
+} from './security.js';
 import { V2SqliteCanvasStore, type V2CanvasRecord } from './store/v2.js';
 import { handleMcpV2Request } from './mcp-v2/http.js';
 import { assertPluginSchemasReady } from './migrations/plugin-schema.js';
@@ -72,6 +83,7 @@ interface V2Runtime {
   resources: ResourceBroker;
   store: V2SqliteCanvasStore;
   macros: MacroRuntime;
+  embedSessions: EmbedSessionRegistry;
   openapi: JsonObject;
   developmentReloadVersion?: string;
 }
@@ -375,7 +387,113 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
       : 'Read-only.',
     retry: retry ? 'Retry only when the returned error marks retryable=true.' : 'No retry is normally required.'
   });
+  const embedSession = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id', 'canvasIds', 'mode', 'parentOrigin', 'createdAt', 'expiresAt'],
+    properties: {
+      id: { type: 'string' },
+      canvasIds: {
+        type: 'array',
+        minItems: 1,
+        maxItems: EMBED_SESSION_LIMITS.maxCanvasIds,
+        uniqueItems: true,
+        items: { type: 'string' }
+      },
+      mode: { enum: ['read', 'edit'] },
+      parentOrigin: { type: 'string', format: 'uri' },
+      createdAt: { type: 'string', format: 'date-time' },
+      expiresAt: { type: 'string', format: 'date-time' }
+    }
+  };
+  const embedNotes = (sideEffects: string[] = []): JsonObject => ({
+    useWhen: ['Embedding one or more explicitly allowed AgentCanvas canvases inside a trusted host application.'],
+    doNotUseWhen: [
+      'Do not use as LLM mutation transport; use the canvas HTTP or MCP operations.',
+      'Do not expose the bearer URL in logs, prompts, analytics, or untrusted client state.'
+    ],
+    sideEffects,
+    consistency: {
+      refresh: sideEffects.length ? ['Recreate the iframe or discard its URL after session revocation or expiry.'] : []
+    },
+    workflow: [
+      'Create the session server-side, set the returned URL as the iframe src, and listen for the versioned postMessage bridge.',
+      'Ordinary AgentCanvas pages remain non-frameable.'
+    ]
+  });
   return {
+    '/api/v1/embed-sessions': {
+      post: {
+        operationId: 'embedSessionCreate',
+        summary: 'Create a short-lived app-scoped embed session',
+        description:
+          'Creates an in-memory bearer session for one through 25 canvases and one exact parent origin. Sessions are invalidated when AgentCanvas restarts.',
+        tags: ['Embedding'],
+        requestBody: jsonBody(EMBED_SESSION_CREATE_REQUEST_SCHEMA as unknown as JsonObject, {
+          canvasIds: ['canvas_example'],
+          mode: 'read',
+          parentOrigin: 'http://127.0.0.1:3000',
+          expiresInSeconds: 3600
+        }),
+        responses: {
+          201: response('Created embed session', {
+            type: 'object',
+            required: ['ok', 'session', 'url'],
+            properties: { ok: { const: true }, session: embedSession, url: { type: 'string', format: 'uri' } }
+          }),
+          400: errorResponses[400],
+          404: errorResponses[404],
+          500: errorResponses[500]
+        },
+        'x-agent-notes': embedNotes(['Creates process-memory embed authority until expiry, revocation, or restart.'])
+      }
+    },
+    '/api/v1/embed-sessions/{token}': {
+      get: {
+        operationId: 'embedSessionResolve',
+        summary: 'Resolve an embed session and selected canvas',
+        description: 'Used by the AgentCanvas iframe shell. The optional canvasId must belong to the session.',
+        tags: ['Embedding'],
+        parameters: [
+          { name: 'token', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'canvasId', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          200: response('Embed session and canvas projection', {
+            type: 'object',
+            required: ['ok', 'session', 'canvas', 'elementRuntime', 'diagnostics', 'readOnly'],
+            properties: {
+              ok: { const: true },
+              session: embedSession,
+              canvas: { $ref: '#/components/schemas/CanvasRecord' },
+              elementRuntime: { type: 'object', additionalProperties: { type: 'object' } },
+              diagnostics: { type: 'array', items: { $ref: '#/components/schemas/PluginDiagnostic' } },
+              readOnly: { type: 'boolean' }
+            }
+          }),
+          403: response('Canvas is outside the embed session', { $ref: '#/components/schemas/ApiError' }),
+          404: errorResponses[404],
+          410: response('Embed session expired', { $ref: '#/components/schemas/ApiError' })
+        },
+        'x-agent-notes': embedNotes()
+      },
+      delete: {
+        operationId: 'embedSessionRevoke',
+        summary: 'Revoke an embed session',
+        tags: ['Embedding'],
+        parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          200: response('Revoked embed session', {
+            type: 'object',
+            required: ['ok', 'session'],
+            properties: { ok: { const: true }, session: embedSession }
+          }),
+          404: errorResponses[404],
+          410: response('Embed session expired', { $ref: '#/components/schemas/ApiError' })
+        },
+        'x-agent-notes': embedNotes(['Immediately removes the process-memory embed authority.'])
+      }
+    },
     '/api/v1/macros': {
       get: {
         operationId: 'macroList',
@@ -861,6 +979,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
   const plugins = await preparePluginRuntime(options.pluginsRoot);
   const store = new V2SqliteCanvasStore(new PluginElementValidator(plugins.registry), config.databasePath, config);
   const macros = new MacroRuntime(store, plugins.registry);
+  const embedSessions = new EmbedSessionRegistry(config.publicBaseUrl);
   plugins.bindDatabase(store.db);
   assertPluginSchemasReady(store.db, plugins.registry, config.databasePath, plugins.pluginsRoot);
   const browserCatalog = await createBrowserPluginCatalog(plugins.registry);
@@ -886,6 +1005,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     resources: plugins.resources,
     store,
     macros,
+    embedSessions,
     openapi,
     ...(options.developmentReloadVersion ? { developmentReloadVersion: options.developmentReloadVersion } : {})
   };
@@ -918,7 +1038,7 @@ function validateMacroResult(value: unknown, validator: ValidateFunction): void 
 }
 
 export function createV2App(runtime: V2Runtime): Hono {
-  const { config, registry, browserCatalog, resources, store, macros } = runtime;
+  const { config, registry, browserCatalog, resources, store, macros, embedSessions } = runtime;
   const app = new Hono();
   const procedures = createProcedureCatalog(registry);
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
@@ -946,6 +1066,9 @@ export function createV2App(runtime: V2Runtime): Hono {
     ['plan', ajv.compile(MACRO_PLAN_RESPONSE_SCHEMA)],
     ['execute', ajv.compile(MACRO_EXECUTE_RESPONSE_SCHEMA)]
   ]);
+  const embedSessionCreateValidator = ajv.compile(
+    EMBED_SESSION_CREATE_REQUEST_SCHEMA as unknown as Record<string, unknown>
+  );
 
   app.onError((error, c) => {
     if (error instanceof MacroError) {
@@ -962,7 +1085,7 @@ export function createV2App(runtime: V2Runtime): Hono {
       );
     }
     const projected = toCanvasError(error);
-    return c.json(projected.toPayload(), projected.status as 400 | 404 | 409 | 500 | 503 | 504);
+    return c.json(projected.toPayload(), projected.status as 400 | 403 | 404 | 409 | 410 | 500 | 503 | 504);
   });
   app.use('/assets/*', serveStatic({ root: WEB_BUILD_ROOT }));
 
@@ -985,6 +1108,12 @@ export function createV2App(runtime: V2Runtime): Hono {
       plugins: registry.plugins.map((plugin) => plugin.plugin.manifest.id),
       dependencies: { ...(assets ? { assets } : {}) },
       macros: MACRO_RUNTIME_LIMITS,
+      embedding: {
+        maxCanvasIds: EMBED_SESSION_LIMITS.maxCanvasIds,
+        minTtlSeconds: EMBED_SESSION_LIMITS.minTtlSeconds,
+        maxTtlSeconds: EMBED_SESSION_LIMITS.maxTtlSeconds,
+        storage: 'process-memory'
+      },
       mcp: { endpoint: `${config.publicBaseUrl}/mcp`, transport: 'streamable-http' },
       host: config.host,
       port: config.port
@@ -1021,6 +1150,36 @@ setInterval(async () => {
         capabilityStatus: await capabilityStatus(registry)
       })
     )
+  );
+  app.post('/api/v1/embed-sessions', async (c) => {
+    let input: unknown;
+    try {
+      input = await c.req.json();
+    } catch {
+      throw new CanvasError('validation_error', 'embed session request must be valid JSON', 'validation', 400);
+    }
+    if (!embedSessionCreateValidator(input)) {
+      throw new CanvasError(
+        'validation_error',
+        'embed session request does not match the canonical schema',
+        'validation',
+        400
+      );
+    }
+    const created = embedSessions.create(input as CreateEmbedSessionInput, (canvasId) => {
+      store.getCanvas(canvasId);
+    });
+    return c.json({ ok: true, ...created }, 201);
+  });
+  app.get('/api/v1/embed-sessions/:token', async (c) => {
+    const selected = embedSessions.select(c.req.param('token'), c.req.query('canvasId'));
+    const canvas = store.getCanvas(selected.canvasId);
+    const readOnly = selected.session.mode === 'read';
+    const projection = await resolveCanvasProjection(canvas, registry, readOnly, c.req.raw.signal);
+    return c.json({ ok: true, session: selected.session, canvas, ...projection, readOnly });
+  });
+  app.delete('/api/v1/embed-sessions/:token', (c) =>
+    c.json({ ok: true, session: embedSessions.revoke(c.req.param('token')) })
   );
   app.get('/api/v1/plugins/:pluginId', async (c) => {
     const status = getPluginStatus(
@@ -1278,6 +1437,10 @@ setInterval(async () => {
   app.get('/canvases', (c) => c.html(webShell()));
   app.get('/canvases/:canvasId', (c) => c.html(webShell()));
   app.get('/c/:shareToken', (c) => c.html(webShell()));
+  app.get('/embed/:token', (c) => {
+    embedSessions.get(c.req.param('token'));
+    return c.html(webShell());
+  });
   return app;
 }
 
@@ -1285,7 +1448,18 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
   const app = createV2App(runtime);
   const handler = getRequestListener(app.fetch, { hostname: runtime.config.host, overrideGlobalObjects: false });
   return async (request, response) => {
-    for (const [name, value] of Object.entries(SECURITY_RESPONSE_HEADERS)) response.setHeader(name, value);
+    const requestUrl = new URL(request.url ?? '/', runtime.config.publicBaseUrl);
+    let responseHeaders = SECURITY_RESPONSE_HEADERS;
+    const embedMatch = requestUrl.pathname.match(/^\/embed\/([^/]+)$/);
+    if (embedMatch) {
+      try {
+        const session = runtime.embedSessions.get(decodeURIComponent(embedMatch[1]));
+        responseHeaders = securityResponseHeaders([session.parentOrigin]);
+      } catch {
+        responseHeaders = SECURITY_RESPONSE_HEADERS;
+      }
+    }
+    for (const [name, value] of Object.entries(responseHeaders)) response.setHeader(name, value);
     try {
       const headers = new Headers();
       for (const [name, value] of Object.entries(request.headers)) {
@@ -1300,7 +1474,6 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
       response.end(JSON.stringify({ code: error.code, message: error.message }));
       return;
     }
-    const requestUrl = new URL(request.url ?? '/', runtime.config.publicBaseUrl);
     if (requestUrl.pathname === '/mcp') {
       await handleMcpV2Request(request, response, {
         publicBaseUrl: runtime.config.publicBaseUrl,
