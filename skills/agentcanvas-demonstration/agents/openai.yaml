@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentCanvas Demonstration"
+  short_description: "Show a new user what the default AgentCanvas install can do"
+  default_prompt: "Use $agentcanvas-demonstration to create a polished guided demonstration of AgentCanvas capabilities."
