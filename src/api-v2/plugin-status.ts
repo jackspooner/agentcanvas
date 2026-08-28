@@ -89,14 +89,15 @@ export function createPluginStatusCatalog(
     const manifest = activated.plugin.manifest;
     const capabilities: SanitizedPluginStatus['capabilities'][number][] = [];
     for (const [name, range] of Object.entries(manifest.requires.capabilities).sort(([a], [b]) => a.localeCompare(b))) {
-      const provider = providers.get(name);
+      const provider = registry.capabilities[name];
+      const providerPlugin = providers.get(name);
       capabilities.push(
         Object.freeze({
           name,
           relationship: 'required',
           version: provider?.version ?? null,
           range,
-          providerPluginId: provider?.pluginId ?? null,
+          providerPluginId: providerPlugin?.pluginId ?? null,
           status: safeStatus(context.capabilityStatus?.[name], Boolean(provider))
         })
       );

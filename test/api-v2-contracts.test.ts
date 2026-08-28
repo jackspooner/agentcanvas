@@ -145,7 +145,7 @@ describe('v0.2 registry-driven API contracts', () => {
         }
       ],
       diagnostics,
-      capabilityStatus: { 'agentcanvas.assets': { ok: true } }
+      capabilityStatus: { 'agentcanvas.assets': { ok: false, code: 'provider_unavailable', retryable: true } }
     });
     const status = getPluginStatus(catalog, 'agentcanvas.fixture');
     expect(status).toMatchObject({
@@ -156,10 +156,10 @@ describe('v0.2 registry-driven API contracts', () => {
         {
           name: 'agentcanvas.assets',
           relationship: 'required',
-          version: null,
+          version: '1.0.0',
           range: '^1.0.0',
           providerPluginId: null,
-          status: { ok: true }
+          status: { ok: false, code: 'provider_unavailable', retryable: true }
         }
       ],
       diagnostics
@@ -175,6 +175,39 @@ describe('v0.2 registry-driven API contracts', () => {
     ]) {
       expect(serialized).not.toContain(privateValue);
     }
+  });
+
+  it('attributes plugin-provided capabilities while keeping host providers anonymous', () => {
+    const providerPlugin = activated('agentcanvas.provider');
+    providerPlugin.plugin.manifest.requires.capabilities = {};
+    providerPlugin.plugin.manifest.provides.capabilities = { 'agentcanvas.assets': '1.0.0' };
+
+    const hostStatus = getPluginStatus(createPluginStatusCatalog(registry()), 'agentcanvas.fixture');
+    expect(hostStatus?.capabilities).toEqual([
+      {
+        name: 'agentcanvas.assets',
+        relationship: 'required',
+        version: '1.0.0',
+        range: '^1.0.0',
+        providerPluginId: null,
+        status: { ok: true }
+      }
+    ]);
+
+    const pluginStatus = getPluginStatus(
+      createPluginStatusCatalog(registry([providerPlugin, activated()])),
+      'agentcanvas.fixture'
+    );
+    expect(pluginStatus?.capabilities).toEqual([
+      {
+        name: 'agentcanvas.assets',
+        relationship: 'required',
+        version: '1.0.0',
+        range: '^1.0.0',
+        providerPluginId: 'agentcanvas.provider',
+        status: { ok: true }
+      }
+    ]);
   });
 
   it('uses one procedure catalog for lookup and concrete OpenAPI operations', () => {
