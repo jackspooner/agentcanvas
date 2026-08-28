@@ -104,20 +104,6 @@ export const RESOURCE_DETAILS_SCHEMA: JsonSchema = {
   }
 };
 
-export const API_ERROR_SCHEMA: JsonSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['ok', 'code', 'message', 'stage', 'retryable', 'correlationId'],
-  properties: {
-    ok: { const: false },
-    code: { type: 'string' },
-    message: { type: 'string' },
-    stage: { type: 'string' },
-    retryable: { type: 'boolean' },
-    correlationId: { type: 'string' }
-  }
-};
-
 export const CANVAS_BOUNDS_SCHEMA: JsonSchema = {
   oneOf: [
     {

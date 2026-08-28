@@ -5,6 +5,12 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## 0.3.0-alpha.2
+
+This pre-1.0 release intentionally replaces every flat HTTP error body with RFC 9457 Problem Details and the `application/problem+json` content type. Update clients to read `detail` instead of `message`, `requestId` instead of `correlationId`, and branch on the stable `code`; remove assumptions about `ok:false` and `stage`. There is no legacy response mode.
+
+MCP clients should keep handling protocol/JSON-RPC errors normally. For application failures returned by a dispatched tool, read `structuredContent.problem` when `isError` is true. Refresh generated clients from `docs/openapi.standard.json`, refresh cached MCP tool catalogs, and use `docs/error-codes.json` to audit code-specific behavior.
+
 ## Before changing the checkout
 
 1. Read the release notes between the installed and target versions.

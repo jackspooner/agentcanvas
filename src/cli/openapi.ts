@@ -9,7 +9,7 @@ import { CANVAS_BOUNDS_SCHEMA, CANVAS_RECORD_SCHEMA, SHARE_LINK_SCHEMA, VIEWPORT
 import { CANVAS_THEME_V1_SCHEMA } from '@agentcanvas/plugin-sdk';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
-const STANDARD_PLUGINS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
+export const STANDARD_PLUGINS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
 
 function root(): string {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');

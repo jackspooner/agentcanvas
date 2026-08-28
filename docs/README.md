@@ -69,8 +69,10 @@ runtime](plugin-snapshot-runtime.md).
 - [Agent readiness](agent-readiness.md): bundled operational skill, Hermes setup, eight acceptance objectives, and evidence rules.
 - [Troubleshooting](troubleshooting.md): startup, plugin, browser, Assets-2, database, and MCP failure guides.
 - [Standard OpenAPI](openapi.standard.json): generated contract for the three default extensions.
+- [Standard MCP catalog](mcp-tools.standard.json): normalized generated tool contract for the same distribution.
+- [Error-code registry](error-codes.json): generated stable application error definitions and owning operations.
 
-Runtime `GET /openapi.json` is authoritative for the exact active plugin set. The committed standard OpenAPI is generated from the default distribution and checked with `npm run check:openapi`.
+Runtime `GET /openapi.json` is authoritative for the exact active plugin set. The committed standard artifacts are generated from the default distribution and checked together with `npm run check:contracts`.
 
 ## Architecture and reference
 
@@ -85,6 +87,7 @@ Runtime `GET /openapi.json` is authoritative for the exact active plugin set. Th
 
 - [v0.2.0 release notes](release-notes-v0.2.0.md)
 - [v0.3.0 alpha implementation notes](release-notes-v0.3.0-alpha.1.md)
+- [v0.3.0-alpha.2 API contract migration](release-notes-v0.3.0-alpha.2.md)
 - [Completed v0.2 refactor plan](plugin-refactor-implementation-plan.md)
 - [Reference migration status](v0.1-to-v0.2-migration.md#reference-cutover-status)
 
@@ -105,6 +108,9 @@ The documentation follows these sources of truth:
 | HTTP | Runtime registry and `src/api-v2/` |
 | MCP | `src/mcp-v2/` plus active plugin tool descriptors |
 | Standard API artifact | `docs/openapi.standard.json` |
+| Application error meanings | `src/api-v2/problem-contract.ts` |
+| Standard MCP artifact | `docs/mcp-tools.standard.json` |
+| Generated error registry | `docs/error-codes.json` |
 | Database and migration | `src/store/` and `src/migrations/` |
 
-When behavior changes, update the owning runtime contract, generated OpenAPI, relevant guide/reference page, examples, README, and tests together. Run `npm run check:docs` and `npm run check:openapi` before handing off a documentation or contract change.
+When behavior changes, update the owning runtime contract, generated artifacts, relevant guide/reference page, examples, README, and tests together. Run `npm run check:docs` and `npm run check:contracts` before handing off a documentation or contract change.

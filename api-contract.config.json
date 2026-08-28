@@ -1,0 +1,35 @@
+{
+  "openapi": {
+    "document": "docs/openapi.standard.json",
+    "freshnessCommand": "npm run check:openapi"
+  },
+  "mcp": {
+    "catalog": "docs/mcp-tools.standard.json",
+    "freshnessCommand": "npm run check:mcp-contract"
+  },
+  "compatibility": {
+    "baselineRef": "origin/main",
+    "waivers": [
+      {
+        "ruleId": "ARC711",
+        "location": "*:response:*:error-envelope",
+        "reason": "AgentCanvas is adopting RFC 9457 Problem Details before its stable 1.0 release.",
+        "migration": "docs/upgrading.md#030-alpha2",
+        "owner": "AgentCanvas",
+        "expires": "2026-11-30"
+      }
+    ]
+  },
+  "ratchet": {
+    "baseline": ".api-contract-baseline.json"
+  },
+  "reports": {
+    "errorCodes": "docs/error-codes.json"
+  },
+  "consumers": [
+    {
+      "name": "internal-dependency-pin",
+      "freshnessCommand": "node C:\\Workspace2\\infrastructure\\Workspace2InternalDeps\\src\\cli.mjs verify --repo ."
+    }
+  ]
+}

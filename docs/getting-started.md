@@ -1,7 +1,7 @@
 # Getting started
 
 This guide installs a development or local operator copy of AgentCanvas
-v0.3.0-alpha.1 with its three default extensions.
+v0.3.0-alpha.2 with its three default extensions.
 
 ## Prerequisites
 
@@ -84,7 +84,7 @@ curl http://127.0.0.1:23003/openapi.json
 Expected signals:
 
 - `/health` returns HTTP 200. Optional provider status appears under `dependencies` only when that provider is installed.
-- `/whoami` reports `version: "0.3.0-alpha.1"`, `pluginApi: "1.1.0"`, and the active extension IDs.
+- `/whoami` reports `version: "0.3.0-alpha.2"`, `pluginApi: "1.1.0"`, and the active extension IDs.
 - `/api/v1/plugins` contains sanitized plugin status without config values, environment values, secrets, or local paths.
 - `/` serves the built browser bundle from `/assets/...`.
 

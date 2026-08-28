@@ -95,6 +95,26 @@ describe('v0.2 assembled runtime', () => {
     });
     expect(JSON.stringify(plugins)).not.toContain(runtime.registry.plugins[0].plugin.root);
 
+    const invalid = await app.request('/api/v1/canvases', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-request-id': 'req_contract_test' },
+      body: JSON.stringify({ title: '' })
+    });
+    expect(invalid.status).toBe(400);
+    expect(invalid.headers.get('content-type')).toContain('application/problem+json');
+    expect(invalid.headers.get('x-request-id')).toBe('req_contract_test');
+    expect(await invalid.json()).toEqual({
+      type: 'urn:workspace2:problem:validation_error',
+      title: 'Request validation failed',
+      status: 400,
+      detail: 'canvas title is required',
+      code: 'validation_error',
+      category: 'validation',
+      retryable: false,
+      requestId: 'req_contract_test',
+      instance: '/api/v1/canvases'
+    });
+
     const created = await (
       await app.request('/api/v1/canvases', {
         method: 'POST',
@@ -213,6 +233,19 @@ describe('v0.2 assembled runtime', () => {
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
       mcpCatalog: { coreToolCount: 24, pluginToolCount: 0, totalToolCount: 24 }
+    });
+    const invalidMcp = await client.callTool({ name: 'canvas_get', arguments: {} });
+    expect(invalidMcp.isError).toBe(true);
+    expect(invalidMcp.structuredContent).toMatchObject({
+      problem: {
+        type: 'urn:workspace2:problem:validation_error',
+        status: 400,
+        code: 'validation_error',
+        category: 'validation',
+        retryable: false,
+        requestId: expect.stringMatching(/^mcp_/),
+        instance: 'mcp://tool/canvas_get'
+      }
     });
     const mcpCreated = await client.callTool({ name: 'canvas_create', arguments: { title: 'MCP created canvas' } });
     expect(mcpCreated.structuredContent).toMatchObject({

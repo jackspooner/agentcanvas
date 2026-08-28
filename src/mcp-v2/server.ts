@@ -10,7 +10,11 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import { nanoid } from 'nanoid';
 import {
+  AGENTCANVAS_PROBLEM_CODES,
   createMcpToolCatalog,
+  mcpOutputSchema,
+  problemFromCanvasError,
+  problemFromMacroError,
   createPluginStatusCatalog,
   createRegistryElementSchemas,
   getPluginStatus,
@@ -18,6 +22,7 @@ import {
   PLUGIN_DIAGNOSTIC_SCHEMA,
   PLUGIN_STATUS_CATALOG_SCHEMA,
   PLUGIN_STATUS_SCHEMA,
+  type AgentCanvasProblemCode,
   type CoreJsonSchemaTool,
   type McpJsonSchemaTool
 } from '../api-v2/index.js';
@@ -38,12 +43,14 @@ import {
   CANVAS_RUN_MACRO_RESPONSE_SCHEMA
 } from '../macros/index.js';
 import type { MacroRuntime } from '../macros/runtime.js';
+import { MacroError } from '../macros/errors.js';
 import type { BrowserPluginCatalog, FrozenPluginRegistry, InspectableCanvas } from '../plugin-runtime/index.js';
 import { createPluginCanvasOperations, inspectCanvas } from '../plugin-runtime/index.js';
 import type { V2SqliteCanvasStore } from '../store/v2.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 import { canvasPageUrl } from '../canvas-url.js';
 import { AGENTCANVAS_AGENT_GUIDANCE, AGENTCANVAS_MCP_INSTRUCTIONS } from './agent-guidance.js';
+import { CanvasError, toCanvasError } from '../errors.js';
 
 export interface McpV2Runtime {
   publicBaseUrl: string;
@@ -665,11 +672,42 @@ function schemaObject(schema: JsonSchema): Record<string, unknown> {
   return schema;
 }
 
+/** Creates the canonical tool catalog shared by MCP runtime exposure and generated contract artifacts. */
+export function createMcpV2ToolCatalog(registry: FrozenPluginRegistry): readonly McpJsonSchemaTool[] {
+  return createMcpToolCatalog(registry, [...coreTools(registry), ...macroTools()]).map((tool) =>
+    Object.freeze({ ...tool, outputSchema: mcpOutputSchema(tool.outputSchema) })
+  );
+}
+
+/** Declares the application failures a caller should handle for one normalized tool contract. */
+export function mcpErrorCodesForTool(tool: McpJsonSchemaTool): readonly AgentCanvasProblemCode[] {
+  const codes = new Set<AgentCanvasProblemCode>(['validation_error', 'internal_error']);
+  if (tool.source === 'plugin') {
+    codes.add('plugin_unavailable');
+    codes.add('plugin_permission_denied');
+  }
+  if (tool.name.startsWith('macro_') || tool.name === 'canvas_run_macro') {
+    for (const code of Object.keys(AGENTCANVAS_PROBLEM_CODES) as AgentCanvasProblemCode[]) {
+      if (code.startsWith('macro_')) codes.add(code);
+    }
+  }
+  if (tool.name.startsWith('canvas_') && tool.name !== 'canvas_get_guidance') {
+    codes.add('not_found');
+    codes.add('stored_canvas_invalid');
+    codes.add('database_version_invalid');
+  }
+  if (!tool.annotations?.readOnlyHint) {
+    codes.add('revision_conflict');
+    codes.add('idempotency_conflict');
+  }
+  return [...codes].sort();
+}
+
 export function createMcpV2Server(runtime: McpV2Runtime): {
   server: Server;
   tools: readonly McpJsonSchemaTool[];
 } {
-  const tools = createMcpToolCatalog(runtime.registry, [...coreTools(runtime.registry), ...macroTools()]);
+  const tools = createMcpV2ToolCatalog(runtime.registry);
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
   const validators = new Map<string, { input: ValidateFunction; output: ValidateFunction }>(
     tools.map((tool) => [tool.name, { input: ajv.compile(tool.inputSchema), output: ajv.compile(tool.outputSchema) }])
@@ -694,16 +732,22 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
   server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const tool = tools.find((candidate) => candidate.name === request.params.name);
     try {
-      if (!tool) throw new Error(`unknown tool: ${request.params.name}`);
+      if (!tool) throw new CanvasError('not_found', `unknown tool: ${request.params.name}`, 'not_found', 404);
       const input = (request.params.arguments ?? {}) as JsonObject;
       const validation = validators.get(tool.name) as { input: ValidateFunction; output: ValidateFunction };
-      if (!validation.input(input)) throw new Error(`tool input failed schema validation: ${tool.name}`);
+      if (!validation.input(input))
+        throw new CanvasError(
+          'validation_error',
+          `tool input failed schema validation: ${tool.name}`,
+          'validation',
+          400
+        );
       let output: JsonObject;
       if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime);
       else {
         const pluginId = tool.pluginId as string;
         const plugin = runtime.registry.getPlugin(pluginId);
-        if (!plugin) throw new Error(`plugin is not active: ${pluginId}`);
+        if (!plugin) throw new CanvasError('plugin_unavailable', `plugin is not active: ${pluginId}`, 'not_found', 404);
         const context: PluginInvocationContext = {
           signal: extra.signal,
           correlationId: `mcp_${nanoid(16)}`,
@@ -717,9 +761,15 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
         structuredContent: output
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'tool execution failed';
+      const requestId = `mcp_${nanoid(16)}`;
+      const instance = `mcp://tool/${request.params.name}`;
+      const problem =
+        error instanceof MacroError
+          ? problemFromMacroError(error, requestId, instance)
+          : problemFromCanvasError(toCanvasError(error), requestId, instance);
       return {
-        content: [{ type: 'text' as const, text: `Tool ${request.params.name} failed: ${message}` }],
+        content: [{ type: 'text' as const, text: `${problem.title}: ${problem.detail}` }],
+        structuredContent: { problem },
         isError: true
       };
     }

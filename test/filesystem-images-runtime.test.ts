@@ -130,9 +130,14 @@ describe('filesystem image runtime without Assets-2', () => {
       }
     });
     expect(invalidPath.isError).toBe(true);
-    expect(invalidPath.content).toEqual([
-      expect.objectContaining({ text: expect.stringContaining('filesystem image path must be normalized') })
-    ]);
+    expect(invalidPath.structuredContent).toMatchObject({
+      problem: {
+        code: 'validation_error',
+        status: 400,
+        retryable: false,
+        instance: 'mcp://tool/agentcanvas_filesystem_images__place'
+      }
+    });
     await Promise.all([client.close(), mcp.server.close()]);
 
     const snapshotResponse = await app.request(`/api/v1/canvases/${canvasId}/snapshot`, { method: 'POST' });

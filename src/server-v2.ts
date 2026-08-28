@@ -74,6 +74,13 @@ import { V2SqliteCanvasStore, type V2CanvasRecord } from './store/v2.js';
 import { handleMcpV2Request } from './mcp-v2/http.js';
 import { assertPluginSchemasReady } from './migrations/plugin-schema.js';
 import { AGENTCANVAS_HOST_API_VERSION, AGENTCANVAS_VERSION } from './version.js';
+import {
+  codesForStatus,
+  problemForCode,
+  problemFromCanvasError,
+  problemFromMacroError,
+  problemResponse
+} from './api-v2/problem-contract.js';
 
 interface V2Runtime {
   config: AgentCanvasConfig;
@@ -235,84 +242,47 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     ...(schema ? { content: { 'application/json': { schema, ...(example ? { example } : {}) } } } : {})
   });
   const errorResponses = {
-    400: response('Request validation failed', { $ref: '#/components/schemas/ApiError' }),
-    404: response('Resource was not found', { $ref: '#/components/schemas/ApiError' }),
-    409: response('Revision or idempotency conflict', { $ref: '#/components/schemas/ApiError' }),
-    500: response('AgentCanvas failed to complete the request', { $ref: '#/components/schemas/ApiError' })
+    400: problemResponse('Request validation failed', codesForStatus(400)),
+    403: problemResponse('The operation is not permitted', codesForStatus(403)),
+    404: problemResponse('Resource was not found', codesForStatus(404)),
+    409: problemResponse('Revision or idempotency conflict', codesForStatus(409)),
+    410: problemResponse('The requested session or plan has expired', codesForStatus(410)),
+    500: problemResponse('AgentCanvas failed to complete the request', codesForStatus(500)),
+    503: problemResponse('AgentCanvas dependency is unavailable', codesForStatus(503)),
+    504: problemResponse('A dependent operation timed out', codesForStatus(504))
   };
   const macroErrors = {
-    400: response(
-      'Macro request validation failed',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_definition_invalid',
-        message: 'request is invalid',
-        stage: 'definition',
-        retryable: false,
-        status: 400
-      }
-    ),
-    403: response(
-      'Macro scope does not permit this canvas',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_scope_denied',
-        message: 'macro is scoped to another canvas',
-        stage: 'repository',
-        retryable: false,
-        status: 403
-      }
-    ),
-    404: response(
-      'Macro or exact macro version was not found',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_not_found',
-        message: 'macro was not found',
-        stage: 'repository',
-        retryable: false,
-        status: 404
-      }
-    ),
-    409: response(
-      'Macro revision, version, scope, or idempotency conflict',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_revision_conflict',
-        message: 'canvas revision changed',
-        stage: 'revision',
-        retryable: true,
-        status: 409
-      }
-    ),
-    410: response(
-      'Macro plan has expired',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_plan_expired',
-        message: 'macro plan expired',
-        stage: 'plan',
-        retryable: false,
-        status: 410
-      }
-    ),
-    500: response(
-      'Macro execution failed',
-      { $ref: '#/components/schemas/MacroErrorEnvelope' },
-      {
-        ok: false,
-        code: 'macro_execution_invalid',
-        message: 'macro execution failed',
-        stage: 'execution',
-        retryable: false,
-        status: 500
-      }
-    )
+    400: problemResponse('Macro request validation failed', [
+      'macro_definition_invalid',
+      'macro_definition_too_large',
+      'macro_input_invalid',
+      'macro_input_too_large',
+      'macro_unsafe',
+      'macro_ref_invalid',
+      'macro_ref_pointer_invalid',
+      'macro_dependency_invalid',
+      'macro_element_invalid',
+      'macro_limit_exceeded',
+      'macro_canvas_limit_exceeded',
+      'macro_idempotency_invalid'
+    ]),
+    403: problemResponse('Macro scope does not permit this canvas', ['macro_scope_denied']),
+    404: problemResponse('Macro or exact macro version was not found', [
+      'macro_not_found',
+      'macro_version_not_found',
+      'macro_plan_not_found',
+      'macro_ref_missing',
+      'macro_dependency_missing'
+    ]),
+    409: problemResponse('Macro revision, version, scope, or idempotency conflict', [
+      'macro_archived',
+      'macro_version_mismatch',
+      'macro_plan_stale',
+      'macro_revision_conflict',
+      'macro_idempotency_conflict'
+    ]),
+    410: problemResponse('Macro plan has expired', ['macro_plan_expired']),
+    500: problemResponse('Macro execution failed', ['macro_execution_invalid'])
   };
   const authoringExample = {
     scope: 'installation',
@@ -366,7 +336,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         ? 'Use for a deterministic macro preview or catalog operation.'
         : 'Use when the macro workflow requires this mutation.'
     ],
-    doNotUseWhen: pure ? ['Do not use to mutate canvas state.'] : [],
+    ...(pure ? { doNotUseWhen: ['Do not use to mutate canvas state.'] } : {}),
     sideEffects,
     consistency: { refresh: sideEffects.length ? ['Refresh the affected macro catalog or canvas after success.'] : [] }
   });
@@ -381,11 +351,16 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     }
   };
   const agentNotes = (sideEffects: string[] = [], retry = false): JsonObject => ({
+    useWhen: [
+      sideEffects.length
+        ? 'Use when this exact AgentCanvas mutation is required.'
+        : 'Use to inspect the current AgentCanvas state without mutation.'
+    ],
     sideEffects,
-    idempotency: sideEffects.length
-      ? 'Use expectedRevision; element batches may also use idempotencyKey.'
-      : 'Read-only.',
-    retry: retry ? 'Retry only when the returned error marks retryable=true.' : 'No retry is normally required.'
+    consistency: {
+      refresh: sideEffects.length ? ['Refresh the affected canvas, list, or configuration after success.'] : []
+    },
+    ...(retry ? { workflow: ['Retry only when the returned Problem Details object has retryable=true.'] } : {})
   });
   const embedSession = {
     type: 'object',
@@ -443,7 +418,8 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
           }),
           400: errorResponses[400],
           404: errorResponses[404],
-          500: errorResponses[500]
+          500: errorResponses[500],
+          503: errorResponses[503]
         },
         'x-agent-notes': embedNotes(['Creates process-memory embed authority until expiry, revocation, or restart.'])
       }
@@ -471,9 +447,9 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
               readOnly: { type: 'boolean' }
             }
           }),
-          403: response('Canvas is outside the embed session', { $ref: '#/components/schemas/ApiError' }),
+          403: problemResponse('Canvas is outside the embed session', ['embed_canvas_forbidden']),
           404: errorResponses[404],
-          410: response('Embed session expired', { $ref: '#/components/schemas/ApiError' })
+          410: problemResponse('Embed session expired', ['embed_session_expired'])
         },
         'x-agent-notes': embedNotes()
       },
@@ -489,7 +465,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
             properties: { ok: { const: true }, session: embedSession }
           }),
           404: errorResponses[404],
-          410: response('Embed session expired', { $ref: '#/components/schemas/ApiError' })
+          410: problemResponse('Embed session expired', ['embed_session_expired'])
         },
         'x-agent-notes': embedNotes(['Immediately removes the process-memory embed authority.'])
       }
@@ -596,7 +572,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
           200: response('Pure macro plan', { $ref: '#/components/schemas/MacroPlanResponse' }, planExample),
           ...macroErrors
         },
-        'x-agent-notes': macroNotes([], true)
+        'x-agent-notes': macroNotes(['Creates a short-lived in-memory plan bound to the current canvas revision.'])
       }
     },
     '/api/v1/canvases/{canvasId}/macros:execute': {
@@ -1037,6 +1013,17 @@ function validateMacroResult(value: unknown, validator: ValidateFunction): void 
     );
 }
 
+function requestId(c: Context): string {
+  return c.req.header('x-request-id')?.trim() || `req_${nanoid(16)}`;
+}
+
+function sendProblem(c: Context, problem: ReturnType<typeof problemForCode>): Response {
+  return c.json(problem, problem.status as 400 | 403 | 404 | 408 | 409 | 410 | 413 | 500 | 503 | 504, {
+    'content-type': 'application/problem+json',
+    'x-request-id': problem.requestId
+  });
+}
+
 export function createV2App(runtime: V2Runtime): Hono {
   const { config, registry, browserCatalog, resources, store, macros, embedSessions } = runtime;
   const app = new Hono();
@@ -1072,20 +1059,10 @@ export function createV2App(runtime: V2Runtime): Hono {
 
   app.onError((error, c) => {
     if (error instanceof MacroError) {
-      return c.json(
-        {
-          ok: false,
-          code: error.code,
-          message: error.message,
-          stage: error.stage,
-          retryable: error.retryable,
-          status: error.status
-        },
-        error.status as 400 | 404 | 409 | 410 | 500
-      );
+      return sendProblem(c, problemFromMacroError(error, requestId(c), c.req.path));
     }
     const projected = toCanvasError(error);
-    return c.json(projected.toPayload(), projected.status as 400 | 403 | 404 | 409 | 410 | 500 | 503 | 504);
+    return sendProblem(c, problemFromCanvasError(projected, requestId(c), c.req.path));
   });
   app.use('/assets/*', serveStatic({ root: WEB_BUILD_ROOT }));
 
@@ -1190,7 +1167,9 @@ setInterval(async () => {
       }),
       c.req.param('pluginId')
     );
-    return status ? c.json(status) : c.json({ code: 'plugin_not_found', message: 'plugin is not active' }, 404);
+    return status
+      ? c.json(status)
+      : sendProblem(c, problemForCode('plugin_unavailable', 'Plugin is not active.', requestId(c), c.req.path));
   });
   app.get('/api/v1/plugin-modules/:pluginId/:buildHash/*', async (c) => {
     const module = await resolveBrowserPluginModule(
@@ -1371,18 +1350,29 @@ setInterval(async () => {
   ) => void;
   registerProcedureRoute(procedureRoute, async (c: Context): Promise<Response> => {
     const match = c.req.path.match(/^\/api\/v1\/plugins\/([^/]+)\/procedures\/([^/]+)$/);
-    if (!match) return c.json({ code: 'procedure_not_found', message: 'plugin procedure is unavailable' }, 404);
+    if (!match)
+      return sendProblem(
+        c,
+        problemForCode('procedure_not_found', 'Plugin procedure is unavailable.', requestId(c), c.req.path)
+      );
     const pluginId = decodeURIComponent(match[1]);
     const procedureName = decodeURIComponent(match[2]);
     const contract = procedures.get(pluginId, procedureName);
-    if (!contract) return c.json({ code: 'procedure_not_found', message: 'plugin procedure is unavailable' }, 404);
+    if (!contract)
+      return sendProblem(
+        c,
+        problemForCode('procedure_not_found', 'Plugin procedure is unavailable.', requestId(c), c.req.path)
+      );
     const input = await c.req.json();
     const validators = procedureValidators.get(`${pluginId}\0${procedureName}`) as {
       input: ValidateFunction;
       output: ValidateFunction;
     };
     if (!validators.input(input))
-      return c.json({ code: 'validation_error', message: 'procedure input is invalid' }, 400);
+      return sendProblem(
+        c,
+        problemForCode('validation_error', 'Procedure input is invalid.', requestId(c), c.req.path)
+      );
     const timeoutSignal = AbortSignal.timeout(30_000);
     const signal = AbortSignal.any([c.req.raw.signal, timeoutSignal]);
     const timeout = new Promise<never>((_resolve, reject) => {
@@ -1405,7 +1395,7 @@ setInterval(async () => {
     const details = resources.details(c.req.param('handle'));
     return details
       ? c.json(details)
-      : c.json({ code: 'resource_not_found', message: 'resource handle not found' }, 404);
+      : sendProblem(c, problemForCode('resource_not_found', 'Resource handle not found.', requestId(c), c.req.path));
   });
   app.get('/api/v1/resources/:handle/content', async (c) => {
     const payload = await resources.load(c.req.param('handle'), c.req.raw.signal);
@@ -1419,7 +1409,7 @@ setInterval(async () => {
             'cross-origin-resource-policy': 'same-origin'
           }
         })
-      : c.json({ code: 'resource_not_found', message: 'resource handle not found' }, 404);
+      : sendProblem(c, problemForCode('resource_not_found', 'Resource handle not found.', requestId(c), c.req.path));
   });
   app.get('/api/v1/share/:token', async (c) => {
     const resolved = store.resolveShareToken(c.req.param('token'));
@@ -1469,9 +1459,17 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
       assertTrustedRequest(headers, runtime.config.security);
     } catch (error) {
       if (!(error instanceof SecurityPolicyError)) throw error;
-      response.statusCode = error.status;
-      response.setHeader('content-type', 'application/json; charset=utf-8');
-      response.end(JSON.stringify({ code: error.code, message: error.message }));
+      const securityRequestId = request.headers['x-request-id']?.toString() ?? `req_${nanoid(16)}`;
+      const problem = problemForCode(
+        error.code as 'untrusted_host' | 'untrusted_origin',
+        error.message,
+        securityRequestId,
+        requestUrl.pathname
+      );
+      response.statusCode = problem.status;
+      response.setHeader('content-type', 'application/problem+json');
+      response.setHeader('x-request-id', securityRequestId);
+      response.end(JSON.stringify(problem));
       return;
     }
     if (requestUrl.pathname === '/mcp') {

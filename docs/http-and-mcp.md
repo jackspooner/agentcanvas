@@ -8,9 +8,31 @@ AgentCanvas exposes one registry-derived contract through HTTP, runtime OpenAPI,
 - `GET /api/v1/plugins`: sanitized active-plugin and capability status.
 - `GET /api/v1/plugins/{pluginId}`: one plugin's contributions and browser entry URL.
 - MCP `tools/list`: core tools plus active plugin tools using the same JSON Schemas.
-- `docs/openapi.standard.json`: generated four-default-extension reference, not a substitute for runtime discovery.
+- `docs/openapi.standard.json`: generated three-default-extension reference, not a substitute for runtime discovery.
+- `docs/mcp-tools.standard.json`: normalized generated MCP catalog for the same distribution.
+- `docs/error-codes.json`: generated registry of stable application error codes.
 
 The owning schemas live in the frozen registry. Plugins register JSON Schema 2020-12 for elements, tools, and procedures; the host must not maintain a parallel handwritten schema.
+
+## Application failures
+
+HTTP application failures use `application/problem+json`. Every body includes `type`, stable `title`, HTTP `status`, occurrence-specific `detail`, stable lowercase `code`, `category`, `retryable`, and `requestId`; `instance`, validation `issues`, and `remediation` may also be present. Clients must branch on `code`, not on `title` or `detail`.
+
+```json
+{
+  "type": "urn:workspace2:problem:not_found",
+  "title": "Resource not found",
+  "status": 404,
+  "detail": "canvas not found: canvas_123",
+  "code": "not_found",
+  "category": "not_found",
+  "retryable": false,
+  "requestId": "req_123",
+  "instance": "/api/v1/canvases/canvas_123"
+}
+```
+
+The pre-alpha.2 flat `{ok:false, code, message, stage, retryable, correlationId}` HTTP envelope is removed with no fallback. MCP transport and JSON-RPC errors remain protocol-native. Once a tool is dispatched, an application failure sets `isError: true` and exposes the same Problem Details object at `structuredContent.problem`.
 
 ## HTTP route groups
 
@@ -243,4 +265,4 @@ accidental one.
 - Retry only failures marked retryable.
 - Do not retry validation, missing-plugin, unsupported-version, or revision-conflict failures without changing the request or refreshing state.
 
-Every OpenAPI operation includes stable `operationId`, response schemas, and `x-agent-notes` describing side effects, idempotency, and retry behavior. Run `npm run check:openapi` after route or schema changes.
+Every OpenAPI operation includes stable `operationId`, response schemas, `x-error-codes`, and formal `x-agent-notes` describing selection, side effects, and required refresh domains. Run `npm run check:contracts` after route, schema, error, example, or tool changes.

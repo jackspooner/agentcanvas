@@ -8,15 +8,6 @@ export type CanvasErrorStage =
   | 'storage'
   | 'rendering';
 
-export interface CanvasErrorPayload {
-  ok: false;
-  code: string;
-  message: string;
-  stage: CanvasErrorStage;
-  retryable: boolean;
-  correlationId: string;
-}
-
 export class CanvasError extends Error {
   readonly code: string;
   readonly stage: CanvasErrorStage;
@@ -32,17 +23,6 @@ export class CanvasError extends Error {
     this.status = status;
     this.retryable = retryable;
     this.correlationId = makeCorrelationId();
-  }
-
-  toPayload(): CanvasErrorPayload {
-    return {
-      ok: false,
-      code: this.code,
-      message: this.message,
-      stage: this.stage,
-      retryable: this.retryable,
-      correlationId: this.correlationId
-    };
   }
 }
 

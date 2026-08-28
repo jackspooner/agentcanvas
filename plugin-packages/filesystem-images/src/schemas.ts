@@ -6,7 +6,7 @@ export const sourceSchema = {
   required: ['rootId', 'path'],
   properties: {
     rootId: { type: 'string', pattern: '^[a-z][a-z0-9-]{0,63}$' },
-    path: { type: 'string', minLength: 1, maxLength: 4096 }
+    path: { type: 'string', minLength: 1, maxLength: 4096, not: { pattern: '\\\\' } }
   }
 } as const;
 

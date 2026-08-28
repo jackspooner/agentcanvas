@@ -1,6 +1,6 @@
 # AgentCanvas
 
-AgentCanvas v0.3.0-alpha.1 is a local-first visual workspace and MCP server for
+AgentCanvas v0.3.0-alpha.2 is a local-first visual workspace and MCP server for
 canvases built by people and agents. This alpha includes the v0.3 editor
 foundation: polished pan, zoom, selection, marquee, multi-move, resize,
 clipboard, undo/redo, grid snapping, and a shared command service.
@@ -286,7 +286,9 @@ Canvas creation returns a direct browser `url`, derived from
 `canvas_get_url` recovers it for an existing canvas. This is not a share link:
 it respects the service's normal network and access controls.
 
-The installed frozen plugin registry generates runtime OpenAPI and both MCP transports. The committed [standard OpenAPI document](docs/openapi.standard.json) represents the three-extension default distribution; verify freshness with `npm run check:openapi`.
+The installed frozen plugin registry generates runtime OpenAPI and both MCP transports. The committed [standard OpenAPI document](docs/openapi.standard.json) and [standard MCP catalog](docs/mcp-tools.standard.json) represent the three-extension default distribution. `npm run check:contracts` validates both artifacts, their examples, compatibility, generated [error-code registry](docs/error-codes.json), and freshness.
+
+HTTP application failures use RFC 9457 `application/problem+json` with stable machine-readable `code`, `category`, `retryable`, and `requestId` fields. This replaces the pre-alpha.2 `{ok:false, code, message, ...}` body without a legacy fallback. MCP protocol errors remain JSON-RPC-native; application failures from a known tool set `isError: true` and return the same object at `structuredContent.problem`.
 
 Resident MCP is `POST http://127.0.0.1:23003/mcp`. The stdio command is a transport bridge to that resident endpoint and does not rediscover plugins:
 

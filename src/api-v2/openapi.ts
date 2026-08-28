@@ -4,7 +4,12 @@ import { getMacroOpenApiComponentSchemas } from '../macros/schema-catalog.js';
 import { PLUGIN_STATUS_CATALOG_SCHEMA, PLUGIN_STATUS_SCHEMA } from './plugin-status.js';
 import { createProcedureCatalog, type RegistryProcedureCatalog } from './procedures.js';
 import {
-  API_ERROR_SCHEMA,
+  PROBLEM_DETAILS_OPENAPI_SCHEMA,
+  PROBLEM_ISSUE_OPENAPI_SCHEMA,
+  problemResponse,
+  type AgentCanvasProblemCode
+} from './problem-contract.js';
+import {
   CANVAS_ELEMENT_SCHEMA,
   JSON_OBJECT_SCHEMA,
   PLUGIN_DIAGNOSTIC_SCHEMA,
@@ -36,8 +41,8 @@ function response(description: string, schema: JsonSchema, mediaType = 'applicat
   return { description, content: { [mediaType]: { schema } } };
 }
 
-function errorResponse(description: string): JsonObject {
-  return response(description, { $ref: '#/components/schemas/ApiError' });
+function errorResponse(description: string, codes: readonly AgentCanvasProblemCode[]): JsonObject {
+  return problemResponse(description, codes);
 }
 
 function addPath(paths: Record<string, JsonObject>, route: string, method: string, operation: JsonObject): void {
@@ -110,7 +115,7 @@ export function createRegistryOpenApiDocument(
     parameters: [{ name: 'pluginId', in: 'path', required: true, schema: { type: 'string' } }],
     responses: {
       200: response('Sanitized plugin status', { $ref: '#/components/schemas/PluginStatus' }),
-      404: errorResponse('Plugin is not active')
+      404: errorResponse('Plugin is not active', ['plugin_unavailable'])
     },
     'x-agent-notes': {
       useWhen: ['Inspect one active plugin after discovery.'],
@@ -125,7 +130,7 @@ export function createRegistryOpenApiDocument(
     parameters: [{ name: 'handle', in: 'path', required: true, schema: { type: 'string' } }],
     responses: {
       200: response('Resource metadata', { $ref: '#/components/schemas/ResourceDetails' }),
-      404: errorResponse('Resource handle was not found')
+      404: errorResponse('Resource handle was not found', ['resource_not_found'])
     },
     'x-agent-notes': {
       useWhen: ['Inspect MIME type, size, dimensions, or checksum without retrieving binary content.'],
@@ -142,8 +147,8 @@ export function createRegistryOpenApiDocument(
     parameters: [{ name: 'handle', in: 'path', required: true, schema: { type: 'string' } }],
     responses: {
       200: response('Bounded resource bytes', { type: 'string', format: 'binary' }, 'application/octet-stream'),
-      404: errorResponse('Resource handle was not found'),
-      413: errorResponse('Resource exceeds the delivery limit')
+      404: errorResponse('Resource handle was not found', ['resource_not_found']),
+      413: errorResponse('Resource exceeds the delivery limit', ['resource_too_large'])
     },
     'x-agent-notes': {
       useWhen: ['A consumer explicitly needs bytes after inspecting resource details.'],
@@ -164,10 +169,10 @@ export function createRegistryOpenApiDocument(
       },
       responses: {
         200: response('Validated plugin procedure result', procedure.descriptor.outputSchema),
-        400: errorResponse('Procedure input failed validation'),
-        404: errorResponse('Plugin or procedure is unavailable'),
-        408: errorResponse('Procedure timed out'),
-        500: errorResponse('Procedure execution failed')
+        400: errorResponse('Procedure input failed validation', ['validation_error']),
+        404: errorResponse('Plugin or procedure is unavailable', ['plugin_unavailable', 'procedure_not_found']),
+        500: errorResponse('Procedure execution failed', ['internal_error']),
+        504: errorResponse('Procedure timed out', ['procedure_timeout'])
       },
       'x-agent-notes': {
         useWhen: [`Invoke the ${procedure.pluginId}/${procedure.name} plugin workflow.`],
@@ -186,7 +191,8 @@ export function createRegistryOpenApiDocument(
     PluginStatusCatalog: PLUGIN_STATUS_CATALOG_SCHEMA,
     ResourceHandle: RESOURCE_HANDLE_SCHEMA,
     ResourceDetails: RESOURCE_DETAILS_SCHEMA,
-    ApiError: API_ERROR_SCHEMA,
+    ProblemIssue: PROBLEM_ISSUE_OPENAPI_SCHEMA,
+    ProblemDetails: PROBLEM_DETAILS_OPENAPI_SCHEMA,
     ...getMacroOpenApiComponentSchemas(),
     ...elementCatalog.schemas
   };
