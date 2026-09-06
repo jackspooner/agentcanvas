@@ -50,7 +50,10 @@ describe('Assets-2 mutable resource delivery', () => {
     });
     const broker = new ResourceBroker();
     const capability = new Assets2Capability(config, broker, fetcher);
-    const handle = await capability.contentHandle(capability.validateReference(reference), new AbortController().signal);
+    const handle = await capability.contentHandle(
+      capability.validateReference(reference),
+      new AbortController().signal
+    );
 
     await expect(broker.load(handle.handle, new AbortController().signal)).resolves.toMatchObject({ bytes });
     const firstDetails = broker.details(handle.handle);

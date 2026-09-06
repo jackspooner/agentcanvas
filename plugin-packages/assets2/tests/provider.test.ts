@@ -174,7 +174,7 @@ describe('Assets2Capability', () => {
       releaseMetadata = resolve;
     });
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => {
-      if (!(new URL(input as string).pathname.endsWith('/content'))) await metadataGate;
+      if (!new URL(input as string).pathname.endsWith('/content')) await metadataGate;
       return json({
         project: 'demo',
         id: reference.assetId,

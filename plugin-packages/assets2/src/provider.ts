@@ -347,10 +347,7 @@ export class Assets2Capability implements AssetsCapabilityV1 {
     }
   }
 
-  private async createContentHandle(
-    reference: AssetReference,
-    signal: AbortSignal
-  ): Promise<OpaqueResourceHandle> {
+  private async createContentHandle(reference: AssetReference, signal: AbortSignal): Promise<OpaqueResourceHandle> {
     const record = await this.metadata(reference, signal);
     const mimeType =
       typeof record.content_type === 'string' ? record.content_type.split(';')[0].trim().toLowerCase() : '';

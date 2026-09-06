@@ -133,7 +133,11 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
     if (bytes.byteLength > this.maxBytes) throw new Error(`resource exceeds ${this.maxBytes} byte limit`);
     const mimeType = checkMimeType(payload.mimeType);
     if (mimeType !== resource.details.mimeType) throw new Error('resource loader MIME type differs from registration');
-    if (!resource.registration.mutable && resource.details.byteLength !== undefined && resource.details.byteLength !== bytes.byteLength) {
+    if (
+      !resource.registration.mutable &&
+      resource.details.byteLength !== undefined &&
+      resource.details.byteLength !== bytes.byteLength
+    ) {
       throw new Error('resource loader byte length differs from registration');
     }
     const digest = sha256(bytes);
