@@ -29,8 +29,12 @@ For an installation that tracks the current branch:
 
 ```bash
 git pull --ff-only
-npm ci
+npm run setup
 ```
+
+`npm run setup` prepares the exact internal dependency pins before reinstalling
+npm packages. It requires Git and HTTPS access to the configured repositories;
+plain `npm ci` does not populate the generated `.cutlery/deps/` directory.
 
 `git pull` updates source only. It does not update installed dependencies,
 built browser assets, active extension distributions, the database, or the

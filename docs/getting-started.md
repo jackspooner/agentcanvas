@@ -7,6 +7,7 @@ v0.3.0-alpha.2 with its three default extensions.
 
 - Node.js 24 or newer.
 - npm 11 or newer.
+- Git with HTTPS access to GitHub.
 
 AgentCanvas has no user-account layer. It binds to loopback by default.
 Extensions are trusted executable dependencies.
@@ -26,8 +27,26 @@ An empty database is initialized at physical schema 4 / document schema 2. Exist
 Clone or enter the AgentCanvas repository and install its dependencies:
 
 ```bash
-npm ci
+npm run setup
 ```
+
+Setup downloads a pinned revision of the existing
+[Workspace2 dependency materializer](https://github.com/jackspooner/workspace2-internal-deps),
+which needs only Node.js and Git. It reads `.cutlery/internal-deps.toml`, fetches
+each dependency at its exact `resolvedCommit`, runs its declared build command,
+and prepares `.cutlery/deps/` before running `npm ci`. It does not update pins.
+The materializer revision is pinned in `scripts/internal-dependencies.mjs`.
+
+Use `npm run deps:materialize` to prepare dependencies without reinstalling npm
+packages. `npm run check:internal-deps` verifies pins, expected build outputs,
+and the installed API-contract package import; it does not rebuild dependencies.
+Both commands fetch the pinned materializer from GitHub. Download, build, or
+verification failures stop setup. Keep `.cutlery/internal-deps.toml` in Git;
+`.cutlery/deps/` and `.cutlery/cache/` remain generated and ignored.
+
+`npm run test:setup` exercises setup in a fresh temporary copy and confirms
+verification rejects missing build output. This network-dependent check also
+runs in CI, separately from the application tests.
 
 Copy `.env.example` to `.env` and check at least these values:
 

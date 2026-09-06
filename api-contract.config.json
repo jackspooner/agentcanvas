@@ -29,7 +29,7 @@
   "consumers": [
     {
       "name": "internal-dependency-pin",
-      "freshnessCommand": "node C:\\Workspace2\\infrastructure\\Workspace2InternalDeps\\src\\cli.mjs verify --repo ."
+      "freshnessCommand": "npm run check:internal-deps"
     }
   ]
 }

@@ -7,10 +7,10 @@ public issues.
 
 ## Development setup
 
-Use Node.js 24 and npm 11.
+Use Node.js 24, npm 11, and Git with HTTPS access to GitHub.
 
 ```text
-npm ci
+npm run setup
 npm run build
 ```
 

@@ -83,7 +83,7 @@ function Start-AgentCanvas {
   }
   if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js was not found on PATH.' }
   if (-not (Test-Path -LiteralPath (Join-Path $repoRoot 'node_modules\tsx'))) {
-    throw 'Dependencies are not installed. Run npm ci from the AgentCanvas repository root.'
+    throw 'Dependencies are not installed. Run npm run setup from the AgentCanvas repository root.'
   }
   if (-not (Test-Path -LiteralPath (Join-Path $repoRoot 'dist\web\index.html'))) {
     throw 'AgentCanvas is not built. Run npm run plugins:build, npm run plugins:materialize -- --defaults, and npm run build first.'

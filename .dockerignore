@@ -1,6 +1,7 @@
 .git
 .codex
-.cutlery
+.cutlery/*
+!.cutlery/internal-deps.toml
 .vite
 node_modules
 dist
@@ -22,4 +23,3 @@ browser-artifacts
 *.sqlite-shm
 *.sqlite-wal
 *.log
-

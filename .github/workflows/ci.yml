@@ -39,10 +39,13 @@ jobs:
           npm --version
 
       - name: Install dependencies
-        run: npm ci
+        run: npm run setup
 
       - name: Build public packages for the external fixture
         run: npm run build:packages
+
+      - name: Verify clean dependency setup
+        run: npm run test:setup
 
       - name: Install packed SDK and testkit into the external fixture
         shell: bash
@@ -133,7 +136,7 @@ jobs:
         run: npm install --global npm@11
 
       - name: Install dependencies
-        run: npm ci
+        run: npm run setup
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

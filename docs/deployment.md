@@ -9,6 +9,7 @@ process manager.
 Prerequisites:
 
 - Docker Engine with the Compose plugin (`docker compose`).
+- Build-time network access to GitHub, npm, and Debian package repositories.
 
 From the repository root:
 
@@ -20,7 +21,10 @@ curl http://127.0.0.1:23003/health
 
 The supplied `compose.yaml` builds the application, materializes the three
 default extensions, runs as the unprivileged `node` user, and stores the SQLite
-database in the named `agentcanvas-data` volume. Follow logs with:
+database in the named `agentcanvas-data` volume. The build prepares pinned
+internal dependencies with `npm run setup`; the runtime image retains
+`.cutlery/deps/` so npm package links remain valid. Git is installed only in
+the build stage. Follow logs with:
 
 ```bash
 docker compose logs -f agentcanvas
@@ -58,7 +62,7 @@ For an agent or a local user who wants AgentCanvas running in the background
 without installing a Windows service, prepare the checkout once:
 
 ```powershell
-npm ci
+npm run setup
 npm run plugins:build
 npm run plugins:materialize -- --defaults
 npm run build
@@ -89,7 +93,7 @@ Prerequisites:
 - A built checkout with dependencies, plugins, and browser assets prepared:
 
 ```powershell
-npm ci
+npm run setup
 npm run plugins:build
 npm run plugins:materialize -- --defaults
 npm run build

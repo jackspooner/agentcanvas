@@ -46,7 +46,7 @@ model.
 
 ## Requirements
 
-- Node.js 24 or newer and npm 11 or newer.
+- Node.js 24 or newer, npm 11 or newer, and Git with HTTPS access to GitHub.
 - A new database, which AgentCanvas initializes at physical schema 4 / document schema 2, or an existing supported database upgraded with the offline CLI before startup.
 
 No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
@@ -62,12 +62,18 @@ deployment](docs/deployment.md).
 ## Quick start
 
 ```bash
-npm ci
+npm run setup
 npm run plugins:build
 npm run plugins:materialize -- --defaults
 npm run build
 npm run dev
 ```
+
+`npm run setup` fetches the pinned Workspace2 dependency materializer, builds the
+internal packages listed in `.cutlery/internal-deps.toml`, then runs `npm ci` and
+verifies the installed package can load. Run it after cloning or updating pins.
+`npm ci` alone requires `.cutlery/deps/` to have already been prepared.
+See [dependency setup](docs/getting-started.md#install-dependencies) for details.
 
 On Windows, start the already-prepared checkout in the background with:
 
@@ -463,7 +469,7 @@ extension; the kernel has no closed element union or renderer switch.
 ## Verification
 
 ```bash
-npm ci
+npm run setup
 npm run format:check
 npm run lint
 npm test
