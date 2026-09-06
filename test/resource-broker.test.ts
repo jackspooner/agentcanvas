@@ -1,7 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ResourceBroker } from '../src/resources/broker';
 
 describe('opaque resource broker', () => {
+  it('evicts without reads, retains live resources, and disposes its timer', () => {
+    vi.useFakeTimers();
+    const broker = new ResourceBroker();
+    try {
+      const live = broker.registerBytes(new Uint8Array([1]), { mimeType: 'image/png', ttlMs: 100 });
+      broker.registerBytes(new Uint8Array([2]), { mimeType: 'image/png', ttlMs: 10 });
+      expect(vi.getTimerCount()).toBe(1);
+      vi.advanceTimersByTime(10);
+      // Nothing remains for explicit pruning: the timer already released the expired registration.
+      expect(broker.pruneExpired()).toBe(0);
+      expect(broker.details(live.handle)).not.toBeNull();
+      expect(vi.getTimerCount()).toBe(1);
+      vi.advanceTimersByTime(90);
+      expect(broker.pruneExpired()).toBe(0);
+      expect(vi.getTimerCount()).toBe(0);
+      broker.registerBytes(new Uint8Array([3]), { mimeType: 'image/png' });
+      broker.dispose();
+      broker.dispose();
+      expect(vi.getTimerCount()).toBe(0);
+      expect(broker.details(live.handle)).toBeNull();
+      expect(() => broker.registerBytes(new Uint8Array([4]), { mimeType: 'image/png' })).toThrow(/disposed/);
+    } finally {
+      broker.dispose();
+      vi.useRealTimers();
+    }
+  });
+
   it('returns compact handles and verifies bounded bytes without data URLs', async () => {
     const broker = new ResourceBroker();
     const handle = broker.registerBytes(new TextEncoder().encode('<svg/>'), { mimeType: 'image/svg+xml' });

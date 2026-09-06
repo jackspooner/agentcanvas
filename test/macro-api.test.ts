@@ -76,7 +76,9 @@ describe('macro browser API adapters', () => {
   });
 
   it('surfaces the canonical server error message without logging the payload', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ message: 'macro input is invalid' }, 422));
+    fetchMock.mockResolvedValue(
+      jsonResponse({ detail: 'macro input is invalid', code: 'macro_input_invalid', requestId: 'req_macro' }, 400)
+    );
 
     await expect(fetchMacroDefinition({ macroId: 'demo/card', macroVersion: 3 })).rejects.toThrow(
       'macro input is invalid'

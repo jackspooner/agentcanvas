@@ -1,3 +1,4 @@
+import { CANVAS_BOUNDS_SCHEMA, CORE_REQUEST_SCHEMAS } from '../api-v2/schemas.js';
 import {
   CANVAS_THEME_V1_SCHEMA,
   type CanvasThemeV1,
@@ -122,26 +123,7 @@ function canvasSchema(elementSchema: JsonSchema, includeInspection = false, incl
       createdBy: { type: 'string', enum: ['agent', 'user', 'system'] },
       createdAt: { type: 'string' },
       updatedAt: { type: 'string' },
-      bounds: {
-        oneOf: [
-          {
-            type: 'object',
-            additionalProperties: false,
-            required: ['mode'],
-            properties: { mode: { const: 'unlimited' } }
-          },
-          {
-            type: 'object',
-            additionalProperties: false,
-            required: ['mode', 'width', 'height'],
-            properties: {
-              mode: { const: 'fixed' },
-              width: { type: 'number', exclusiveMinimum: 0 },
-              height: { type: 'number', exclusiveMinimum: 0 }
-            }
-          }
-        ]
-      },
+      bounds: CANVAS_BOUNDS_SCHEMA,
       width: { type: 'number' },
       height: { type: 'number' },
       background: { oneOf: [JSON_OBJECT_SCHEMA, { type: 'null' }] },
@@ -214,9 +196,9 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         additionalProperties: false,
         required: ['title'],
         properties: {
-          title: { type: 'string', minLength: 1 },
-          project: { type: 'string' },
-          description: { type: 'string' },
+          title: CORE_REQUEST_SCHEMAS.create.properties.title,
+          project: CORE_REQUEST_SCHEMAS.create.properties.project,
+          description: CORE_REQUEST_SCHEMAS.create.properties.description,
           theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
@@ -296,8 +278,8 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       'Rename a canvas',
       {
         canvasId: CANVAS_ID,
-        title: { type: 'string', minLength: 1 },
-        expectedRevision: { type: 'integer', minimum: 1 }
+        title: CORE_REQUEST_SCHEMAS.title.properties.title,
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'title'],
       inspectedCanvas
@@ -308,7 +290,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       {
         canvasId: CANVAS_ID,
         theme: CANVAS_THEME_V1_SCHEMA as JsonObject,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'theme'],
       inspectedCanvas
@@ -318,7 +300,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       'Clear a canvas theme and restore AgentCanvas defaults',
       {
         canvasId: CANVAS_ID,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId'],
       inspectedCanvas
@@ -329,7 +311,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       {
         canvasId: CANVAS_ID,
         element: elementSchema as JsonObject,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'element'],
       inspectedCanvas
@@ -341,7 +323,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         canvasId: CANVAS_ID,
         elementId: ELEMENT_ID,
         frame: FRAME_SCHEMA as JsonObject,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'frame'],
       inspectedCanvas
@@ -354,7 +336,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         elementId: ELEMENT_ID,
         data: JSON_OBJECT_SCHEMA as JsonObject,
         style: { oneOf: [JSON_OBJECT_SCHEMA, { type: 'null' }] },
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'data'],
       inspectedCanvas
@@ -366,7 +348,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         canvasId: CANVAS_ID,
         elementId: ELEMENT_ID,
         metadata: JSON_OBJECT_SCHEMA as JsonObject,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'metadata'],
       inspectedCanvas
@@ -377,7 +359,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       {
         canvasId: CANVAS_ID,
         elementId: ELEMENT_ID,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId'],
       inspectedCanvas
@@ -387,7 +369,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       'Remove all elements from a canvas',
       {
         canvasId: CANVAS_ID,
-        expectedRevision: { type: 'integer', minimum: 1 }
+        expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId'],
       inspectedCanvas

@@ -26,6 +26,7 @@ import type { MacroExecutionResult, MacroPlan, MacroServiceExecuteRequest } from
 import type { LoadedBrowserRegistry } from '../plugins/catalog';
 import { DomRendererOverlayService } from '../plugins/overlays';
 import { ShadowRendererHost, type RendererContextInput } from '../plugins/renderer-host';
+import { isPluginInteractiveEvent } from '../plugins/interaction';
 import type { CanvasBounds, CanvasDocument, CanvasViewport, CanvasViewportState } from '../v2-types';
 import { coerceViewport, DEFAULT_REPORTED_VIEWPORT_HEIGHT, DEFAULT_REPORTED_VIEWPORT_WIDTH } from '../viewport';
 import { CanvasBoundsControl } from './CanvasBoundsControl';
@@ -87,10 +88,16 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
 
   useEffect(() => {
     if (!outer.current) return undefined;
-    const rendererHost = new ShadowRendererHost(outer.current, { reportDiagnostic: props.reportDiagnostic });
+    const surface = outer.current;
+    const preserveInteractiveWheel = (event: WheelEvent) => {
+      if (isPluginInteractiveEvent(event, surface)) event.stopPropagation();
+    };
+    surface.addEventListener('wheel', preserveInteractiveWheel, { passive: true });
+    const rendererHost = new ShadowRendererHost(surface, { reportDiagnostic: props.reportDiagnostic });
     host.current = rendererHost;
     void rendererHost.mount(props.renderer, context);
     return () => {
+      surface.removeEventListener('wheel', preserveInteractiveWheel);
       detailsController.current?.abort();
       detailsController.current = null;
       host.current = null;
@@ -132,10 +139,7 @@ function PluginRendererSurface(props: PluginRendererSurfaceProps) {
 
   return (
     <div className="plugin-renderer-container">
-      <div
-        ref={outer}
-        className="plugin-renderer-surface agentcanvas-editor-no-drag agentcanvas-editor-no-pan agentcanvas-editor-no-wheel"
-      />
+      <div ref={outer} className="plugin-renderer-surface agentcanvas-editor-no-drag agentcanvas-editor-no-pan" />
       {props.renderer?.details && (
         <button
           type="button"

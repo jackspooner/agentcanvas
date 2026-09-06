@@ -135,7 +135,7 @@ describe('Media Gallery runtime', () => {
     expect(svg).toMatch(/href="\/api\/v1\/resources\/res_[A-Za-z0-9_-]+\/content"/);
     expect(svg).toContain('aria-label="Second image"');
     expect(svg).toContain('2 / 2');
-    runtime.store.close();
+    runtime.dispose();
   });
 
   it('preserves galleries and reports diagnostics when their source provider is not installed', async () => {
@@ -179,6 +179,6 @@ describe('Media Gallery runtime', () => {
         expect.objectContaining({ code: 'gallery_image_provider_unavailable', pluginId: 'agentcanvas.gallery' })
       ])
     );
-    runtime.store.close();
+    runtime.dispose();
   });
 });

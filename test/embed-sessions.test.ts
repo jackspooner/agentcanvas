@@ -127,6 +127,6 @@ describe('embed sessions', () => {
 
     expect((await app.request(`/api/v1/embed-sessions/${token}`, { method: 'DELETE' })).status).toBe(200);
     expect((await app.request(`/api/v1/embed-sessions/${token}`)).status).toBe(404);
-    runtime.store.close();
+    runtime.dispose();
   });
 });

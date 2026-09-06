@@ -185,3 +185,128 @@ export function schemaRecord(schema: JsonSchema): JsonObject {
   if (typeof schema === 'boolean') return schema ? {} : { not: {} };
   return schema;
 }
+
+const CANVAS_VIEWPORT_INPUT_SCHEMA = {
+  type: 'object',
+  required: ['centerX', 'centerY', 'zoom', 'width', 'height'],
+  properties: {
+    centerX: { type: 'number' },
+    centerY: { type: 'number' },
+    zoom: { type: 'number', exclusiveMinimum: 0 },
+    width: { type: 'integer', minimum: 1 },
+    height: { type: 'integer', minimum: 1 }
+  }
+} as JsonObject & { properties: Record<string, JsonObject> };
+
+/** Shared request definitions for HTTP validation, OpenAPI, and corresponding MCP fields. */
+export const CORE_REQUEST_SCHEMAS: Record<
+  'configuration' | 'create' | 'bounds' | 'title' | 'theme' | 'batch' | 'share' | 'viewport' | 'focus',
+  JsonObject & { properties: Record<string, JsonObject> }
+> = {
+  configuration: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['defaultCanvasSize'],
+    properties: { defaultCanvasSize: { $ref: '#/components/schemas/CanvasBounds' }, actor: { type: 'string' } }
+  },
+  create: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['title'],
+    properties: {
+      title: { type: 'string', minLength: 1 },
+      description: { type: 'string' },
+      project: { type: 'string' },
+      conversationId: { type: 'string' },
+      createdBy: { type: 'string', enum: ['agent', 'user', 'system'] },
+      bounds: { $ref: '#/components/schemas/CanvasBounds' },
+      background: { type: 'object' },
+      theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
+      metadata: { type: 'object' }
+    }
+  },
+  bounds: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['bounds'],
+    properties: {
+      bounds: { $ref: '#/components/schemas/CanvasBounds' },
+      expectedRevision: { type: 'integer', minimum: 1 },
+      actor: { type: 'string' }
+    }
+  },
+  title: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['title'],
+    properties: {
+      title: { type: 'string', minLength: 1 },
+      expectedRevision: { type: 'integer', minimum: 1 },
+      actor: { type: 'string' }
+    }
+  },
+  theme: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['theme'],
+    properties: {
+      theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
+      expectedRevision: { type: 'integer', minimum: 1 },
+      actor: { type: 'string' }
+    }
+  },
+  batch: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['operations'],
+    properties: {
+      expectedRevision: { type: 'integer', minimum: 1 },
+      idempotencyKey: { type: 'string', minLength: 1 },
+      actor: { type: 'string' },
+      operations: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          oneOf: [
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['op', 'element'],
+              properties: {
+                op: { const: 'upsertElement' },
+                element: { $ref: '#/components/schemas/WritableCanvasElement' }
+              }
+            },
+            {
+              type: 'object',
+              required: ['op', 'elementId'],
+              properties: {
+                op: {
+                  enum: ['patchElementFrame', 'replaceElementData', 'replaceElementMetadata', 'deleteElement']
+                },
+                elementId: { type: 'string' },
+                frame: { type: 'object' },
+                data: { type: 'object' },
+                style: { type: ['object', 'null'] },
+                metadata: { type: 'object' }
+              }
+            },
+            {
+              type: 'object',
+              additionalProperties: false,
+              required: ['op'],
+              properties: { op: { const: 'clear' } }
+            }
+          ]
+        }
+      }
+    }
+  },
+  share: {
+    type: 'object',
+    additionalProperties: false,
+    properties: { label: { type: 'string' }, expiresAt: { type: ['string', 'null'] } }
+  },
+  viewport: CANVAS_VIEWPORT_INPUT_SCHEMA,
+  focus: CANVAS_VIEWPORT_INPUT_SCHEMA
+};

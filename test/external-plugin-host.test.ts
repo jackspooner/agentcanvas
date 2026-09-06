@@ -109,7 +109,7 @@ describe('external plugin host proof', () => {
       { snapshot: { mimeType: 'image/svg+xml' } }
     );
     const before = runtime.store.getCanvas(canvasId);
-    runtime.store.close();
+    runtime.dispose();
 
     fs.rmSync(path.join(root, 'external.signal-card'), { recursive: true, force: true });
     runtime = await createV2Runtime({ pluginsRoot: root, databasePath });
@@ -119,7 +119,7 @@ describe('external plugin host proof', () => {
     expect(missing.diagnostics).toContainEqual(
       expect.objectContaining({ code: 'plugin_unavailable', elementId: 'signal-1' })
     );
-    runtime.store.close();
+    runtime.dispose();
 
     fs.cpSync(externalSource, path.join(root, 'external.signal-card'), { recursive: true });
     runtime = await createV2Runtime({ pluginsRoot: root, databasePath });
@@ -130,6 +130,6 @@ describe('external plugin host proof', () => {
     expect(await (await app.request('/api/v1/plugins/external.signal-card')).json()).toMatchObject({
       id: 'external.signal-card'
     });
-    runtime.store.close();
+    runtime.dispose();
   });
 });

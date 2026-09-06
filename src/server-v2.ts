@@ -1,3 +1,4 @@
+import { CORE_REQUEST_SCHEMAS } from './api-v2/schemas.js';
 import fs from 'node:fs';
 import { createServer, type RequestListener } from 'node:http';
 import path from 'node:path';
@@ -14,6 +15,7 @@ import type {
 import { CANVAS_THEME_V1_SCHEMA, DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import { Hono, type Context } from 'hono';
+import { matchedRoutes } from 'hono/route';
 import { nanoid } from 'nanoid';
 import {
   createPluginStatusCatalog,
@@ -93,6 +95,7 @@ interface V2Runtime {
   embedSessions: EmbedSessionRegistry;
   openapi: JsonObject;
   developmentReloadVersion?: string;
+  dispose(): void;
 }
 
 const INSTALLATION_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -235,6 +238,8 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
   const canvasId = { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } };
   const jsonBody = (schema: JsonObject, example?: JsonObject): JsonObject => ({
     required: true,
+    description:
+      'Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.',
     content: { 'application/json': { schema, ...(example ? { example } : {}) } }
   });
   const response = (description: string, schema?: JsonObject, example?: JsonObject): JsonObject => ({
@@ -630,12 +635,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         operationId: 'canvasUpdateConfiguration',
         summary: 'Replace AgentCanvas document defaults',
         tags: ['Configuration'],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['defaultCanvasSize'],
-          properties: { defaultCanvasSize: { $ref: '#/components/schemas/CanvasBounds' }, actor: { type: 'string' } }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.configuration),
         responses: { 200: response('Updated configuration'), ...errorResponses },
         'x-agent-notes': agentNotes(['Changes defaults for canvases created later.'])
       }
@@ -657,22 +657,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         operationId: 'canvasCreate',
         summary: 'Create a canvas',
         tags: ['Canvases'],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['title'],
-          properties: {
-            title: { type: 'string', minLength: 1 },
-            description: { type: 'string' },
-            project: { type: 'string' },
-            conversationId: { type: 'string' },
-            createdBy: { type: 'string', enum: ['agent', 'user', 'system'] },
-            bounds: { $ref: '#/components/schemas/CanvasBounds' },
-            background: { type: 'object' },
-            theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
-            metadata: { type: 'object' }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.create),
         responses: {
           201: response('Created canvas', {
             type: 'object',
@@ -706,16 +691,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Update canvas bounds',
         tags: ['Canvases'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['bounds'],
-          properties: {
-            bounds: { $ref: '#/components/schemas/CanvasBounds' },
-            expectedRevision: { type: 'integer', minimum: 1 },
-            actor: { type: 'string' }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.bounds),
         responses: { 200: response('Updated canvas'), ...errorResponses },
         'x-agent-notes': agentNotes(['Updates bounds and increments the canvas revision.'], true)
       }
@@ -726,16 +702,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Rename a canvas',
         tags: ['Canvases'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['title'],
-          properties: {
-            title: { type: 'string', minLength: 1 },
-            expectedRevision: { type: 'integer', minimum: 1 },
-            actor: { type: 'string' }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.title),
         responses: { 200: response('Renamed canvas'), ...errorResponses },
         'x-agent-notes': agentNotes(['Renames the canvas and increments its revision.'], true)
       }
@@ -746,16 +713,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Set or clear a canvas theme',
         tags: ['Canvases'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['theme'],
-          properties: {
-            theme: { oneOf: [{ $ref: '#/components/schemas/CanvasThemeV1' }, { type: 'null' }] },
-            expectedRevision: { type: 'integer', minimum: 1 },
-            actor: { type: 'string' }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.theme),
         responses: { 200: response('Updated canvas theme'), ...errorResponses },
         'x-agent-notes': agentNotes(
           ['Replaces the canvas-level semantic design tokens and increments the canvas revision.'],
@@ -769,53 +727,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Apply explicit element operations',
         tags: ['Elements'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          required: ['operations'],
-          properties: {
-            expectedRevision: { type: 'integer', minimum: 1 },
-            idempotencyKey: { type: 'string', minLength: 1 },
-            actor: { type: 'string' },
-            operations: {
-              type: 'array',
-              minItems: 1,
-              items: {
-                oneOf: [
-                  {
-                    type: 'object',
-                    additionalProperties: false,
-                    required: ['op', 'element'],
-                    properties: {
-                      op: { const: 'upsertElement' },
-                      element: { $ref: '#/components/schemas/WritableCanvasElement' }
-                    }
-                  },
-                  {
-                    type: 'object',
-                    required: ['op', 'elementId'],
-                    properties: {
-                      op: {
-                        enum: ['patchElementFrame', 'replaceElementData', 'replaceElementMetadata', 'deleteElement']
-                      },
-                      elementId: { type: 'string' },
-                      frame: { type: 'object' },
-                      data: { type: 'object' },
-                      style: { type: ['object', 'null'] },
-                      metadata: { type: 'object' }
-                    }
-                  },
-                  {
-                    type: 'object',
-                    additionalProperties: false,
-                    required: ['op'],
-                    properties: { op: { const: 'clear' } }
-                  }
-                ]
-              }
-            }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.batch),
         responses: { 200: response('Updated canvas projection', canvasProjection), ...errorResponses },
         'x-agent-notes': agentNotes(['Mutates element envelopes and increments the canvas revision.'], true)
       }
@@ -854,11 +766,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Create a read-only share link',
         tags: ['Sharing'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          additionalProperties: false,
-          properties: { label: { type: 'string' }, expiresAt: { type: ['string', 'null'] } }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.share),
         responses: { 201: response('Created share link'), ...errorResponses },
         'x-agent-notes': agentNotes(['Creates a revocable read-only share token.'])
       }
@@ -887,17 +795,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Save the user viewport',
         tags: ['Viewport'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          required: ['centerX', 'centerY', 'zoom', 'width', 'height'],
-          properties: {
-            centerX: { type: 'number' },
-            centerY: { type: 'number' },
-            zoom: { type: 'number', exclusiveMinimum: 0 },
-            width: { type: 'integer', minimum: 1 },
-            height: { type: 'integer', minimum: 1 }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.viewport),
         responses: { 200: response('Saved user viewport'), ...errorResponses },
         'x-agent-notes': agentNotes(['Updates user viewport state.'])
       }
@@ -908,17 +806,7 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         summary: 'Publish an agent viewport focus',
         tags: ['Viewport'],
         parameters: [canvasId],
-        requestBody: jsonBody({
-          type: 'object',
-          required: ['centerX', 'centerY', 'zoom', 'width', 'height'],
-          properties: {
-            centerX: { type: 'number' },
-            centerY: { type: 'number' },
-            zoom: { type: 'number', exclusiveMinimum: 0 },
-            width: { type: 'integer', minimum: 1 },
-            height: { type: 'integer', minimum: 1 }
-          }
-        }),
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.focus),
         responses: { 200: response('Saved agent viewport'), ...errorResponses },
         'x-agent-notes': agentNotes(['Updates agent viewport state.'])
       }
@@ -983,6 +871,10 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     macros,
     embedSessions,
     openapi,
+    dispose() {
+      plugins.resources.dispose();
+      store.close();
+    },
     ...(options.developmentReloadVersion ? { developmentReloadVersion: options.developmentReloadVersion } : {})
   };
 }
@@ -1035,6 +927,38 @@ export function createV2App(runtime: V2Runtime): Hono {
       { input: ajv.compile(procedure.descriptor.inputSchema), output: ajv.compile(procedure.descriptor.outputSchema) }
     ])
   );
+  const coreValidators = new Map<string, ValidateFunction>(
+    Object.entries(CORE_REQUEST_SCHEMAS).map(([name, schema]) => [
+      name,
+      ajv.compile(
+        JSON.parse(
+          JSON.stringify({
+            ...schema,
+            $defs: (runtime.openapi.components as JsonObject).schemas
+          }).replaceAll('#/components/schemas/', '#/$defs/')
+        )
+      )
+    ])
+  );
+  async function readCoreJson<T>(c: Context, name: keyof typeof CORE_REQUEST_SCHEMAS): Promise<T> {
+    let value: unknown;
+    try {
+      value = await c.req.json();
+    } catch {
+      throw new CanvasError('validation_error', 'Request body must be valid JSON', 'validation', 400);
+    }
+    const validate = coreValidators.get(name) as ValidateFunction;
+    if (!validate(value)) {
+      const issue = validate.errors?.[0];
+      throw new CanvasError(
+        'validation_error',
+        `Request body${issue?.instancePath || '/'} ${issue?.message || 'does not match the canonical schema'}`,
+        'validation',
+        400
+      );
+    }
+    return value as T;
+  }
   const macroValidators = new Map<string, ValidateFunction>([
     ['list', ajv.compile(MACRO_LIST_REQUEST_SCHEMA)],
     ['create', ajv.compile(MACRO_CREATE_REQUEST_SCHEMA)],
@@ -1058,11 +982,37 @@ export function createV2App(runtime: V2Runtime): Hono {
   );
 
   app.onError((error, c) => {
-    if (error instanceof MacroError) {
-      return sendProblem(c, problemFromMacroError(error, requestId(c), c.req.path));
+    const correlationId = requestId(c);
+    const problem =
+      error instanceof MacroError
+        ? problemFromMacroError(error, correlationId, c.req.path)
+        : problemFromCanvasError(toCanvasError(error), correlationId, c.req.path);
+    if (problem.status >= 500) {
+      // Log source locations, never exception messages or request values: either can contain credentials.
+      const frames = (error.stack ?? '')
+        .split('\n')
+        .slice(1)
+        .flatMap((line) => {
+          const location = line.match(/([^\\/():\s]+\.[cm]?[jt]s):(\d+):(\d+)\)?$/);
+          return location ? [`${location[1]}:${location[2]}:${location[3]}`] : [];
+        });
+      process.stderr.write(
+        `${JSON.stringify({
+          service: 'AgentCanvas',
+          level: 'error',
+          time: new Date().toISOString(),
+          requestId: correlationId,
+          method: c.req.method,
+          route: matchedRoutes(c).at(-1)?.path,
+          status: problem.status,
+          code: problem.code,
+          stage: 'http',
+          outcome: 'failed',
+          frames
+        })}\n`
+      );
     }
-    const projected = toCanvasError(error);
-    return sendProblem(c, problemFromCanvasError(projected, requestId(c), c.req.path));
+    return sendProblem(c, problem);
   });
   app.use('/assets/*', serveStatic({ root: WEB_BUILD_ROOT }));
 
@@ -1265,7 +1215,7 @@ setInterval(async () => {
 
   app.get('/api/v1/configuration', (c) => c.json({ ok: true, configuration: store.getConfiguration() }));
   app.patch('/api/v1/configuration', async (c) =>
-    c.json({ ok: true, configuration: store.updateConfiguration(await c.req.json()) })
+    c.json({ ok: true, configuration: store.updateConfiguration(await readCoreJson(c, 'configuration')) })
   );
   app.get('/api/v1/canvases', async (c) => {
     const canvases = store.listCanvases({
@@ -1276,7 +1226,7 @@ setInterval(async () => {
     return c.json({ ok: true, canvases });
   });
   app.post('/api/v1/canvases', async (c) => {
-    const canvas = store.createCanvas(await c.req.json());
+    const canvas = store.createCanvas(await readCoreJson(c, 'create'));
     return c.json({ ok: true, canvas, url: canvasPageUrl(config.publicBaseUrl, canvas.id) }, 201);
   });
   app.get('/api/v1/canvases/:canvasId', async (c) => {
@@ -1285,21 +1235,21 @@ setInterval(async () => {
     return c.json({ ok: true, canvas, ...projection });
   });
   app.patch('/api/v1/canvases/:canvasId', async (c) =>
-    c.json({ ok: true, canvas: store.updateCanvasBounds(c.req.param('canvasId'), await c.req.json()) })
+    c.json({ ok: true, canvas: store.updateCanvasBounds(c.req.param('canvasId'), await readCoreJson(c, 'bounds')) })
   );
   app.patch('/api/v1/canvases/:canvasId/title', async (c) =>
-    c.json({ ok: true, canvas: store.renameCanvas(c.req.param('canvasId'), await c.req.json()) })
+    c.json({ ok: true, canvas: store.renameCanvas(c.req.param('canvasId'), await readCoreJson(c, 'title')) })
   );
   app.patch('/api/v1/canvases/:canvasId/theme', async (c) =>
-    c.json({ ok: true, canvas: store.updateCanvasTheme(c.req.param('canvasId'), await c.req.json()) })
+    c.json({ ok: true, canvas: store.updateCanvasTheme(c.req.param('canvasId'), await readCoreJson(c, 'theme')) })
   );
   app.post('/api/v1/canvases/:canvasId/elements:batch', async (c) => {
-    const canvas = store.applyOperations(c.req.param('canvasId'), await c.req.json());
+    const canvas = store.applyOperations(c.req.param('canvasId'), await readCoreJson(c, 'batch'));
     const projection = await resolveCanvasProjection(canvas, registry, false, c.req.raw.signal);
     return c.json({ ok: true, canvas, revision: canvas.revision, ...projection });
   });
   app.post('/api/v1/canvases/:canvasId/share-links', async (c) => {
-    const share = store.createShareLink(c.req.param('canvasId'), await c.req.json().catch(() => ({})));
+    const share = store.createShareLink(c.req.param('canvasId'), await readCoreJson(c, 'share'));
     const { token: _token, ...publicShare } = share;
     return c.json({ ok: true, share: publicShare }, 201);
   });
@@ -1313,10 +1263,16 @@ setInterval(async () => {
     c.json({ ok: true, ...store.getViewportState(c.req.param('canvasId')) })
   );
   app.post('/api/v1/canvases/:canvasId/viewport', async (c) =>
-    c.json({ ok: true, viewport: store.recordViewport(c.req.param('canvasId'), await c.req.json(), 'user') })
+    c.json({
+      ok: true,
+      viewport: store.recordViewport(c.req.param('canvasId'), await readCoreJson(c, 'viewport'), 'user')
+    })
   );
   app.post('/api/v1/canvases/:canvasId/viewport/focus', async (c) =>
-    c.json({ ok: true, viewport: store.recordViewport(c.req.param('canvasId'), await c.req.json(), 'agent') })
+    c.json({
+      ok: true,
+      viewport: store.recordViewport(c.req.param('canvasId'), await readCoreJson(c, 'focus'), 'agent')
+    })
   );
   app.post('/api/v1/canvases/:canvasId/snapshot', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
@@ -1492,6 +1448,7 @@ export async function startAgentCanvas(): Promise<void> {
   loadAgentCanvasDotenv();
   const runtime = await createV2Runtime();
   const server = createServer(createV2ServiceHandler(runtime));
+  server.once('close', () => runtime.dispose());
   server.listen(runtime.config.port, runtime.config.host, () => {
     console.log(`AgentCanvas ${AGENTCANVAS_VERSION} listening on ${runtime.config.publicBaseUrl}`);
   });

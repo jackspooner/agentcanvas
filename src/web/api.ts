@@ -16,17 +16,14 @@ import type { EmbedSessionSummary } from '../embed-sessions';
 
 async function jsonResponse<T>(response: Response, label: string): Promise<T> {
   if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    let message = '';
-    if (body) {
-      try {
-        const parsed = JSON.parse(body) as { message?: unknown };
-        if (typeof parsed.message === 'string') message = parsed.message;
-      } catch {
-        message = body;
-      }
-    }
-    throw new Error(message || `${label}: ${response.status}`);
+    const problem = await response.json().catch(() => null);
+    const detail = typeof problem?.detail === 'string' ? problem.detail : `${label}: ${response.status}`;
+    const requestId = typeof problem?.requestId === 'string' ? problem.requestId : response.headers.get('x-request-id');
+    throw Object.assign(new Error(`${detail}${requestId ? ` (request ${requestId})` : ''}`), {
+      status: response.status,
+      code: typeof problem?.code === 'string' ? problem.code : undefined,
+      requestId
+    });
   }
   return response.json() as Promise<T>;
 }
@@ -186,15 +183,15 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
       height: viewport.height
     })
   });
-  if (!response.ok) throw new Error(`failed to save viewport: ${response.status}`);
+  await jsonResponse(response, 'failed to save viewport');
 }
 
 export async function applyCanvasOperations(
   canvasId: string,
   operations: readonly CanvasOperation[],
   expectedRevision?: number
-): Promise<CanvasDocument> {
-  const body = await jsonResponse<{ canvas: CanvasDocument }>(
+): Promise<CanvasProjection> {
+  return jsonResponse<CanvasProjection>(
     await fetch(`/api/v1/canvases/${encodeURIComponent(canvasId)}/elements:batch`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -206,7 +203,6 @@ export async function applyCanvasOperations(
     }),
     'failed to update canvas elements'
   );
-  return body.canvas as CanvasDocument;
 }
 
 export async function fetchMacroList(request: MacroListRequest = {}): Promise<MacroListResponse> {

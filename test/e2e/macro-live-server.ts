@@ -22,8 +22,8 @@ function isOwnedTempPath(candidate: string): boolean {
 }
 
 async function cleanup(): Promise<void> {
-  runtime.store.close();
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  runtime.dispose();
   if (!isOwnedTempPath(databasePath)) throw new Error('Refusing to remove an unverified macro proof database path.');
   await rm(tempRoot, { recursive: true, force: true });
 }

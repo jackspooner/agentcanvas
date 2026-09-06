@@ -9,5 +9,12 @@ This release makes the HTTP and MCP application-error contract enforceable.
 - `npm run check:contracts` validates structure, metadata, examples, MCP descriptors, compatibility, generated artifacts, and the ratchet baseline.
 - Clean installations now use `npm run setup` to fetch and build pinned internal dependencies before `npm ci`; CI and Docker use the same entry point. Docker retains the prepared packages in its runtime image.
 - Internal dependency verification no longer requires a machine-specific Workspace2 path.
+- Canvas title, bounds, and theme updates commit their document, revision, and event together; failed writes roll back completely.
+- Core HTTP mutations enforce the published request schemas. Malformed JSON, invalid fields, and missing required bodies return `400` Problem Details without writing data; share creation requires an object body, including `{}` for default options.
+- The browser installs runtime media and diagnostics from batch responses, refreshes after macros and metadata changes, and renews resources without requiring a document revision change. Older responses cannot overwrite newer documents.
+- Browser errors display Problem Details and request IDs. Unexpected server failures produce one structured stderr record with the matching request ID and source locations, excluding exception messages and request values.
+- Expired resource registrations release their buffers automatically. Closing an owned runtime disposes its resource broker.
+- Wheel zoom works over ordinary extension content while interactive controls keep their wheel events.
+- Compatible dependency updates resolve the reported production and development vulnerabilities. Browser fixtures account for canvas zoom, an explicitly zoomed culling viewport, and same-origin GLB delivery.
 
 The old flat HTTP error envelope is removed without a compatibility fallback because AgentCanvas remains pre-1.0. See [Upgrading](upgrading.md#030-alpha2) for the client migration.

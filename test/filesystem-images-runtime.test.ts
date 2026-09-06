@@ -148,6 +148,6 @@ describe('filesystem image runtime without Assets-2', () => {
     expect(snapshotContent.status).toBe(200);
     expect(snapshotContent.headers.get('content-type')).toBe('image/svg+xml');
     expect(await snapshotContent.text()).toContain('href="/api/v1/resources/');
-    runtime.store.close();
+    runtime.dispose();
   });
 });

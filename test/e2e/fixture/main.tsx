@@ -10,6 +10,7 @@ import {
   loadBrowserPluginRegistry
 } from '../../../src/web/plugins/catalog';
 import type { CanvasDocument } from '../../../src/web/v2-types';
+import { coerceViewport } from '../../../src/web/viewport';
 import { TEST_CANVAS_THEME } from '../../fixtures/canvas-theme';
 import '../../../src/web/styles.css';
 import './fixture.css';
@@ -220,6 +221,11 @@ function withoutRenderer(registry: LoadedBrowserRegistry, type: string): LoadedB
 }
 
 function App() {
+  const [initialViewport] = useState(() =>
+    new URLSearchParams(window.location.search).get('canvas') === 'performance'
+      ? coerceViewport({ source: 'user', centerX: 0, centerY: 0, zoom: 1 })
+      : undefined
+  );
   const [registry, setRegistry] = useState<LoadedBrowserRegistry | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [canvas, setCanvas] = useState(initialCanvas);
@@ -319,6 +325,7 @@ function App() {
       <output data-testid="persisted-elements">{JSON.stringify(canvas.elements)}</output>
       <output data-testid="glb-snapshot-policy">{JSON.stringify(glbPlaceholder)}</output>
       <CanvasView
+        initialViewport={initialViewport}
         canvas={visibleCanvas}
         elementRuntime={runtime}
         diagnostics={visibleRegistry.diagnostics}

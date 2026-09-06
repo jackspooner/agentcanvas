@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createMcpV2Server } from '../src/mcp-v2/server';
@@ -70,6 +70,74 @@ afterEach(() => {
 });
 
 describe('v0.2 assembled runtime', () => {
+  it('validates core requests before writes and correlates sanitized internal failures', async () => {
+    const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
+    try {
+      const app = createV2App(runtime);
+      const canvas = runtime.store.createCanvas({ title: 'Validation' });
+      for (const body of [
+        '{',
+        '',
+        'null',
+        '[]',
+        '{"title":"Test","createdBy":"invalid"}',
+        '{"title":"Test","background":"invalid"}',
+        '{"title":"Test","unexpected":true}'
+      ]) {
+        expect((await app.request('/api/v1/canvases', { method: 'POST', body })).status).toBe(400);
+      }
+      const writes = [
+        ['PATCH', '/api/v1/configuration'],
+        ['PATCH', `/api/v1/canvases/${canvas.id}`],
+        ['PATCH', `/api/v1/canvases/${canvas.id}/title`],
+        ['PATCH', `/api/v1/canvases/${canvas.id}/theme`],
+        ['POST', `/api/v1/canvases/${canvas.id}/elements:batch`],
+        ['POST', `/api/v1/canvases/${canvas.id}/share-links`],
+        ['POST', `/api/v1/canvases/${canvas.id}/viewport`],
+        ['POST', `/api/v1/canvases/${canvas.id}/viewport/focus`]
+      ];
+      for (const [method, url] of writes) {
+        for (const body of ['{', '', 'null', '{"unexpected":true}']) {
+          const response = await app.request(url, { method, body });
+          expect(response.status, `${method} ${url} ${body}`).toBe(400);
+          expect(await response.json()).toMatchObject({ code: 'validation_error', status: 400 });
+        }
+      }
+      expect(runtime.store.listCanvases()).toHaveLength(1);
+      expect(runtime.store.getCanvas(canvas.id)).toEqual(canvas);
+      expect(runtime.store.listShareLinks(canvas.id)).toEqual([]);
+      expect(
+        (await app.request(`/api/v1/canvases/${canvas.id}/share-links`, { method: 'POST', body: '{}' })).status
+      ).toBe(201);
+
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const failure = vi.spyOn(runtime.store, 'getCanvas').mockImplementation(() => {
+        throw new Error('secret-token private-path');
+      });
+      try {
+        const response = await app.request('/api/v1/canvases/secret-token', {
+          headers: { 'x-request-id': 'req_failure' }
+        });
+        const problem = await response.json();
+        expect(response.status).toBe(500);
+        expect(problem).toMatchObject({ requestId: 'req_failure', code: 'internal_error' });
+        expect(stderr).toHaveBeenCalledTimes(1);
+        const log = String(stderr.mock.calls[0][0]);
+        expect(JSON.parse(log)).toMatchObject({
+          requestId: 'req_failure',
+          route: '/api/v1/canvases/:canvasId',
+          status: 500
+        });
+        expect(log).not.toMatch(/secret-token|private-path/);
+      } finally {
+        failure.mockRestore();
+        stderr.mockRestore();
+      }
+    } finally {
+      runtime.dispose();
+    }
+  });
+
   it('uses one frozen registry across HTTP, OpenAPI, browser modules, procedures, storage, and snapshots', async () => {
     const runtime = await createV2Runtime({
       pluginsRoot: fixturePlugins(),
@@ -107,7 +175,7 @@ describe('v0.2 assembled runtime', () => {
       type: 'urn:workspace2:problem:validation_error',
       title: 'Request validation failed',
       status: 400,
-      detail: 'canvas title is required',
+      detail: 'Request body/title must NOT have fewer than 1 characters',
       code: 'validation_error',
       category: 'validation',
       retryable: false,
@@ -316,7 +384,7 @@ describe('v0.2 assembled runtime', () => {
     const pluginCall = await client.callTool({ name: 'canvas_list_plugins', arguments: {} });
     expect(pluginCall.structuredContent).toMatchObject({ plugins: [{ id: 'fixture.cards' }] });
     await Promise.all([client.close(), mcp.server.close()]);
-    runtime.store.close();
+    runtime.dispose();
   });
 
   it('persists macro CRUD, plans purely, and atomically replays the complete result', async () => {
@@ -540,7 +608,7 @@ describe('v0.2 assembled runtime', () => {
     });
     expect(direct.structuredContent).toMatchObject({ provenance: { macroId: created.definition.id, macroVersion: 2 } });
     await Promise.all([mcpClient.close(), mcp.server.close()]);
-    runtime.store.close();
+    runtime.dispose();
   });
 
   it('restricts canvas-scoped macros and distinguishes exact missing versions', async () => {
@@ -608,7 +676,7 @@ describe('v0.2 assembled runtime', () => {
         })
       ).status
     ).toBe(404);
-    runtime.store.close();
+    runtime.dispose();
   });
 
   it('rolls back every macro write stage when SQLite abort triggers fire', async () => {
@@ -681,7 +749,7 @@ describe('v0.2 assembled runtime', () => {
       for (const table of ['canvas_events', 'macro_invocations', 'canvas_idempotency_keys'])
         expect(runtime.store.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get()).toEqual({ count: 0 });
       runtime.store.db.exec(`DROP TRIGGER ${trigger}`);
-      runtime.store.close();
+      runtime.dispose();
     }
   });
 });

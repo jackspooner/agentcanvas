@@ -162,7 +162,15 @@ describe('plugin canvas React host', () => {
     });
     expect(surface.classList).toContain('agentcanvas-editor-no-drag');
     expect(surface.classList).toContain('agentcanvas-editor-no-pan');
-    expect(surface.classList).toContain('agentcanvas-editor-no-wheel');
+    const wheel = vi.fn();
+    surface.parentElement?.addEventListener('wheel', wheel);
+    surface.shadowRoot
+      ?.querySelector('button')
+      ?.dispatchEvent(new WheelEvent('wheel', { bubbles: true, composed: true }));
+    expect(wheel).not.toHaveBeenCalled();
+    surface.dispatchEvent(new WheelEvent('wheel', { bubbles: true, composed: true }));
+    expect(wheel).toHaveBeenCalledTimes(1);
+    surface.parentElement?.removeEventListener('wheel', wheel);
 
     const button = surface.shadowRoot?.querySelector('button');
     const pointerDown = vi.fn();

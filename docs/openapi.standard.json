@@ -5911,6 +5911,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -7492,6 +7493,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -8813,6 +8815,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -10084,6 +10087,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -10787,6 +10791,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -11762,6 +11767,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -15488,6 +15494,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -16738,6 +16745,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -18274,6 +18282,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -19531,6 +19540,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -20784,6 +20794,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -22049,6 +22060,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -24442,6 +24454,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -25123,6 +25136,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {
@@ -25801,6 +25815,7 @@
               }
             }
           },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
           "required": true
         },
         "responses": {

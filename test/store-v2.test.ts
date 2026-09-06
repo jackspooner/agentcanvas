@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { PluginElementValidator } from '../src/plugin-runtime/elements';
 import { FrozenPluginRegistry } from '../src/plugin-runtime/registry';
 import { V2SqliteCanvasStore } from '../src/store/v2';
+import { TEST_CANVAS_THEME } from './fixtures/canvas-theme';
 
 const manifest: PluginManifest = {
   apiVersion: 'agentcanvas.plugin/v1',
@@ -61,6 +62,40 @@ function makeStore(): V2SqliteCanvasStore {
 }
 
 describe('v0.2 canonical store', () => {
+  it('rolls back metadata, revision, and events together when event recording fails', () => {
+    const store = makeStore();
+    try {
+      const canvas = store.createCanvas({ title: 'Original' });
+      const before = store.db.prepare('SELECT * FROM canvases WHERE id=?').get(canvas.id);
+      store.db.exec(
+        "CREATE TRIGGER fail_event BEFORE INSERT ON canvas_events BEGIN SELECT RAISE(ABORT, 'event rejected'); END;"
+      );
+      const updates = [
+        () => store.renameCanvas(canvas.id, { title: 'Changed', expectedRevision: 1 }),
+        () =>
+          store.updateCanvasBounds(canvas.id, {
+            bounds: { mode: 'fixed', width: 100, height: 100 },
+            expectedRevision: 1
+          }),
+        () => store.updateCanvasTheme(canvas.id, { theme: TEST_CANVAS_THEME, expectedRevision: 1 })
+      ];
+      for (const update of updates) {
+        expect(update).toThrow('event rejected');
+        expect(store.db.prepare('SELECT * FROM canvases WHERE id=?').get(canvas.id)).toEqual(before);
+        expect(store.db.prepare('SELECT * FROM canvas_events').all()).toEqual([]);
+      }
+      store.db.exec('DROP TRIGGER fail_event');
+      expect(store.renameCanvas(canvas.id, { title: 'Original', expectedRevision: 1 }).revision).toBe(1);
+      expect(store.renameCanvas(canvas.id, { title: 'Changed', expectedRevision: 1 }).revision).toBe(2);
+      expect(() => store.updateCanvasBounds(canvas.id, { bounds: { mode: 'unlimited' }, expectedRevision: 1 })).toThrow(
+        /expected revision/
+      );
+      expect(store.db.prepare('SELECT * FROM canvas_events').all()).toHaveLength(1);
+    } finally {
+      store.close();
+    }
+  });
+
   it('separates frame, data, and metadata mutations and versions events/idempotency', () => {
     const store = makeStore();
     const canvas = store.createCanvas({ title: 'Cards' });

@@ -298,72 +298,90 @@ export class V2SqliteCanvasStore {
   }
 
   updateCanvasBounds(canvasId: string, input: UpdateCanvasBoundsInput): V2CanvasRecord {
-    const canvas = this.getCanvas(canvasId);
-    if (!input || input.bounds === undefined) {
-      throw new CanvasError('validation_error', 'canvas bounds are required', 'validation', 400);
-    }
-    checkRevision(input.expectedRevision, canvas.revision);
-    const bounds = normalizeCanvasBounds(input.bounds);
-    const revision = canvas.revision + 1;
-    const updatedAt = timestamp();
-    this.db
-      .prepare('UPDATE canvases SET width=?, height=?, bounds_json=?, revision=?, updated_at=? WHERE id=?')
-      .run(
-        bounds.mode === 'fixed' ? bounds.width : DEFAULT_CANVAS_WIDTH,
-        bounds.mode === 'fixed' ? bounds.height : DEFAULT_CANVAS_HEIGHT,
-        serialize(bounds),
+    return this.metadataTransaction(() => {
+      const canvas = this.getCanvas(canvasId);
+      if (!input || input.bounds === undefined) {
+        throw new CanvasError('validation_error', 'canvas bounds are required', 'validation', 400);
+      }
+      checkRevision(input.expectedRevision, canvas.revision);
+      const bounds = normalizeCanvasBounds(input.bounds);
+      const revision = canvas.revision + 1;
+      const updatedAt = timestamp();
+      this.db
+        .prepare('UPDATE canvases SET width=?, height=?, bounds_json=?, revision=?, updated_at=? WHERE id=?')
+        .run(
+          bounds.mode === 'fixed' ? bounds.width : DEFAULT_CANVAS_WIDTH,
+          bounds.mode === 'fixed' ? bounds.height : DEFAULT_CANVAS_HEIGHT,
+          serialize(bounds),
+          revision,
+          updatedAt,
+          canvasId
+        );
+      this.recordEvent(canvasId, revision, { op: 'setBounds', bounds }, updatedAt, input.actor);
+      return {
+        ...canvas,
+        bounds,
+        ...(bounds.mode === 'fixed'
+          ? { width: bounds.width, height: bounds.height }
+          : { width: undefined, height: undefined }),
         revision,
-        updatedAt,
-        canvasId
-      );
-    this.recordEvent(canvasId, revision, { op: 'setBounds', bounds }, updatedAt, input.actor);
-    return {
-      ...canvas,
-      bounds,
-      ...(bounds.mode === 'fixed'
-        ? { width: bounds.width, height: bounds.height }
-        : { width: undefined, height: undefined }),
-      revision,
-      updatedAt
-    };
+        updatedAt
+      };
+    });
   }
 
   renameCanvas(canvasId: string, input: RenameCanvasInput): V2CanvasRecord {
-    const canvas = this.getCanvas(canvasId);
-    const title = typeof input?.title === 'string' ? input.title.trim() : '';
-    if (!title) throw new CanvasError('validation_error', 'canvas title is required', 'validation', 400);
-    checkRevision(input.expectedRevision, canvas.revision);
-    if (title === canvas.title) return canvas;
-    const revision = canvas.revision + 1;
-    const updatedAt = timestamp();
-    this.db
-      .prepare('UPDATE canvases SET title=?, revision=?, updated_at=? WHERE id=?')
-      .run(title, revision, updatedAt, canvasId);
-    this.recordEvent(canvasId, revision, { op: 'renameCanvas', title }, updatedAt, input.actor);
-    return { ...canvas, title, revision, updatedAt };
+    return this.metadataTransaction(() => {
+      const canvas = this.getCanvas(canvasId);
+      const title = typeof input?.title === 'string' ? input.title.trim() : '';
+      if (!title) throw new CanvasError('validation_error', 'canvas title is required', 'validation', 400);
+      checkRevision(input.expectedRevision, canvas.revision);
+      if (title === canvas.title) return canvas;
+      const revision = canvas.revision + 1;
+      const updatedAt = timestamp();
+      this.db
+        .prepare('UPDATE canvases SET title=?, revision=?, updated_at=? WHERE id=?')
+        .run(title, revision, updatedAt, canvasId);
+      this.recordEvent(canvasId, revision, { op: 'renameCanvas', title }, updatedAt, input.actor);
+      return { ...canvas, title, revision, updatedAt };
+    });
   }
 
   updateCanvasTheme(canvasId: string, input: UpdateCanvasThemeInput): V2CanvasRecord {
-    const canvas = this.getCanvas(canvasId);
-    if (!input || !Object.hasOwn(input, 'theme')) {
-      throw new CanvasError('validation_error', 'canvas theme is required and may be null', 'validation', 400);
+    return this.metadataTransaction(() => {
+      const canvas = this.getCanvas(canvasId);
+      if (!input || !Object.hasOwn(input, 'theme')) {
+        throw new CanvasError('validation_error', 'canvas theme is required and may be null', 'validation', 400);
+      }
+      checkRevision(input.expectedRevision, canvas.revision);
+      const theme = input.theme === null ? null : normalizeCanvasTheme(input.theme);
+      if (JSON.stringify(theme) === JSON.stringify(canvas.theme ?? null)) return canvas;
+      const revision = canvas.revision + 1;
+      const updatedAt = timestamp();
+      this.db
+        .prepare('UPDATE canvases SET theme_json=?, revision=?, updated_at=? WHERE id=?')
+        .run(serialize(theme), revision, updatedAt, canvasId);
+      this.recordEvent(
+        canvasId,
+        revision,
+        { op: 'setTheme', theme: theme as unknown as JsonObject | null },
+        updatedAt,
+        input.actor
+      );
+      return { ...canvas, theme, revision, updatedAt };
+    });
+  }
+
+  private metadataTransaction(update: () => V2CanvasRecord): V2CanvasRecord {
+    this.db.exec('BEGIN IMMEDIATE;');
+    try {
+      const canvas = update();
+      this.db.exec('COMMIT;');
+      return canvas;
+    } catch (error) {
+      this.db.exec('ROLLBACK;');
+      throw error;
     }
-    checkRevision(input.expectedRevision, canvas.revision);
-    const theme = input.theme === null ? null : normalizeCanvasTheme(input.theme);
-    if (JSON.stringify(theme) === JSON.stringify(canvas.theme ?? null)) return canvas;
-    const revision = canvas.revision + 1;
-    const updatedAt = timestamp();
-    this.db
-      .prepare('UPDATE canvases SET theme_json=?, revision=?, updated_at=? WHERE id=?')
-      .run(serialize(theme), revision, updatedAt, canvasId);
-    this.recordEvent(
-      canvasId,
-      revision,
-      { op: 'setTheme', theme: theme as unknown as JsonObject | null },
-      updatedAt,
-      input.actor
-    );
-    return { ...canvas, theme, revision, updatedAt };
   }
 
   applyOperations(canvasId: string, request: V2CanvasBatchRequest): V2CanvasRecord {

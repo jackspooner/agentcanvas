@@ -11,6 +11,12 @@ This pre-1.0 release intentionally replaces every flat HTTP error body with RFC 
 
 MCP clients should keep handling protocol/JSON-RPC errors normally. For application failures returned by a dispatched tool, read `structuredContent.problem` when `isError` is true. Refresh generated clients from `docs/openapi.standard.json`, refresh cached MCP tool catalogs, and use `docs/error-codes.json` to audit code-specific behavior.
 
+Core HTTP mutations now enforce their published schemas before persistence. Send valid JSON objects with the documented fields and types; share-link creation requires `{}` when no options are supplied. Previously accepted malformed bodies or unsupported fields now receive `400` Problem Details. Successful response shapes, routes, and MCP tool names are unchanged. No database migration is needed for these reliability fixes.
+
+Browser consumers should retain `elementRuntime` and `diagnostics` from batch responses, and refresh the canvas projection after macros or metadata-only mutations. Resource expiration is independent of document revisions. A failed refresh after a successful mutation must not cause that mutation to be retried.
+
+Unexpected HTTP failures are logged once as JSON on stderr with the response request ID and source locations. Exception messages and request values are excluded; use the request ID to correlate a failure with its boundary log.
+
 ## Before changing the checkout
 
 1. Read the release notes between the installed and target versions.

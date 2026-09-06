@@ -5,6 +5,12 @@ canvases built by people and agents. This alpha includes the v0.3 editor
 foundation: polished pan, zoom, selection, marquee, multi-move, resize,
 clipboard, undo/redo, grid snapping, and a shared command service.
 
+Core HTTP mutations validate the published schemas and return Problem Details
+for invalid requests. Browser media resources refresh independently of document
+revisions. See the [release notes](docs/release-notes-v0.3.0-alpha.2.md) and
+[upgrade guidance](docs/upgrading.md#030-alpha2) for the reliability fixes and
+client compatibility notes.
+
 Canvas documents, revisions, SQLite persistence, sharing, viewports, resource
 security, HTTP/MCP infrastructure, and snapshot composition remain owned by
 the AgentCanvas kernel. Extensions contribute element schemas, renderers,

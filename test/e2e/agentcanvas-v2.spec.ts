@@ -85,12 +85,11 @@ test('renders default and optional elements while isolating one failing browser 
   const assetNodeBox = await page.locator('[data-element-id="asset-1"]').boundingBox();
   const assetFrameBox = await page.locator('[data-element-id="asset-1"] figure.frame').boundingBox();
   if (!assetNodeBox || !assetFrameBox) throw new Error('Asset renderer frame has no bounding box');
-  expect(assetFrameBox).toEqual({
-    x: assetNodeBox.x + 1,
-    y: assetNodeBox.y + 1,
-    width: assetNodeBox.width - 2,
-    height: assetNodeBox.height - 2
-  });
+  const scale = assetNodeBox.width / (await persistedElement(page, 'asset-1')).width!;
+  expect(assetFrameBox.x).toBeCloseTo(assetNodeBox.x + scale, 2);
+  expect(assetFrameBox.y).toBeCloseTo(assetNodeBox.y + scale, 2);
+  expect(assetFrameBox.width).toBeCloseTo(assetNodeBox.width - 2 * scale, 2);
+  expect(assetFrameBox.height).toBeCloseTo(assetNodeBox.height - 2 * scale, 2);
   await expect(page.locator('[data-element-id="bbox-1"] .plugin-renderer-surface svg')).toBeVisible();
   await expect(page.locator('[data-element-id="path-1"] .plugin-renderer-surface svg')).toBeVisible();
   await expect(page.locator('[data-element-id="video-1"] video')).toHaveAttribute('src', /^blob:/);
@@ -217,6 +216,10 @@ test('uses the host drag handle but leaves composed-path interactive media alone
   await page.mouse.move(videoBox.x + videoBox.width / 2 + 70, videoBox.y + videoBox.height / 2 + 40, { steps: 4 });
   await page.mouse.up();
   expect(await persistedElement(page, 'video-1')).toMatchObject({ x: originalVideo.x, y: originalVideo.y });
+  expect(await page.locator('.viewport-status').textContent()).toBe(viewportBefore);
+  await page.mouse.move(videoBox.x + videoBox.width / 2, videoBox.y + videoBox.height / 2);
+  await page.mouse.wheel(0, -240);
+  await page.waitForTimeout(150);
   expect(await page.locator('.viewport-status').textContent()).toBe(viewportBefore);
 });
 
@@ -396,7 +399,7 @@ test('applies GLB lifecycle attributes, releases resources, and exposes the dete
 }) => {
   await openFixture(page);
   const viewer = page.locator('[data-element-id="glb-1"] model-viewer');
-  await expect(viewer).toHaveAttribute('src', /^blob:/, { timeout: 30_000 });
+  await expect(viewer).toHaveAttribute('src', new URL('/fixture-resources/model.glb', page.url()).href);
   await expect(viewer).toHaveAttribute('poster', /^blob:/);
   await expect(viewer).toHaveAttribute('camera-controls', '');
   await expect(viewer).toHaveAttribute('auto-rotate', '');

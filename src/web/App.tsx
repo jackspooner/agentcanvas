@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { AgentCanvasConfiguration } from '../configuration';
 import {
   applyCanvasOperations,
@@ -38,9 +38,35 @@ export function App() {
   const [browserRegistry, setBrowserRegistry] = useState<LoadedBrowserRegistry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const mounted = useRef(false);
+  const readGeneration = useRef(0);
+  const refreshAfterMutation = useRef<() => Promise<void>>(async () => {});
+
+  function installMutation(next: { canvas: CanvasDocument } & Partial<CanvasProjection>) {
+    if (!mounted.current) return;
+    readGeneration.current += 1;
+    setState((current) =>
+      current?.mode === 'canvas' &&
+      current.canvas.id === next.canvas.id &&
+      next.canvas.revision >= current.canvas.revision
+        ? { ...current, ...next }
+        : current
+    );
+  }
+
+  function refreshCommittedCanvas() {
+    if (!mounted.current) return;
+    void refreshAfterMutation.current().catch((cause) => {
+      if (mounted.current)
+        setWarning(`Canvas refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    });
+  }
 
   useEffect(() => {
+    mounted.current = true;
     let cancelled = false;
+    let initialLoaded = false;
+    let refreshInFlight: Promise<void> | null = null;
     let activeRegistry: LoadedBrowserRegistry | null = null;
     const indexMode = isCanvasIndexPath(window.location.pathname);
     const embedMode = window.location.pathname.startsWith('/embed/');
@@ -76,7 +102,8 @@ export function App() {
         try {
           serverState = await fetchViewportState(loaded.canvas.id);
         } catch (cause) {
-          setWarning(`Viewport state is unavailable: ${cause instanceof Error ? cause.message : String(cause)}`);
+          if (!cancelled)
+            setWarning(`Viewport state is unavailable: ${cause instanceof Error ? cause.message : String(cause)}`);
         }
         viewport = coerceViewport(readViewportCookie(loaded.canvas.id) ?? serverState?.userViewport);
       }
@@ -91,22 +118,50 @@ export function App() {
         if (!cancelled) setState({ mode: 'index', canvases, configuration });
         return;
       }
+      const generation = readGeneration.current;
       const loaded = await fetchCanvasFromLocation();
-      if (cancelled) return;
+      if (cancelled || generation !== readGeneration.current) return;
       setState((current) => {
         if (!current || current.mode !== 'canvas') return current;
-        if (current.canvas.id !== loaded.canvas.id)
-          return { mode: 'canvas', ...loaded, initialViewport: current.initialViewport };
-        if (current.canvas.revision === loaded.canvas.revision && current.canvas.updatedAt === loaded.canvas.updatedAt)
-          return current;
-        return { ...current, ...loaded };
+        if (current.canvas.id !== loaded.canvas.id || loaded.canvas.revision < current.canvas.revision) return current;
+        const canvas = current.canvas.revision === loaded.canvas.revision ? current.canvas : loaded.canvas;
+        const elementRuntime =
+          JSON.stringify(current.elementRuntime) === JSON.stringify(loaded.elementRuntime)
+            ? current.elementRuntime
+            : loaded.elementRuntime;
+        const diagnostics =
+          JSON.stringify(current.diagnostics) === JSON.stringify(loaded.diagnostics)
+            ? current.diagnostics
+            : loaded.diagnostics;
+        return { ...current, ...loaded, canvas, elementRuntime, diagnostics };
       });
+      setWarning((current) => (current?.startsWith('Canvas refresh failed:') ? null : current));
     }
 
-    loadInitial().catch((cause) => setError(cause instanceof Error ? cause.message : String(cause)));
+    function poll(): Promise<void> {
+      if (cancelled || !initialLoaded) return Promise.resolve();
+      if (!refreshInFlight)
+        refreshInFlight = refresh().finally(() => {
+          refreshInFlight = null;
+        });
+      return refreshInFlight;
+    }
+    refreshAfterMutation.current = async () => {
+      // A mutation invalidates an earlier poll; wait for it before requesting the committed projection.
+      await refreshInFlight?.catch(() => {});
+      await poll();
+    };
+    loadInitial()
+      .then(() => {
+        initialLoaded = true;
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+      });
     const timer = window.setInterval(
       () =>
-        void refresh().catch((cause) => {
+        void poll().catch((cause) => {
+          if (cancelled) return;
           const message = `Canvas refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`;
           if (embedMode) setError(message);
           else setWarning(message);
@@ -115,6 +170,8 @@ export function App() {
     );
     return () => {
       cancelled = true;
+      mounted.current = false;
+      readGeneration.current += 1;
       window.clearInterval(timer);
       void activeRegistry?.dispose();
     };
@@ -211,25 +268,22 @@ export function App() {
       initialViewport={state.initialViewport}
       loadViewport={() => fetchViewportState(state.canvas.id)}
       onCanvasBoundsChange={async (bounds: CanvasBounds) => {
+        readGeneration.current += 1;
         const canvas = await updateCanvasBounds(state.canvas.id, bounds, state.canvas.revision);
-        setState((current) =>
-          current?.mode === 'canvas' && current.canvas.id === canvas.id ? { ...current, canvas } : current
-        );
+        installMutation({ canvas });
+        refreshCommittedCanvas();
       }}
       onCanvasOperations={async (operations, expectedRevision) => {
-        const canvas = await applyCanvasOperations(state.canvas.id, operations, expectedRevision);
-        setState((current) =>
-          current?.mode === 'canvas' && current.canvas.id === canvas.id ? { ...current, canvas } : current
-        );
-        return canvas;
+        readGeneration.current += 1;
+        const projection = await applyCanvasOperations(state.canvas.id, operations, expectedRevision);
+        installMutation(projection);
+        return projection.canvas;
       }}
       onMacroExecute={async (request: MacroServiceExecuteRequest) => {
+        readGeneration.current += 1;
         const result = await executeMacro(request);
-        setState((current) =>
-          current?.mode === 'canvas' && current.canvas.id === result.canvas.id
-            ? { ...current, canvas: result.canvas as CanvasDocument }
-            : current
-        );
+        installMutation({ canvas: result.canvas as CanvasDocument });
+        refreshCommittedCanvas();
         return result;
       }}
       onViewportChange={(viewport) => {

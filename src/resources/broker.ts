@@ -50,6 +50,9 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
   private readonly defaultTtlMs: number;
   private readonly maximumTtlMs: number;
   private readonly now: () => number;
+  private expirationTimer: ReturnType<typeof setTimeout> | undefined;
+  private nextExpiration = Infinity;
+  private disposed = false;
 
   constructor(options: ResourceBrokerOptions = {}) {
     // Provider-specific limits are normally lower; this remains the independent host ceiling.
@@ -60,6 +63,7 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
   }
 
   register(registration: ResourceRegistration): OpaqueResourceHandle {
+    if (this.disposed) throw new Error('Resource broker is disposed');
     const mimeType = checkMimeType(registration.mimeType);
     if (
       registration.byteLength !== undefined &&
@@ -88,6 +92,7 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
       ...(registration.sha256 ? { sha256: registration.sha256 } : {})
     };
     this.resources.set(handle, { details, registration });
+    this.scheduleExpiration(created + ttlMs);
     return Object.freeze({
       handle,
       url: details.url,
@@ -165,6 +170,35 @@ export class ResourceBroker implements SnapshotResourcesCapabilityV1 {
       if (!this.live(handle)) removed += 1;
     }
     return removed;
+  }
+
+  /** Releases all handles and scheduled expiration work. Safe to call more than once. */
+  dispose(): void {
+    this.disposed = true;
+    clearTimeout(this.expirationTimer);
+    this.expirationTimer = undefined;
+    this.resources.clear();
+    this.nextExpiration = Infinity;
+  }
+
+  private scheduleExpiration(expiresAt: number): void {
+    if (expiresAt >= this.nextExpiration) return;
+    clearTimeout(this.expirationTimer);
+    this.nextExpiration = expiresAt;
+    this.expirationTimer = setTimeout(
+      () => {
+        this.expirationTimer = undefined;
+        this.nextExpiration = Infinity;
+        this.pruneExpired();
+        let next = Infinity;
+        for (const resource of this.resources.values()) {
+          next = Math.min(next, Date.parse(resource.details.expiresAt as string));
+        }
+        this.scheduleExpiration(next);
+      },
+      Math.max(1, expiresAt - this.now())
+    );
+    this.expirationTimer.unref?.();
   }
 
   private live(handle: string): StoredResource | null {
