@@ -444,7 +444,8 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
     {
       name: 'macro_plan',
       title: 'Plan macro',
-      description: 'Purely expand and validate an exact macro version for a canvas.',
+      description:
+        'Purely expand and validate an exact macro version for a canvas. Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.',
       inputSchema: MACRO_PLAN_REQUEST_SCHEMA,
       outputSchema: MACRO_PLAN_RESPONSE_SCHEMA,
       annotations: { readOnlyHint: true }

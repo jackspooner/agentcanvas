@@ -385,6 +385,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/MacroJsonValue"
             },
+            "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
             "type": "object"
           },
           "label": {
@@ -542,6 +543,7 @@
                 "additionalProperties": {
                   "$ref": "#/components/schemas/MacroJsonValue"
                 },
+                "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
                 "type": "object"
               },
               "label": {
@@ -3421,6 +3423,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/MacroJsonValue"
             },
+            "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
             "type": "object"
           },
           "label": {
@@ -4712,6 +4715,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/MacroJsonValue"
             },
+            "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
             "type": "object"
           },
           "label": {
@@ -10756,6 +10760,7 @@
     },
     "/api/v1/canvases/{canvasId}/macros/{macroId}:plan": {
       "post": {
+        "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
         "operationId": "macroPlan",
         "parameters": [
           {

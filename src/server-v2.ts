@@ -564,6 +564,8 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
       post: {
         operationId: 'macroPlan',
         summary: 'Plan an exact macro version without mutation',
+        description:
+          'Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.',
         tags: ['Macros'],
         parameters: [
           { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } },

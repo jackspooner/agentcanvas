@@ -79,6 +79,51 @@ function plan(
 }
 
 describe('AgentCanvas Macros v1 domain', () => {
+  it.each([
+    ['string', 'hello'],
+    ['number', 42],
+    ['boolean', false],
+    ['null', null],
+    ['array', [1, { nested: true }]],
+    ['object', { value: 'hello' }],
+    ['self reference', { $macroRef: 'input', pointer: '/payload' }],
+    [
+      'mutual references',
+      { a: { $macroRef: 'input', pointer: '/payload/b' }, b: { $macroRef: 'input', pointer: '/payload/a' } }
+    ],
+    ['generated reference', { $macroRef: 'generatedElementId', elementKey: 'table' }]
+  ])('inserts %s input literally across template payloads', (_name, payload) => {
+    const input = { payload } as JsonObject;
+    const before = structuredClone(input);
+    const ref = { $macroRef: 'input', pointer: '/payload' };
+    const result = plan(
+      {
+        inputSchema: {
+          type: 'object',
+          required: ['payload'],
+          properties: { payload: {} },
+          additionalProperties: false
+        },
+        elements: [
+          {
+            ...definition().elements[0],
+            data: { nested: [{ value: ref }], generated: { $macroRef: 'generatedElementId', elementKey: 'table' } },
+            style: { literal: ref },
+            metadata: { literal: ref }
+          }
+        ]
+      },
+      input
+    );
+    expect(result.previewElements[0]).toMatchObject({
+      data: { nested: [{ value: payload }], generated: result.previewElements[0].id },
+      style: { literal: payload },
+      metadata: { literal: payload }
+    });
+    expect(input).toEqual(before);
+    expect(Object.isFrozen(input)).toBe(false);
+  });
+
   it('validates definitions, applies AJV defaults, expands refs, and preserves fixed geometry', () => {
     const macro = definition({
       inputSchema: {

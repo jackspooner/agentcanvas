@@ -434,7 +434,11 @@ const macroSummary: JsonObject = {
 const requestCanvasId = { type: 'string', minLength: 1 };
 const requestMacroId = { type: 'string', pattern: ID_PATTERN };
 const requestVersion = { type: 'integer', minimum: 1 };
-const requestInput = jsonObject;
+const requestInput = {
+  ...jsonObject,
+  description:
+    'Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.'
+};
 const planRequest: JsonObject = {
   type: 'object',
   additionalProperties: false,

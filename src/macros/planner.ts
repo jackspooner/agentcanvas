@@ -159,8 +159,7 @@ export function resolveMacroRef(
         throw new MacroError('macro_ref_missing', 'generated element reference points to an unknown key', 'planning');
       return id;
     }
-    const resolved = resolveJsonPointer(input, reference.pointer as string);
-    return resolveMacroRef(resolved, input, generatedIds);
+    return resolveJsonPointer(input, reference.pointer as string);
   }
   return Object.fromEntries(
     Object.entries(value).map(([key, child]) => [key, resolveMacroRef(child, input, generatedIds)])
