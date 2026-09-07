@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasThemeV1, JsonObject } from '@agentcanvas/plugin-sdk';
 import { isJsonObject } from '@agentcanvas/plugin-sdk';
 import { nanoid } from 'nanoid';
 import { canvasShareUrl } from '../canvas-url.js';
@@ -13,7 +13,6 @@ import {
   type UpdateAgentCanvasConfigurationInput
 } from '../configuration.js';
 import type {
-  CanvasBackground,
   CanvasBounds,
   CanvasViewport,
   CanvasViewportInput,
@@ -34,45 +33,13 @@ import { AGENTCANVAS_VERSION } from '../version.js';
 import { readAgentCanvasConfiguration, writeAgentCanvasConfiguration } from './configuration.js';
 import { initializeEmptyV2Database, inspectDatabaseVersion, requireV2Database } from './version.js';
 
-export interface V2CanvasRecord {
-  id: string;
-  title: string;
-  description?: string | null;
-  project?: string | null;
-  conversationId?: string | null;
-  createdBy: 'agent' | 'user' | 'system';
-  createdAt: string;
-  updatedAt: string;
-  bounds: CanvasBounds;
-  width?: number;
-  height?: number;
-  background?: CanvasBackground | null;
-  theme?: CanvasThemeV1 | null;
-  elements: CanvasElement[];
-  revision: number;
-  metadata?: JsonObject;
-  documentVersion: 2;
-}
+export type {
+  CanvasBatchRequest as V2CanvasBatchRequest,
+  CanvasOperation as V2CanvasOperation,
+  CanvasRecord as V2CanvasRecord
+} from '@agentcanvas/core';
 
-export type V2CanvasOperation =
-  | { op: 'upsertElement'; element: CanvasElement | Record<string, unknown> }
-  | { op: 'patchElementFrame'; elementId: string; frame: CanvasElementFramePatch | Record<string, unknown> }
-  | {
-      op: 'replaceElementData';
-      elementId: string;
-      data: JsonObject | Record<string, unknown>;
-      style?: JsonObject | null;
-    }
-  | { op: 'replaceElementMetadata'; elementId: string; metadata: JsonObject | Record<string, unknown> }
-  | { op: 'deleteElement'; elementId: string }
-  | { op: 'clear' };
-
-export interface V2CanvasBatchRequest {
-  operations: V2CanvasOperation[];
-  expectedRevision?: number;
-  idempotencyKey?: string;
-  actor?: string;
-}
+import type { CanvasBatchRequest as V2CanvasBatchRequest, CanvasRecord as V2CanvasRecord } from '@agentcanvas/core';
 
 export interface V2BatchTransactionContext {
   db: DatabaseSync;
