@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { discoverPluginDirectory } from '../plugin-runtime/index.js';
-import { createV2Runtime, createV2ServiceHandler } from '../server-v2.js';
+import { createV2Runtime } from '../runtime.js';
+import { createV2ServiceHandler } from '../server-v2.js';
 
 const DEFAULT_PLUGIN_IDS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;
 

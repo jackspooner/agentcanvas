@@ -10555,6 +10555,7 @@
               "additionalProperties": {
                 "$ref": "#/$defs/JsonValue"
               },
+              "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
               "type": "object"
             },
             "label": {
@@ -28095,7 +28096,7 @@
       "openWorldHint": false,
       "readOnlyHint": true
     },
-    "description": "Purely expand and validate an exact macro version for a canvas.",
+    "description": "Purely expand and validate an exact macro version for a canvas. Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
     "errorCodes": [
       "internal_error",
       "macro_archived",
@@ -29361,6 +29362,7 @@
           "additionalProperties": {
             "$ref": "#/$defs/JsonValue"
           },
+          "description": "Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.",
           "type": "object"
         },
         "label": {

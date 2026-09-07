@@ -1,4 +1,4 @@
-import type { CanvasElement, JsonObject } from '@agentcanvas/plugin-sdk';
+import { isJsonObject, type CanvasElement, type JsonObject } from '@agentcanvas/plugin-sdk';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderModelSnapshot } from '../../../plugin-packages/glb-viewer/src/snapshot';
@@ -345,18 +345,22 @@ function App() {
                 candidate.id === operation.elementId ? { ...candidate, ...operation.frame } : candidate
               );
             } else if (operation.op === 'replaceElementData') {
+              const data = operation.data;
+              if (!isJsonObject(data)) throw new Error('Fixture requires JSON element data');
               elements = elements.map((candidate) =>
                 candidate.id === operation.elementId
                   ? {
                       ...candidate,
-                      data: operation.data,
+                      data,
                       ...(operation.style !== undefined ? { style: operation.style } : {})
                     }
                   : candidate
               );
             } else if (operation.op === 'replaceElementMetadata') {
+              const metadata = operation.metadata;
+              if (!isJsonObject(metadata)) throw new Error('Fixture requires JSON element metadata');
               elements = elements.map((candidate) =>
-                candidate.id === operation.elementId ? { ...candidate, metadata: operation.metadata } : candidate
+                candidate.id === operation.elementId ? { ...candidate, metadata } : candidate
               );
             } else if (operation.op === 'deleteElement') {
               elements = elements.filter((candidate) => candidate.id !== operation.elementId);

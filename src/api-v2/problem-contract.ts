@@ -1,14 +1,16 @@
+import type { Context } from 'hono';
+import { nanoid } from 'nanoid';
+import type { JsonObject, JsonSchema } from '@agentcanvas/plugin-sdk';
 import {
   createProblemDetails,
   defineProblemCodes,
-  problemCodeMetadata,
   PROBLEM_DETAILS_SCHEMA,
   PROBLEM_ISSUE_SCHEMA,
   type ProblemCategory,
   type ProblemCodeDefinition,
-  type ProblemDetails
+  type ProblemDetails,
+  problemCodeMetadata
 } from '@workspace2/api-contracts';
-import type { JsonObject, JsonSchema } from '@agentcanvas/plugin-sdk';
 import type { CanvasError } from '../errors.js';
 import type { MacroError } from '../macros/index.js';
 
@@ -280,4 +282,15 @@ export function exampleProblem(problemCode: AgentCanvasProblemCode): ProblemDeta
 function withoutId(schema: Record<string, unknown>): Record<string, unknown> {
   const { $id: _id, ...value } = schema;
   return structuredClone(value);
+}
+
+export function requestId(c: Context): string {
+  return c.req.header('x-request-id')?.trim() || `req_${nanoid(16)}`;
+}
+
+export function sendProblem(c: Context, problem: ReturnType<typeof problemForCode>): Response {
+  return c.json(problem, problem.status as 400 | 403 | 404 | 408 | 409 | 410 | 413 | 500 | 503 | 504, {
+    'content-type': 'application/problem+json',
+    'x-request-id': problem.requestId
+  });
 }

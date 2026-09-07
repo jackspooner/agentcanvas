@@ -30,13 +30,15 @@ export function CanvasBoundsControl({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fixedWidth = bounds.mode === 'fixed' ? bounds.width : null;
+  const fixedHeight = bounds.mode === 'fixed' ? bounds.height : null;
   useEffect(() => {
     setMode(bounds.mode);
-    if (bounds.mode === 'fixed') {
-      setWidth(String(bounds.width));
-      setHeight(String(bounds.height));
+    if (fixedWidth !== null && fixedHeight !== null) {
+      setWidth(String(fixedWidth));
+      setHeight(String(fixedHeight));
     }
-  }, [bounds.mode, bounds.mode === 'fixed' ? bounds.width : null, bounds.mode === 'fixed' ? bounds.height : null]);
+  }, [bounds.mode, fixedWidth, fixedHeight]);
 
   const summary = summaryLabel ?? boundsLabel(bounds);
   if (readOnly || !onChange) return <span className="badge canvas-bounds-badge">{summary}</span>;

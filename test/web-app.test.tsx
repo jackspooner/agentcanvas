@@ -5,6 +5,7 @@ import { App } from '../src/web/App';
 import { applyCanvasOperations, saveUserViewport } from '../src/web/api';
 import type { CanvasView } from '../src/web/components/CanvasView';
 import type { CanvasDocument, CanvasProjection } from '../src/web/v2-types';
+import * as embedBridge from '../src/web/embed-bridge';
 
 const view = vi.hoisted(() => ({ current: null as unknown as React.ComponentProps<typeof CanvasView> }));
 vi.mock('../src/web/components/CanvasView', () => ({
@@ -68,6 +69,44 @@ afterEach(() => {
 });
 
 describe('browser projection reconciliation', () => {
+  it('keeps embed notifications stable on polls and refreshes changed session authority', async () => {
+    window.history.replaceState({}, '', '/embed/token');
+    let session = {
+      id: 'session',
+      canvasIds: ['test'],
+      mode: 'read',
+      parentOrigin: 'https://parent.example',
+      createdAt: '',
+      expiresAt: 'later'
+    };
+    read = async () => Response.json({ ...current, session, readOnly: session.mode === 'read' });
+    const post = vi.spyOn(embedBridge, 'postEmbedMessage').mockImplementation(() => {});
+    try {
+      await act(async () => {
+        render(<App />);
+      });
+      expect(post.mock.calls.map((call) => call[1])).toEqual(['ready', 'canvas.updated']);
+      post.mockClear();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(post).not.toHaveBeenCalled();
+      current = projection(2, 'new');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(post).toHaveBeenCalledWith(session, 'canvas.updated', expect.objectContaining({ revision: 2 }));
+      post.mockClear();
+      session = { ...session, mode: 'edit', parentOrigin: 'https://updated.example' };
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500);
+      });
+      expect(post).toHaveBeenCalledWith(session, 'ready', expect.objectContaining({ readOnly: false }));
+    } finally {
+      post.mockRestore();
+    }
+  });
+
   it('applies batch resources immediately, refreshes equal revisions, and rejects obsolete reads', async () => {
     await act(async () => {
       render(<App />);

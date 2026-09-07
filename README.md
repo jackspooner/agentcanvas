@@ -488,6 +488,8 @@ npm run test:e2e
 npm run build
 npm run plugins:verify
 npm run check:openapi
+npm run check:mcp-contract
+npm run check:contracts
 npm run check:docs
 git diff --check
 ```

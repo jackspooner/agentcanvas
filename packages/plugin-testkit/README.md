@@ -1,8 +1,7 @@
 # AgentCanvas Plugin Testkit
 
-`@agentcanvas/plugin-testkit` provides dependency-free checks for plugin manifests and activation registrations.
-It is intentionally structural: the AgentCanvas host remains the canonical owner of strict Ajv JSON Schema and
-semver validation.
+`@agentcanvas/plugin-testkit` uses Ajv and the SDK-owned manifest schema for structural checks for plugin manifests and activation registrations.
+It is intentionally structural: the SDK owns structural rules; the AgentCanvas host additionally owns semver, dependency availability, and filesystem containment checks.
 
 Use `validatePluginManifestStructure` or `assertPluginManifestStructure` before packaging. After activating a
 plugin in a test host, pass its recorded local contribution names to `validateContributionRegistrations` to

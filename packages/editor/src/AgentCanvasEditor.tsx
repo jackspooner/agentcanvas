@@ -137,10 +137,9 @@ function EditorSurface<TElement extends EditorElement>({
   onFrameCommit,
   onCommitError
 }: AgentCanvasEditorProps<TElement>) {
-  const container = useRef<HTMLDivElement | null>(null);
+  const container = useRef<HTMLElement | null>(null);
   const gestureStart = useRef<ReadonlyMap<string, EditorFrame> | null>(null);
   const resizeStart = useRef<Map<string, EditorFrame>>(new Map());
-  const renderElementRef = useRef(renderElement);
   const onFrameCommitRef = useRef(onFrameCommit);
   const onCommitErrorRef = useRef(onCommitError);
   const onViewportChangeRef = useRef(onViewportChange);
@@ -152,7 +151,6 @@ function EditorSurface<TElement extends EditorElement>({
   );
   const nodesRef = useRef<AgentCanvasNode<TElement>[]>(nodes);
   const selectedElementIdsRef = useRef(selectedElementIds);
-  renderElementRef.current = renderElement;
   onFrameCommitRef.current = onFrameCommit;
   onCommitErrorRef.current = onCommitError;
   onViewportChangeRef.current = onViewportChange;
@@ -231,7 +229,7 @@ function EditorSurface<TElement extends EditorElement>({
         data: {
           ...node.data,
           readOnly,
-          renderElement: (context: EditorRenderContext<TElement>) => renderElementRef.current(context),
+          renderElement,
           onResizeStart(elementId) {
             const current = nodesRef.current.find((candidate) => candidate.id === elementId);
             if (current) resizeStart.current.set(elementId, nodeFrame(current));
@@ -269,7 +267,7 @@ function EditorSurface<TElement extends EditorElement>({
           }
         }
       })),
-    [commitFrameChanges, nodes, readOnly]
+    [commitFrameChanges, nodes, readOnly, renderElement]
   );
 
   const onNodesChange = useCallback((changes: NodeChange<AgentCanvasNode<TElement>>[]) => {
@@ -302,7 +300,7 @@ function EditorSurface<TElement extends EditorElement>({
   }, []);
 
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+    (event: React.KeyboardEvent<HTMLElement>) => {
       if (readOnly || isEditableKeyboardEvent(event) || !event.key.startsWith('Arrow')) return;
       const selected = nodesRef.current.filter((node) => node.selected && !node.data.element.locked);
       if (selected.length === 0) return;
@@ -342,17 +340,18 @@ function EditorSurface<TElement extends EditorElement>({
     [bounds]
   );
   const snapGrid = useMemo<[number, number]>(() => [gridSize, gridSize], [gridSize]);
+  const { centerX, centerY, zoom } = viewport;
   const flowViewport = useMemo(
-    () => worldViewportToFlow(viewport, size),
-    [size, viewport.centerX, viewport.centerY, viewport.zoom]
+    () => worldViewportToFlow({ centerX, centerY, zoom }, size),
+    [size, centerX, centerY, zoom]
   );
 
   return (
-    <div
+    <section
       ref={container}
       className={`agentcanvas-editor${className ? ` ${className}` : ''}`}
       style={{ background: backgroundColor }}
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: The editor must receive focus for arrow-key movement and canvas shortcuts.
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: The named editor region receives focus for arrow-key movement and canvas shortcuts.
       tabIndex={0}
       aria-label="Canvas editor"
       onKeyDownCapture={handleKeyDown}
@@ -404,7 +403,7 @@ function EditorSurface<TElement extends EditorElement>({
           <div className="agentcanvas-editor-world-overlay">{worldOverlay}</div>
         </ViewportPortal>
       </ReactFlow>
-    </div>
+    </section>
   );
 }
 

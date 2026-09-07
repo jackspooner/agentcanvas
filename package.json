@@ -44,7 +44,7 @@
     "build": "npm run build:packages && tsc --noEmit && vite build",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "lint": "biome lint --diagnostic-level=error .",
+    "lint": "biome lint .",
     "mcp": "npm run build:packages && tsx src/mcp-v2/stdio.ts",
     "migrate": "tsx src/cli/main.ts migrate",
     "plugins:build": "npm run build:packages && npm run build:plugins && tsx src/cli/plugins-main.ts catalog",

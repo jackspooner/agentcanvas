@@ -8,3 +8,4 @@ export * from './manifest.js';
 export * from './server.js';
 export * from './snapshot.js';
 export * from './theme.js';
+export * from './manifest-schema.js';

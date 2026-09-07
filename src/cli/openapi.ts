@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { JsonObject } from '@agentcanvas/plugin-sdk';
-import { createRegistryOpenApiDocument } from '../api-v2/openapi.js';
-import { loadOfflinePluginRegistry } from '../plugin-runtime/offline.js';
-import { coreOpenApiPaths } from '../server-v2.js';
-import { CANVAS_BOUNDS_SCHEMA, CANVAS_RECORD_SCHEMA, SHARE_LINK_SCHEMA, VIEWPORT_SCHEMA } from '../api-v2/schemas.js';
 import { CANVAS_THEME_V1_SCHEMA } from '@agentcanvas/plugin-sdk';
+import { coreOpenApiPaths } from '../api-v2/core-paths.js';
+import { createRegistryOpenApiDocument } from '../api-v2/openapi.js';
+import { CANVAS_BOUNDS_SCHEMA, CANVAS_RECORD_SCHEMA, SHARE_LINK_SCHEMA, VIEWPORT_SCHEMA } from '../api-v2/schemas.js';
+import { loadOfflinePluginRegistry } from '../plugin-runtime/offline.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 
 export const STANDARD_PLUGINS = ['agentcanvas.primitives', 'agentcanvas.markdown', 'agentcanvas.table'] as const;

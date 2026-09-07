@@ -137,3 +137,8 @@ built `/assets/...` bundle, and inspect process and browser logs for errors.
 If an MCP client uses the stdio bridge, restart or reconnect that bridge after
 the AgentCanvas process restarts and request a fresh `tools/list`. Do not trust
 a tool catalog cached from the previous host or extension set.
+
+## Literal macro invocation input
+
+Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.
+Callers that previously put reference expressions inside invocation input must move those expressions into the saved template. This change requires no database migration.

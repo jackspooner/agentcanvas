@@ -384,3 +384,8 @@ instances, selection authoring, extension planners, or external actions.
   https://nodered.org/docs/developing-flows/flow-structure
 - Notion buttons and variables:
   https://www.notion.com/en-gb/help/buttons
+
+## Literal macro invocation input
+
+Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.
+Callers that previously put reference expressions inside invocation input must move those expressions into the saved template. This change requires no database migration.

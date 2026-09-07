@@ -60,8 +60,13 @@ export interface CanvasViewportInput {
 export type CanvasOperation =
   | { op: 'upsertElement'; element: CanvasElement | Record<string, unknown> }
   | { op: 'patchElementFrame'; elementId: string; frame: CanvasElementFramePatch | Record<string, unknown> }
-  | { op: 'replaceElementData'; elementId: string; data: JsonObject; style?: JsonObject | null }
-  | { op: 'replaceElementMetadata'; elementId: string; metadata: JsonObject }
+  | {
+      op: 'replaceElementData';
+      elementId: string;
+      data: JsonObject | Record<string, unknown>;
+      style?: JsonObject | null;
+    }
+  | { op: 'replaceElementMetadata'; elementId: string; metadata: JsonObject | Record<string, unknown> }
   | { op: 'deleteElement'; elementId: string }
   | { op: 'clear' };
 
