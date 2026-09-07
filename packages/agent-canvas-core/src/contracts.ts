@@ -2,6 +2,7 @@ import type { CanvasElement, CanvasElementFramePatch, CanvasThemeV1, JsonObject 
 
 export const DEFAULT_CANVAS_WIDTH = 1600;
 export const DEFAULT_CANVAS_HEIGHT = 1000;
+export const CANVAS_LIST_LIMITS = Object.freeze({ default: 50, minimum: 1, maximum: 200 });
 
 export type CanvasBounds = { mode: 'unlimited' } | { mode: 'fixed'; width: number; height: number };
 

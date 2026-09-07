@@ -25,7 +25,7 @@ import type {
   UpdateCanvasBoundsInput,
   UpdateCanvasThemeInput
 } from '../contracts.js';
-import { DEFAULT_CANVAS_HEIGHT, DEFAULT_CANVAS_WIDTH } from '../contracts.js';
+import { CANVAS_LIST_LIMITS, DEFAULT_CANVAS_HEIGHT, DEFAULT_CANVAS_WIDTH } from '../contracts.js';
 import { CanvasError } from '../errors.js';
 import type { PluginElementValidator } from '../plugin-runtime/elements.js';
 import { normalizeCanvasTheme } from '../theme.js';
@@ -265,6 +265,15 @@ export class V2SqliteCanvasStore {
   }
 
   listCanvases(filter: { project?: string; conversationId?: string; limit?: number } = {}): V2CanvasRecord[] {
+    const limit = filter.limit === undefined ? CANVAS_LIST_LIMITS.default : filter.limit;
+    if (!Number.isSafeInteger(limit) || limit < CANVAS_LIST_LIMITS.minimum || limit > CANVAS_LIST_LIMITS.maximum) {
+      throw new CanvasError(
+        'validation_error',
+        `limit must be an integer between ${CANVAS_LIST_LIMITS.minimum} and ${CANVAS_LIST_LIMITS.maximum}`,
+        'validation',
+        400
+      );
+    }
     const clauses: string[] = [];
     const parameters: Array<string | number> = [];
     if (filter.project) {
@@ -276,7 +285,6 @@ export class V2SqliteCanvasStore {
       parameters.push(filter.conversationId);
     }
     const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-    const limit = Math.min(Math.max(filter.limit ?? 50, 1), 200);
     const rows = this.db
       .prepare(`SELECT * FROM canvases ${where} ORDER BY updated_at DESC LIMIT ?`)
       .all(...parameters, limit) as unknown as CanvasRow[];

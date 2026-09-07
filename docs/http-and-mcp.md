@@ -57,6 +57,18 @@ session. See [Embedding AgentCanvas](embedding.md).
 
 ## Canvas read projection
 
+Canvas lists (`GET /api/v1/canvases` and MCP `canvas_list`) accept an optional integer
+`limit` from 1 through 200, defaulting to 50 only when omitted. HTTP rejects empty,
+malformed, fractional, nonfinite, or out-of-range values with `400` Problem Details
+and `code: "validation_error"`; it does not clamp values.
+
+MCP canvas responses use the canonical persisted element envelope, including elements
+whose extension is no longer installed. Reads and supported kernel-owned mutations
+preserve those elements; inspected responses include `plugin_unavailable` diagnostics.
+Upsert inputs remain restricted to installed element types and current schemas.
+With no element extensions installed, canvas creation and reads remain available,
+but element upserts are rejected. Missing-extension data replacement is also rejected.
+
 A canvas read separates durable and runtime state:
 
 ```json

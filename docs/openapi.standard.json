@@ -5830,6 +5830,7 @@
             "in": "query",
             "name": "limit",
             "schema": {
+              "default": 50,
               "maximum": 200,
               "minimum": 1,
               "type": "integer"
@@ -5839,6 +5840,41 @@
         "responses": {
           "200": {
             "description": "Canvas list"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "validation_error": {
+                    "value": {
+                      "category": "validation",
+                      "code": "validation_error",
+                      "detail": "The request does not satisfy the declared contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Request validation failed",
+                      "type": "urn:workspace2:problem:validation_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Invalid canvas list limit",
+            "x-error-codes": [
+              {
+                "category": "validation",
+                "code": "validation_error",
+                "description": "The request does not satisfy the declared contract.",
+                "retryable": false,
+                "status": 400,
+                "title": "Request validation failed"
+              }
+            ]
           }
         },
         "summary": "List canvases",

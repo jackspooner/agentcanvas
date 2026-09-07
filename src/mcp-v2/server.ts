@@ -1,4 +1,9 @@
-import { CANVAS_BOUNDS_SCHEMA, CORE_REQUEST_SCHEMAS } from '../api-v2/schemas.js';
+import {
+  CANVAS_BOUNDS_SCHEMA,
+  CANVAS_ELEMENT_SCHEMA,
+  CANVAS_LIST_LIMIT_SCHEMA,
+  CORE_REQUEST_SCHEMAS
+} from '../api-v2/schemas.js';
 import {
   CANVAS_THEME_V1_SCHEMA,
   type CanvasThemeV1,
@@ -145,10 +150,12 @@ function canvasSchema(elementSchema: JsonSchema, includeInspection = false, incl
 
 function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[] {
   const elementCatalog = createRegistryElementSchemas(registry);
-  const elementSchema: JsonSchema = { oneOf: Object.values(elementCatalog.schemas) };
-  const canvas = canvasSchema(elementSchema);
-  const inspectedCanvas = canvasSchema(elementSchema, true);
-  const createdCanvas = canvasSchema(elementSchema, true, true);
+  const writableSchemas = Object.values(elementCatalog.schemas);
+  const writableElementSchema: JsonSchema = writableSchemas.length ? { oneOf: writableSchemas } : false;
+  // Reads preserve canonical envelopes even when their owning extension is absent.
+  const canvas = canvasSchema(CANVAS_ELEMENT_SCHEMA);
+  const inspectedCanvas = canvasSchema(CANVAS_ELEMENT_SCHEMA, true);
+  const createdCanvas = canvasSchema(CANVAS_ELEMENT_SCHEMA, true, true);
   const canvasList: JsonSchema = {
     type: 'object',
     additionalProperties: false,
@@ -211,7 +218,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       inputSchema: {
         type: 'object',
         additionalProperties: false,
-        properties: { limit: { type: 'integer', minimum: 1, maximum: 200 } }
+        properties: { limit: CANVAS_LIST_LIMIT_SCHEMA }
       },
       outputSchema: canvasList,
       annotations: { readOnlyHint: true }
@@ -310,7 +317,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       'Upsert a complete current-version element',
       {
         canvasId: CANVAS_ID,
-        element: elementSchema as JsonObject,
+        element: writableElementSchema,
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'element'],
@@ -463,7 +470,7 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
 function mutationTool(
   name: string,
   description: string,
-  properties: Record<string, JsonObject>,
+  properties: Record<string, JsonSchema>,
   required: string[],
   outputSchema: JsonSchema
 ): CoreJsonSchemaTool {

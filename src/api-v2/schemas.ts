@@ -1,4 +1,7 @@
 import { CANVAS_THEME_V1_SCHEMA, type JsonObject, type JsonSchema } from '@agentcanvas/plugin-sdk';
+import { CANVAS_LIST_LIMITS } from '../contracts.js';
+
+export const CANVAS_LIST_LIMIT_SCHEMA: JsonObject = { type: 'integer', ...CANVAS_LIST_LIMITS };
 
 const nullableNumber: JsonObject = { type: ['number', 'null'] };
 const nullableBoolean: JsonObject = { type: ['boolean', 'null'] };

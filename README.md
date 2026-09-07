@@ -11,6 +11,11 @@ revisions. See the [release notes](docs/release-notes-v0.3.0-alpha.2.md) and
 [upgrade guidance](docs/upgrading.md#030-alpha2) for the reliability fixes and
 client compatibility notes.
 
+Canvas lists accept an integer `limit` from 1 through 200 (default 50); invalid
+HTTP values return `400 validation_error`. MCP preserves stored elements from
+missing extensions in read and mutation responses while keeping upserts restricted
+to installed types. See [HTTP and MCP](docs/http-and-mcp.md).
+
 Canvas documents, revisions, SQLite persistence, sharing, viewports, resource
 security, HTTP/MCP infrastructure, and snapshot composition remain owned by
 the AgentCanvas kernel. Extensions contribute element schemas, renderers,

@@ -7,6 +7,16 @@ stop or start the process.
 
 ## 0.3.0-alpha.2
 
+Canvas list limits now enforce the documented integer range of 1 through 200.
+HTTP callers that previously relied on clamping must send a value within that range;
+empty or invalid values return `400` with `code: "validation_error"`. Omit `limit`
+to retain the default of 50. MCP already enforces the same range.
+
+Refresh cached MCP tool catalogs: canvas responses now accept canonical persisted
+elements from missing extensions. This fixes reads and successful kernel mutations
+being reported as failures after extension removal. Writable element schemas remain
+restricted to installed extensions. No database migration is required.
+
 This pre-1.0 release intentionally replaces every flat HTTP error body with RFC 9457 Problem Details and the `application/problem+json` content type. Update clients to read `detail` instead of `message`, `requestId` instead of `correlationId`, and branch on the stable `code`; remove assumptions about `ok:false` and `stage`. There is no legacy response mode.
 
 MCP clients should keep handling protocol/JSON-RPC errors normally. For application failures returned by a dispatched tool, read `structuredContent.problem` when `isError` is true. Refresh generated clients from `docs/openapi.standard.json`, refresh cached MCP tool catalogs, and use `docs/error-codes.json` to audit code-specific behavior.

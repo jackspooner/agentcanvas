@@ -2,6 +2,10 @@
 
 This release makes the HTTP and MCP application-error contract enforceable.
 
+- MCP canvas responses preserve missing-extension elements without reporting successful mutations as failures; empty element registries retain canvas creation/read support while rejecting upserts.
+- Canvas lists share a default of 50 and a strict integer range of 1–200 across store, HTTP, OpenAPI, and MCP. HTTP rejects invalid limits with `400 validation_error` instead of clamping or returning a server error.
+- Formatting and lint checks now include package and extension-package TSX. The keyboard-focusable canvas retains a documented, local lint exception for its custom keyboard interaction.
+
 - HTTP application failures now use RFC 9457 `application/problem+json` with stable machine-readable codes and request IDs.
 - MCP application failures reuse the HTTP Problem Details semantics at `structuredContent.problem`; MCP protocol failures remain protocol-native.
 - Runtime responses, OpenAPI `x-error-codes`, examples, MCP mappings, and `docs/error-codes.json` derive from one AgentCanvas registry.

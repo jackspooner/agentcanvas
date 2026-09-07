@@ -1,4 +1,4 @@
-import { CORE_REQUEST_SCHEMAS } from './api-v2/schemas.js';
+import { CANVAS_LIST_LIMIT_SCHEMA, CORE_REQUEST_SCHEMAS } from './api-v2/schemas.js';
 import fs from 'node:fs';
 import { createServer, type RequestListener } from 'node:http';
 import path from 'node:path';
@@ -648,9 +648,12 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         parameters: [
           { name: 'project', in: 'query', schema: { type: 'string' } },
           { name: 'conversationId', in: 'query', schema: { type: 'string' } },
-          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 200 } }
+          { name: 'limit', in: 'query', schema: CANVAS_LIST_LIMIT_SCHEMA }
         ],
-        responses: { 200: response('Canvas list') },
+        responses: {
+          200: response('Canvas list'),
+          400: problemResponse('Invalid canvas list limit', ['validation_error'])
+        },
         'x-agent-notes': agentNotes()
       },
       post: {
@@ -1221,7 +1224,7 @@ setInterval(async () => {
     const canvases = store.listCanvases({
       project: c.req.query('project'),
       conversationId: c.req.query('conversationId'),
-      limit: c.req.query('limit') ? Number(c.req.query('limit')) : undefined
+      limit: c.req.query('limit') === undefined ? undefined : Number(c.req.query('limit'))
     });
     return c.json({ ok: true, canvases });
   });
