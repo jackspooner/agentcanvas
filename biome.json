@@ -13,8 +13,10 @@
       "test/**/*.ts",
       "test/**/*.tsx",
       "packages/**/*.ts",
+      "packages/**/*.tsx",
       "packages/**/*.mts",
       "plugin-packages/**/*.ts",
+      "plugin-packages/**/*.tsx",
       "plugin-packages/**/*.mts",
       "plugin-packages/**/*.json",
       "*.ts",
@@ -44,13 +46,13 @@
     "rules": {
       "preset": "recommended",
       "a11y": {
-        "noStaticElementInteractions": "warn",
-        "noSvgWithoutTitle": "warn",
-        "useAriaPropsSupportedByRole": "warn",
-        "useKeyWithClickEvents": "warn"
+        "noStaticElementInteractions": "error",
+        "noSvgWithoutTitle": "error",
+        "useAriaPropsSupportedByRole": "error",
+        "useKeyWithClickEvents": "error"
       },
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "error"
       },
       "suspicious": {
         "noArrayIndexKey": "warn"

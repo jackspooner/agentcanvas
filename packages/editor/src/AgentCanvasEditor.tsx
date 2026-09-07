@@ -77,12 +77,7 @@ function EditorNode<TElement extends EditorElement>({
       />
       <div className="agentcanvas-editor-node-content">{data.renderElement({ element: data.element, selected })}</div>
       {!data.readOnly && !locked && (
-        <button
-          type="button"
-          className="agentcanvas-editor-drag-handle"
-          aria-label={`Move ${id}`}
-          title={`Move ${id}`}
-        >
+        <button type="button" className="agentcanvas-editor-drag-handle" aria-label={`Move ${id}`} title={`Move ${id}`}>
           <Grip aria-hidden="true" size={14} strokeWidth={2} />
         </button>
       )}
@@ -142,7 +137,7 @@ function EditorSurface<TElement extends EditorElement>({
   onFrameCommit,
   onCommitError
 }: AgentCanvasEditorProps<TElement>) {
-  const container = useRef<HTMLDivElement | null>(null);
+  const container = useRef<HTMLElement | null>(null);
   const gestureStart = useRef<ReadonlyMap<string, EditorFrame> | null>(null);
   const resizeStart = useRef<Map<string, EditorFrame>>(new Map());
   const onFrameCommitRef = useRef(onFrameCommit);
@@ -206,29 +201,26 @@ function EditorSurface<TElement extends EditorElement>({
     []
   );
 
-  const commitFrameChanges = useCallback(
-    (changes: readonly EditorFrameChange[]) => {
-      if (changes.length === 0 || !onFrameCommitRef.current) return;
-      void Promise.resolve(onFrameCommitRef.current(changes)).catch((error) => {
-        const previous = new Map(changes.map((change) => [change.elementId, change.before]));
-        setNodes((current) =>
-          current.map((candidate) => {
-            const frame = previous.get(candidate.id);
-            return frame
-              ? {
-                  ...candidate,
-                  position: { x: frame.x, y: frame.y },
-                  width: frame.width,
-                  height: frame.height
-                }
-              : candidate;
-          })
-        );
-        onCommitErrorRef.current?.(error);
-      });
-    },
-    []
-  );
+  const commitFrameChanges = useCallback((changes: readonly EditorFrameChange[]) => {
+    if (changes.length === 0 || !onFrameCommitRef.current) return;
+    void Promise.resolve(onFrameCommitRef.current(changes)).catch((error) => {
+      const previous = new Map(changes.map((change) => [change.elementId, change.before]));
+      setNodes((current) =>
+        current.map((candidate) => {
+          const frame = previous.get(candidate.id);
+          return frame
+            ? {
+                ...candidate,
+                position: { x: frame.x, y: frame.y },
+                width: frame.width,
+                height: frame.height
+              }
+            : candidate;
+        })
+      );
+      onCommitErrorRef.current?.(error);
+    });
+  }, []);
 
   const renderNodes = useMemo<RenderNode<TElement>[]>(
     () =>
@@ -278,13 +270,10 @@ function EditorSurface<TElement extends EditorElement>({
     [commitFrameChanges, nodes, readOnly, renderElement]
   );
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange<AgentCanvasNode<TElement>>[]) => {
-      const allowed = changes.filter((change) => change.type !== 'remove');
-      setNodes((current) => applyNodeChanges(allowed, current));
-    },
-    []
-  );
+  const onNodesChange = useCallback((changes: NodeChange<AgentCanvasNode<TElement>>[]) => {
+    const allowed = changes.filter((change) => change.type !== 'remove');
+    setNodes((current) => applyNodeChanges(allowed, current));
+  }, []);
 
   const onNodeDragStart: OnNodeDrag<AgentCanvasNode<TElement>> = useCallback((_event, _node, draggedNodes) => {
     gestureStart.current = frameMap(draggedNodes);
@@ -306,15 +295,12 @@ function EditorSurface<TElement extends EditorElement>({
     },
     [size]
   );
-  const handleSelectionChange = useCallback(
-    ({ nodes: selected }: { nodes: RenderNode<TElement>[] }) => {
-      onSelectionChangeRef.current?.(selected.map((node) => node.id));
-    },
-    []
-  );
+  const handleSelectionChange = useCallback(({ nodes: selected }: { nodes: RenderNode<TElement>[] }) => {
+    onSelectionChangeRef.current?.(selected.map((node) => node.id));
+  }, []);
 
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
+    (event: React.KeyboardEvent<HTMLElement>) => {
       if (readOnly || isEditableKeyboardEvent(event) || !event.key.startsWith('Arrow')) return;
       const selected = nodesRef.current.filter((node) => node.selected && !node.data.element.locked);
       if (selected.length === 0) return;
@@ -333,7 +319,12 @@ function EditorSurface<TElement extends EditorElement>({
           : node
       );
       setNodes(nextNodes);
-      commitFrameChanges(changedFrames(before, nextNodes.filter((node) => selectedIds.has(node.id))));
+      commitFrameChanges(
+        changedFrames(
+          before,
+          nextNodes.filter((node) => selectedIds.has(node.id))
+        )
+      );
     },
     [commitFrameChanges, readOnly]
   );
@@ -341,21 +332,26 @@ function EditorSurface<TElement extends EditorElement>({
   const fixedExtent = useMemo(
     () =>
       bounds.mode === 'fixed'
-        ? ([[0, 0], [bounds.width, bounds.height]] as [[number, number], [number, number]])
+        ? ([
+            [0, 0],
+            [bounds.width, bounds.height]
+          ] as [[number, number], [number, number]])
         : undefined,
     [bounds]
   );
   const snapGrid = useMemo<[number, number]>(() => [gridSize, gridSize], [gridSize]);
+  const { centerX, centerY, zoom } = viewport;
   const flowViewport = useMemo(
-    () => worldViewportToFlow(viewport, size),
-    [size, viewport.centerX, viewport.centerY, viewport.zoom]
+    () => worldViewportToFlow({ centerX, centerY, zoom }, size),
+    [size, centerX, centerY, zoom]
   );
 
   return (
-    <div
+    <section
       ref={container}
       className={`agentcanvas-editor${className ? ` ${className}` : ''}`}
       style={{ background: backgroundColor }}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: The named editor region receives focus for arrow-key movement and canvas shortcuts.
       tabIndex={0}
       aria-label="Canvas editor"
       onKeyDownCapture={handleKeyDown}
@@ -407,7 +403,7 @@ function EditorSurface<TElement extends EditorElement>({
           <div className="agentcanvas-editor-world-overlay">{worldOverlay}</div>
         </ViewportPortal>
       </ReactFlow>
-    </div>
+    </section>
   );
 }
 

@@ -45,9 +45,7 @@ export function EditorToolbar({
   onCommandError?(error: unknown): void;
 }) {
   useSyncExternalStore(commands.subscribe, commands.getSnapshot, commands.getSnapshot);
-  const extensionCommands = commands
-    .list()
-    .filter((command) => !CORE_COMMAND_IDS.has(command.id));
+  const extensionCommands = commands.list().filter((command) => !CORE_COMMAND_IDS.has(command.id));
   return (
     <div className="agentcanvas-editor-toolbar" role="toolbar" aria-label="Canvas editing">
       {TOOLBAR_COMMANDS.map((id) => {

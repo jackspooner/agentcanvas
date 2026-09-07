@@ -133,7 +133,11 @@ export function App() {
           JSON.stringify(current.diagnostics) === JSON.stringify(loaded.diagnostics)
             ? current.diagnostics
             : loaded.diagnostics;
-        return { ...current, ...loaded, canvas, elementRuntime, diagnostics };
+        const embedSession =
+          JSON.stringify(current.embedSession) === JSON.stringify(loaded.embedSession)
+            ? current.embedSession
+            : loaded.embedSession;
+        return { ...current, ...loaded, canvas, elementRuntime, diagnostics, embedSession };
       });
       setWarning((current) => (current?.startsWith('Canvas refresh failed:') ? null : current));
     }
@@ -177,14 +181,19 @@ export function App() {
     };
   }, []);
 
+  const session = state?.mode === 'canvas' ? state.embedSession : undefined;
+  const canvasId = state?.mode === 'canvas' ? state.canvas.id : undefined;
+  const canvasRevision = state?.mode === 'canvas' ? state.canvas.revision : undefined;
+  const canvasUpdatedAt = state?.mode === 'canvas' ? state.canvas.updatedAt : undefined;
+  const canvasReadOnly = state?.mode === 'canvas' ? state.readOnly : undefined;
+
   useEffect(() => {
-    if (!state || state.mode !== 'canvas' || !state.embedSession) return;
-    const session = state.embedSession;
+    if (!session || !canvasId) return;
     postEmbedMessage(session, 'ready', {
-      canvasId: state.canvas.id,
+      canvasId: canvasId,
       canvasIds: session.canvasIds,
       mode: session.mode,
-      readOnly: state.readOnly,
+      readOnly: canvasReadOnly,
       expiresAt: session.expiresAt
     });
 
@@ -215,20 +224,16 @@ export function App() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [state?.mode, state?.mode === 'canvas' ? state.canvas.id : null]);
+  }, [session, canvasId, canvasReadOnly]);
 
   useEffect(() => {
-    if (!state || state.mode !== 'canvas' || !state.embedSession) return;
-    postEmbedMessage(state.embedSession, 'canvas.updated', {
-      canvasId: state.canvas.id,
-      revision: state.canvas.revision,
-      updatedAt: state.canvas.updatedAt
+    if (!session || !canvasId) return;
+    postEmbedMessage(session, 'canvas.updated', {
+      canvasId: canvasId,
+      revision: canvasRevision,
+      updatedAt: canvasUpdatedAt
     });
-  }, [
-    state?.mode,
-    state?.mode === 'canvas' ? state.canvas.id : null,
-    state?.mode === 'canvas' ? state.canvas.revision : null
-  ]);
+  }, [session, canvasId, canvasRevision, canvasUpdatedAt]);
 
   if (error) return <div className="error">{error}</div>;
   if (!state || !browserRegistry) return <div className="loading">Loading AgentCanvas…</div>;

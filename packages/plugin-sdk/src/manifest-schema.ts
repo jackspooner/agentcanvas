@@ -35,6 +35,7 @@ export const PLUGIN_MANIFEST_SCHEMA = {
           }
         }
       },
+      // biome-ignore lint/suspicious/noThenProperty: JSON Schema conditional keyword, not a thenable method.
       then: {
         properties: {
           entrypoints: { type: 'object', required: ['browser'], properties: { browser: { type: 'string' } } }

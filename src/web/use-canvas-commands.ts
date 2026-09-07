@@ -358,6 +358,7 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
       .catch((error) => setMoveError(error instanceof Error ? error.message : String(error)));
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Selection and local clipboard belong to one canvas.
   useEffect(() => {
     setSelectedIds([]);
     clipboardElements.current = [];

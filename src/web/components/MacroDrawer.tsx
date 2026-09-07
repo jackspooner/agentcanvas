@@ -94,9 +94,12 @@ export function MacroDrawer({
     };
   }, [canvasId, open]);
 
+  const viewportCenter = useRef(viewport);
+  viewportCenter.current = viewport;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Opening or changing canvas resets manual anchor edits; viewport following is separate.
   useEffect(() => {
     if (!open) return;
-    const defaultAnchor = { x: String(viewport.centerX), y: String(viewport.centerY) };
+    const defaultAnchor = { x: String(viewportCenter.current.centerX), y: String(viewportCenter.current.centerY) };
     anchorRef.current = defaultAnchor;
     anchorEdited.current = false;
     setAnchor(defaultAnchor);
@@ -111,10 +114,12 @@ export function MacroDrawer({
     invalidatePreview();
   }, [invalidatePreview, open, viewport.centerX, viewport.centerY]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A preview belongs to the revision used to plan it.
   useEffect(() => {
     invalidatePreview();
   }, [canvasRevision, invalidatePreview]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Selection changes invalidate the existing preview.
   useEffect(() => {
     if (open) invalidatePreview();
   }, [invalidatePreview, open, selectionInvalidationToken]);
@@ -278,7 +283,7 @@ export function MacroDrawer({
           placeholder="Search installation and canvas macros"
           onChange={(event) => setSearch(event.target.value)}
         />
-        <div className="macro-summary-list" aria-label="Available macros">
+        <section className="macro-summary-list" aria-label="Available macros">
           {loading && <p className="macro-muted">Loading macros…</p>}
           {!loading && visibleSummaries.length === 0 && <p className="macro-muted">No matching macros.</p>}
           {visibleSummaries.map((summary) => (
@@ -296,7 +301,7 @@ export function MacroDrawer({
               {summary.description && <small>{summary.description}</small>}
             </button>
           ))}
-        </div>
+        </section>
         {record && selectedSummary && selectedVersion !== null && (
           <section className="macro-editor" aria-labelledby="macro-editor-title">
             <div className="macro-editor-heading">
