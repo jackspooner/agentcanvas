@@ -1,12 +1,12 @@
 import { PLUGIN_ID_PATTERN, LOCAL_CONTRIBUTION_NAME_PATTERN } from './identifiers.js';
 import type { PluginManifest } from './manifest.js';
 
-/** Canonical structural manifest contract. Hosts additionally validate semver and filesystem containment. */
 const containedPathPattern = '^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?($|/))[^/]+(?:/[^/]+)*$';
 const localNamePattern = LOCAL_CONTRIBUTION_NAME_PATTERN.source;
 
 const pathPattern = '^(?!.*[\\u0000?#])' + containedPathPattern.slice(1);
 
+/** Canonical structural manifest contract. Hosts additionally validate semver and filesystem containment. */
 export const PLUGIN_MANIFEST_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',

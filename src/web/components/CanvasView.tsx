@@ -94,6 +94,16 @@ export function CanvasView({
   const viewportNode = useRef<HTMLDivElement | null>(null);
   const autoFittedCanvas = useRef<string | null>(null);
   const lastAgentViewport = useRef<string | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: These transient UI values belong to one canvas identity.
+  useEffect(() => {
+    setMacroPlan(null);
+    setMacroDrawerOpen(false);
+    setTransientFrames(new Map());
+    setMoveError(null);
+    setViewportError(null);
+    lastAgentViewport.current = null;
+    autoFittedCanvas.current = null;
+  }, [canvas.id]);
   const history = useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacroExecute });
   const { commitHistory } = history;
   const overlays = useMemo(() => new DomRendererOverlayService(), []);

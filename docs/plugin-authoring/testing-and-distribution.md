@@ -9,9 +9,11 @@ a host rebuild.
 ### Manifest and registration
 
 Use `@agentcanvas/extension-testkit` to check the typed definition, generated
-manifest structure, and exact contribution registration. The live host remains
-the canonical owner of strict Ajv, semver, containment, and full activation
-validation.
+manifest structure, and exact contribution registration. The compatibility
+testkit uses Ajv and the SDK-owned structural manifest schema; it is not
+dependency-free. The live host additionally owns semver, filesystem containment,
+dependency availability and full activation validation. Structural success alone
+does not certify a valid version range.
 
 Test:
 

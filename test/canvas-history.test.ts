@@ -19,6 +19,44 @@ const canvas: CanvasDocument = {
 const forward: CanvasOperation[] = [{ op: 'deleteElement', elementId: 'one' }];
 const inverse: CanvasOperation[] = [{ op: 'clear' }];
 
+it('does not install a delayed save into a different canvas or run queued writes for it', async () => {
+  let finish!: (document: CanvasDocument) => void;
+  const save = vi.fn(
+    () =>
+      new Promise<CanvasDocument>((resolve) => {
+        finish = resolve;
+      })
+  );
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: canvas } }
+  );
+  let first!: Promise<void>;
+  let queued!: Promise<void>;
+  await act(async () => {
+    first = result.current.commitHistory('first', forward, inverse, []);
+    queued = result.current.commitHistory('queued', forward, inverse, []);
+    await Promise.resolve();
+  });
+  const next = { ...canvas, id: 'next' };
+  rerender({ document: next });
+  await act(async () => {
+    const outcomes = Promise.allSettled([first, queued]);
+    finish({ ...canvas, revision: 2 });
+    expect((await outcomes).map((outcome) => outcome.status)).toEqual(['rejected', 'rejected']);
+  });
+  expect(save).toHaveBeenCalledOnce();
+  expect(result.current.getConfirmedDocument()).toBe(next);
+  expect(result.current.canUndo).toBe(false);
+});
+
+it('rejects direct mutations in read-only mode before invoking persistence', async () => {
+  const save = vi.fn();
+  const { result } = renderHook(() => useCanvasHistory({ canvas, readOnly: true, onCanvasOperations: save }));
+  await expect(result.current.commitHistory('delete', forward, inverse, [])).rejects.toThrow('read-only');
+  expect(save).not.toHaveBeenCalled();
+});
+
 it('records successful saves only and continues after rejection at the confirmed revision', async () => {
   const save = vi
     .fn()

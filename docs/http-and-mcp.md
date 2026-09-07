@@ -14,6 +14,10 @@ AgentCanvas exposes one registry-derived contract through HTTP, runtime OpenAPI,
 
 The owning schemas live in the frozen registry. Plugins register JSON Schema 2020-12 for elements, tools, and procedures; the host must not maintain a parallel handwritten schema.
 
+## Macro input semantics
+
+Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON. This applies to HTTP and MCP planning, including input values shaped like `$macroRef` expressions. Callers that previously placed reference expressions inside invocation input must move those expressions into the saved template. Planning remains read-only; execution retains revision checks and idempotent replay. See [macro guidance](proposals/macros.md).
+
 ## Application failures
 
 HTTP application failures use `application/problem+json`. Every body includes `type`, stable `title`, HTTP `status`, occurrence-specific `detail`, stable lowercase `code`, `category`, `retryable`, and `requestId`; `instance`, validation `issues`, and `remediation` may also be present. Clients must branch on `code`, not on `title` or `detail`.

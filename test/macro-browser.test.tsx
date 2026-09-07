@@ -333,6 +333,20 @@ function CanvasHarness({
 }
 
 describe('macro canvas lifecycle', () => {
+  it('clears the old preview and closes its drawer when switching canvas identity', async () => {
+    const props = { canvas: canvas(), elementRuntime: {}, diagnostics: [], browserRegistry: registry() };
+    const { container, getByRole, rerender } = render(<CanvasView {...props} />);
+    fireEvent.click(getByRole('button', { name: 'Macros' }));
+    await waitFor(() => expect(getByRole('button', { name: /Card macro/ })).toBeTruthy());
+    fireEvent.click(getByRole('button', { name: /Card macro/ }));
+    await waitFor(() => expect(getByRole('button', { name: 'Preview' })).toBeTruthy());
+    fireEvent.click(getByRole('button', { name: 'Preview' }));
+    await waitFor(() => expect(container.querySelector('[data-testid="macro-ghost-preview"]')).not.toBeNull());
+    rerender(<CanvasView {...props} canvas={{ ...props.canvas, id: 'another-canvas' }} />);
+    await waitFor(() => expect(container.querySelector('[data-testid="macro-ghost-preview"]')).toBeNull());
+    expect(getByRole('button', { name: 'Macros' }).getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('keeps preview explicit, renders a noninteractive ghost, and invalidates it on anchor change', async () => {
     const { container, getByRole, getByLabelText } = render(<CanvasHarness onRun={vi.fn()} />);
     fireEvent.click(getByRole('button', { name: 'Macros' }));

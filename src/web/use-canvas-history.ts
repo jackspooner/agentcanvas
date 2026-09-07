@@ -16,6 +16,8 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
   const lastLocalRevision = useRef<number | null>(null);
   const pendingLocalMutations = useRef(0);
   const confirmedCanvas = useRef(canvas);
+  const currentCanvas = useRef({ id: canvas.id, readOnly });
+  currentCanvas.current = { id: canvas.id, readOnly };
   const mutationQueue = useRef<Promise<void>>(Promise.resolve());
   const history = useRef(new EditorHistory<CanvasOperation>(100));
   const macroIdempotencyKeys = useRef(new Map<string, string>());
@@ -23,11 +25,15 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
   const runCanvasOperations = useCallback(
     async (operations: readonly CanvasOperation[]): Promise<CanvasDocument> => {
       if (!onCanvasOperations) throw new Error('Canvas mutations are unavailable.');
+      const canvasId = confirmedCanvas.current.id;
       let result: CanvasDocument | null = null;
       const task = mutationQueue.current.then(async () => {
+        if (currentCanvas.current.id !== canvasId) throw new Error('The canvas changed before saving.');
+        if (currentCanvas.current.readOnly) throw new Error('The canvas is read-only.');
         pendingLocalMutations.current += 1;
         try {
           result = await onCanvasOperations(operations, confirmedCanvas.current.revision);
+          if (currentCanvas.current.id !== canvasId) throw new Error('The canvas changed while saving.');
           confirmedCanvas.current = result;
           lastLocalRevision.current = result.revision;
         } finally {
@@ -69,6 +75,8 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
       if (!onMacroExecute) throw new Error('Macro execution is unavailable.');
       let result: MacroExecutionResult | null = null;
       const task = mutationQueue.current.then(async () => {
+        if (currentCanvas.current.id !== plan.canvasId) throw new Error('The canvas changed before macro execution.');
+        if (currentCanvas.current.readOnly) throw new Error('The canvas is read-only.');
         pendingLocalMutations.current += 1;
         try {
           const idempotencyKey = macroIdempotencyKeys.current.get(plan.planId) ?? `macro_${nanoid(24)}`;
@@ -79,6 +87,7 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
             expectedRevision: plan.canvasRevision,
             idempotencyKey
           });
+          if (currentCanvas.current.id !== plan.canvasId) throw new Error('The canvas changed during macro execution.');
           const updatedCanvas = result.canvas as CanvasDocument;
           confirmedCanvas.current = updatedCanvas;
           lastLocalRevision.current = updatedCanvas.revision;
