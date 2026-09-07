@@ -145,7 +145,6 @@ function EditorSurface<TElement extends EditorElement>({
   const container = useRef<HTMLDivElement | null>(null);
   const gestureStart = useRef<ReadonlyMap<string, EditorFrame> | null>(null);
   const resizeStart = useRef<Map<string, EditorFrame>>(new Map());
-  const renderElementRef = useRef(renderElement);
   const onFrameCommitRef = useRef(onFrameCommit);
   const onCommitErrorRef = useRef(onCommitError);
   const onViewportChangeRef = useRef(onViewportChange);
@@ -157,7 +156,6 @@ function EditorSurface<TElement extends EditorElement>({
   );
   const nodesRef = useRef<AgentCanvasNode<TElement>[]>(nodes);
   const selectedElementIdsRef = useRef(selectedElementIds);
-  renderElementRef.current = renderElement;
   onFrameCommitRef.current = onFrameCommit;
   onCommitErrorRef.current = onCommitError;
   onViewportChangeRef.current = onViewportChange;
@@ -239,7 +237,7 @@ function EditorSurface<TElement extends EditorElement>({
         data: {
           ...node.data,
           readOnly,
-          renderElement: (context: EditorRenderContext<TElement>) => renderElementRef.current(context),
+          renderElement,
           onResizeStart(elementId) {
             const current = nodesRef.current.find((candidate) => candidate.id === elementId);
             if (current) resizeStart.current.set(elementId, nodeFrame(current));
@@ -277,7 +275,7 @@ function EditorSurface<TElement extends EditorElement>({
           }
         }
       })),
-    [commitFrameChanges, nodes, readOnly]
+    [commitFrameChanges, nodes, readOnly, renderElement]
   );
 
   const onNodesChange = useCallback(

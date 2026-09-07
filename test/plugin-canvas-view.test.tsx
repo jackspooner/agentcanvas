@@ -59,6 +59,25 @@ function canvas(): CanvasDocument {
 }
 
 describe('plugin canvas React host', () => {
+  it('updates selection and runtime context without remounting and disposes the renderer on unmount', async () => {
+    const update = vi.fn();
+    const dispose = vi.fn();
+    const mount = vi.fn(() => ({ update, dispose }));
+    const browserRegistry = registry();
+    browserRegistry.renderers = new Map([[renderer.type, { ...renderer, mount }]]);
+    const document = canvas();
+    const props = { canvas: document, elementRuntime: {}, diagnostics: [], browserRegistry };
+    const { container, rerender, unmount } = render(<CanvasView {...props} />);
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+    fireEvent.click(container.querySelector('[data-element-id="card_1"]') as Element);
+    await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ selected: true })));
+    rerender(<CanvasView {...props} elementRuntime={{ card_1: { refreshed: true } }} />);
+    await waitFor(() => expect(update).toHaveBeenCalledWith(expect.objectContaining({ runtime: { refreshed: true } })));
+    expect(mount).toHaveBeenCalledOnce();
+    unmount();
+    await waitFor(() => expect(dispose).toHaveBeenCalledOnce());
+  });
+
   it('collapses multiple diagnostics behind a compact severity summary', () => {
     const diagnostics = Array.from({ length: 6 }, (_, index) => ({
       code: `quality_${index}`,
