@@ -165,3 +165,19 @@ it('keeps click targets attached so a real second click can open attribute editi
   attribute.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
   expect(root.querySelector('input')?.value).toBe('id');
 });
+
+it('opens entity editing when pointer capture retargets a header double click to the SVG', () => {
+  const { root, apply } = mount();
+  const svg = required<SVGSVGElement>(root, 'svg');
+  pointerGeometry(svg);
+  const header = required(root, '[data-drag-entity=a]');
+  for (let click = 0; click < 2; click++) {
+    pointer(header, 'pointerdown', 60, 80);
+    pointer(svg, 'pointerup', 60, 80);
+    svg.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+  svg.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+  expect(root.querySelector('input')?.value).toBe('Authors');
+  expect(root.textContent).toContain('Add attribute');
+  expect(apply).not.toHaveBeenCalled();
+});

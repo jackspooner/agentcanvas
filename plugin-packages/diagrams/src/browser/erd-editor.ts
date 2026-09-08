@@ -51,6 +51,7 @@ export function mountErdEditor(
   let source: ErdEndpoint | undefined;
   let pending = false;
   let disposed = false;
+  let releasedHeader: string | undefined;
   let view: { x: number; y: number; width: number; height: number } | undefined;
   let drag:
     | {
@@ -338,7 +339,10 @@ export function mountErdEditor(
       });
       return;
     }
-    const next = selectionAt(target);
+    // Pointer capture retargets header clicks to the SVG, including the second click.
+    const next =
+      selectionAt(target) ??
+      (target === svg && releasedHeader ? { kind: 'entity' as const, entityId: releasedHeader } : undefined);
     if (!next) return;
     selectItem(next);
     if (edit) openForm(next);
@@ -362,6 +366,7 @@ export function mountErdEditor(
   svg.addEventListener(
     'pointerdown',
     (event) => {
+      releasedHeader = undefined;
       if (event.button !== 0 || pending || !panel.hidden) return;
       const target = targetElement(event);
       if (target?.closest('[data-connect-entity]')) return;
@@ -421,6 +426,7 @@ export function mountErdEditor(
     if (pointerId === undefined || (event && event.pointerId !== pointerId)) return;
     drag = undefined;
     pan = undefined;
+    if (current && !cancel && current.dx === 0 && current.dy === 0) releasedHeader = current.entityId;
     if (svg.hasPointerCapture(pointerId)) svg.releasePointerCapture(pointerId);
     if (current && !cancel && (Math.abs(current.dx) > 0.1 || Math.abs(current.dy) > 0.1))
       run(
