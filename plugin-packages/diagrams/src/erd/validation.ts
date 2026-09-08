@@ -1,11 +1,11 @@
 import { CanvasError } from '@agentcanvas/core/errors';
-import { Ajv2020 } from 'ajv/dist/2020.js';
+import type { ValidateFunction } from 'ajv';
 import type { DiagramIssue, ErdData, ErdOperation } from '../contracts.js';
-import { ERD_LIMITS, erdDataSchema, erdOperationSchema } from '../erd-schemas.js';
+import { ERD_LIMITS } from '../erd-schemas.js';
+import { validShape as validateShape, validOperation as validateOperation } from './schema-validators.js';
 
-const ajv = new Ajv2020({ allErrors: true, strict: true });
-const validShape = ajv.compile<ErdData>(erdDataSchema);
-const validOperation = ajv.compile<ErdOperation>(erdOperationSchema);
+const validShape = validateShape as ValidateFunction<ErdData>;
+const validOperation = validateOperation as ValidateFunction<ErdOperation>;
 
 export function validateErd(value: unknown): DiagramIssue[] {
   if (!validShape(value))
@@ -75,7 +75,11 @@ export function assertErdOperation(value: unknown): asserts value is ErdOperatio
   if (!validOperation(value))
     throw new CanvasError(
       'validation_error',
-      `Invalid ERD operation: ${ajv.errorsText(validOperation.errors).slice(0, 4000)}`,
+      `Invalid ERD operation: ${(validOperation.errors ?? [])
+        .slice(0, 20)
+        .map((error) => `${error.instancePath || '/'} ${error.message}`)
+        .join('; ')
+        .slice(0, 4000)}`,
       'validation'
     );
 }

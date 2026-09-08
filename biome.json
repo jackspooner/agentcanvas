@@ -41,6 +41,13 @@
       "trailingCommas": "none"
     }
   },
+  "overrides": [
+    {
+      "includes": ["plugin-packages/diagrams/src/erd/schema-validators.ts"],
+      "formatter": { "enabled": false },
+      "linter": { "enabled": false }
+    }
+  ],
   "linter": {
     "enabled": true,
     "rules": {
