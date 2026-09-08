@@ -122,3 +122,7 @@ For a plugin release:
 5. Update configuration docs and migration/release notes.
 6. Build and verify a self-contained distribution.
 7. Rehearse install, migration, missing-plugin preservation, and compatible reinstall.
+
+Extensions using command inputs, hidden commands, current-element command reads,
+revision-checked browser transactions, renderer command dispatch, or per-element
+snapshot deadlines must declare Host API `^1.2.0`.

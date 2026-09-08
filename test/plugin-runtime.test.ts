@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -38,6 +39,39 @@ async function pluginFolder(root: string, folder: string, value: PluginManifest)
 }
 
 describe('plugin runtime foundation', () => {
+  it.each([
+    0, 1.5, 30001
+  ])('rejects an invalid registered snapshot deadline %s during activation', async (snapshotTimeoutMs) => {
+    const root = await mkdtemp(join(tmpdir(), 'agentcanvas-deadline-'));
+    roots.push(root);
+    await pluginFolder(root, 'deadline', manifest('agentcanvas.deadline'));
+    await writeFile(
+      join(root, 'deadline', 'dist', 'server.mjs'),
+      `export default { activate(host) { host.registerElementType({ name: 'card', snapshotTimeoutMs: ${snapshotTimeoutMs} }); } };`
+    );
+    // Native Node imports exercise the same file-URL activation path as the server on Windows.
+    const check = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        '--input-type=module',
+        '-e',
+        `
+      import assert from 'node:assert/strict';
+      import { activatePlugins, discoverPlugins } from './src/plugin-runtime/index.ts';
+      const plugins = await discoverPlugins({ pluginsRoot: process.argv[1] });
+      await assert.rejects(activatePlugins(plugins, {
+        kv: () => ({ get: async () => undefined, set: async () => {}, delete: async () => false, list: async () => ({ entries: [] }) }),
+        diagnostics: () => ({ emit() {} })
+      }), /snapshotTimeoutMs must be an integer/);
+    `,
+        root
+      ],
+      { encoding: 'utf8', windowsHide: true }
+    );
+    expect(check.status, check.stderr).toBe(0);
+  });
   it('strictly validates manifest versions and undeclared properties', () => {
     expect(validatePluginManifest(manifest('agentcanvas.demo')).id).toBe('agentcanvas.demo');
     expect(() => validatePluginManifest({ ...manifest('agentcanvas.demo'), extra: true })).toThrow(PluginRuntimeError);

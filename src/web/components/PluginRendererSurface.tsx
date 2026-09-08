@@ -12,6 +12,9 @@ import type { DomRendererOverlayService } from '../plugins/overlays';
 import { type RendererContextInput, ShadowRendererHost } from '../plugins/renderer-host';
 
 interface PluginRendererSurfaceProps {
+  canvasId?: string;
+  canvasRevision?: number;
+  executeCommand?: RendererContextInput['executeCommand'];
   element: CanvasElement;
   runtime: JsonObject | null;
   renderer: BrowserElementRenderer | undefined;
@@ -30,6 +33,8 @@ export function PluginRendererSurface(props: PluginRendererSurfaceProps) {
   const context: RendererContextInput = useMemo(
     () => ({
       element: props.element,
+      canvasRevision: props.canvasRevision,
+      executeCommand: props.executeCommand,
       runtime: props.runtime,
       readOnly: props.readOnly,
       selected: props.selected,
@@ -40,6 +45,8 @@ export function PluginRendererSurface(props: PluginRendererSurfaceProps) {
     }),
     [
       props.element,
+      props.canvasRevision,
+      props.executeCommand,
       props.geometry,
       props.overlays,
       props.readOnly,
@@ -72,7 +79,7 @@ export function PluginRendererSurface(props: PluginRendererSurfaceProps) {
       host.current = null;
       void rendererHost.dispose();
     };
-  }, [props.element.id, props.element.type, props.renderer]);
+  }, [props.canvasId, props.element.id, props.element.type, props.renderer]);
 
   useEffect(() => {
     void host.current?.update(context);

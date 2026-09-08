@@ -50,3 +50,11 @@ The compositor:
 `POST /api/v1/canvases/:canvasId/snapshot` returns compact opaque handle metadata and diagnostics. It does not return an inline data URL.
 
 Snapshot typography is deterministic semantic projection, not browser DOM pixel parity. Active WebGL content uses deterministic poster or placeholder policy.
+
+## Renderer deadlines
+
+Host API `1.2.0` permits `ElementTypeDescriptor.snapshotTimeoutMs`, an integer
+from 1 through 30000. The collector chooses an explicit `rendererTimeoutMs`
+override first, then the descriptor deadline, then the 2000 ms default.
+Invalid descriptor deadlines fail activation. Testkits expose
+`validateElementSnapshotTimeout(descriptor)` using the same SDK constraint.

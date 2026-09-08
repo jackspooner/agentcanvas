@@ -11,6 +11,11 @@ interface CanvasHistoryOptions {
   onCanvasOperations?: (operations: readonly CanvasOperation[], expectedRevision: number) => Promise<CanvasDocument>;
   onMacroExecute?: (request: MacroServiceExecuteRequest) => Promise<MacroExecutionResult>;
 }
+interface PreparedHistoryEntry {
+  forward: readonly CanvasOperation[];
+  inverse: readonly CanvasOperation[];
+  affectedElementIds: readonly string[];
+}
 export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacroExecute }: CanvasHistoryOptions) {
   const [version, setHistoryVersion] = useState(0);
   const lastLocalRevision = useRef<number | null>(null);
@@ -57,18 +62,19 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
   const commitHistory = useCallback(
     async (
       label: string,
-      forward: readonly CanvasOperation[],
-      inverse: readonly CanvasOperation[],
-      affectedElementIds: readonly string[]
+      forward: readonly CanvasOperation[] | ((document: CanvasDocument) => PreparedHistoryEntry),
+      inverse: readonly CanvasOperation[] = [],
+      affectedElementIds: readonly string[] = []
     ) => {
-      if (forward.length === 0) return;
+      if (typeof forward !== 'function' && forward.length === 0) return;
       await enqueue(async () => {
-        await persistCanvasOperations(forward);
+        const prepared =
+          typeof forward === 'function' ? forward(confirmedCanvas.current) : { forward, inverse, affectedElementIds };
+        if (prepared.forward.length === 0) return;
+        await persistCanvasOperations(prepared.forward);
         history.current.record({
           label,
-          forward,
-          inverse,
-          affectedElementIds,
+          ...prepared,
           timestamp: Date.now()
         });
         refreshCommandState();

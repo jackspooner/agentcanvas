@@ -32,6 +32,38 @@ function context(value: CanvasElement, diagnostics: PluginDiagnostic[] = []): Re
 }
 
 describe('ShadowRendererHost', () => {
+  it('passes command inputs and deadlines while rejecting stale and disposed renderer contexts', async () => {
+    const seen: RendererContext[] = [];
+    const executeCommand = vi.fn(async () => true);
+    const renderer: BrowserElementRenderer = {
+      type: 'acme.cards/hello',
+      schemaVersions: [1],
+      placement: 'node',
+      mount(_root, initial) {
+        seen.push(initial);
+        return {
+          update(next) {
+            seen.push(next);
+          },
+          dispose() {}
+        };
+      }
+    };
+    const host = new ShadowRendererHost(document.createElement('div'), {
+      environment: new ManualRendererEnvironment()
+    });
+    const initial = { ...context(element()), canvasRevision: 4, executeCommand };
+    await host.mount(renderer, initial);
+    expect(seen[0].canvasRevision).toBe(4);
+    await expect(seen[0].executeCommand?.('acme.cards.inspect', { value: 1 })).resolves.toBe(true);
+    expect(executeCommand).toHaveBeenCalledWith('acme.cards.inspect', { value: 1 }, seen[0].lifecycle.signal);
+    await host.update({ ...initial, canvasRevision: 5 });
+    await expect(seen[0].executeCommand?.('acme.cards.inspect')).rejects.toThrow('no longer active');
+    await expect(seen[1].executeCommand?.('acme.cards.inspect')).resolves.toBe(true);
+    await host.dispose();
+    await expect(seen[1].executeCommand?.('acme.cards.inspect')).rejects.toThrow('no longer active');
+    expect(executeCommand).toHaveBeenCalledTimes(2);
+  });
   it('keeps update and lifetime cancellation independent while coalescing updates', async () => {
     const seen: RendererContext[] = [];
     const releases: Array<() => void> = [];

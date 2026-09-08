@@ -1,5 +1,6 @@
 import type {
   BrowserElementRenderer,
+  JsonObject,
   MountedBrowserElementRenderer,
   PluginDiagnostic,
   RendererContext
@@ -12,7 +13,9 @@ import {
 } from './renderer-environment.js';
 import { RendererFrameScope } from './renderer-frame-scheduler.js';
 
-export type RendererContextInput = Omit<RendererContext, 'signal' | 'lifecycle' | 'frames'>;
+export type RendererContextInput = Omit<RendererContext, 'signal' | 'lifecycle' | 'frames' | 'executeCommand'> & {
+  executeCommand?(commandId: string, input: JsonObject | undefined, lifetimeSignal: AbortSignal): Promise<boolean>;
+};
 
 export interface ShadowRendererHostOptions {
   reportDiagnostic?(diagnostic: PluginDiagnostic): void;
@@ -130,8 +133,17 @@ export class ShadowRendererHost {
   }
 
   contextFor(context: RendererContextInput, signal: AbortSignal): RendererContext {
+    const executeCommand = context.executeCommand;
     return {
       ...context,
+      executeCommand: executeCommand
+        ? async (commandId, input) => {
+            if (signal.aborted || this.lifetimeController.signal.aborted || rootOwners.get(this.root) !== this) {
+              throw new Error('The renderer command context is no longer active.');
+            }
+            return executeCommand(commandId, input, this.lifetimeController.signal);
+          }
+        : undefined,
       signal,
       lifecycle: {
         signal: this.lifetimeController.signal,

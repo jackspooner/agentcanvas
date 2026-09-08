@@ -1,8 +1,10 @@
 import { CORE_EDITOR_COMMANDS, EditorCommandService } from '@agentcanvas/editor';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import type {
   BrowserCommandContext,
   BrowserOwnCanvasOperation,
   CanvasElement,
+  JsonObject,
   PluginDiagnostic
 } from '@agentcanvas/plugin-sdk';
 import { nanoid } from 'nanoid';
@@ -44,6 +46,11 @@ interface CanvasCommandsOptions {
   reportDiagnostic: (diagnostic: PluginDiagnostic) => void;
   setMoveError: React.Dispatch<React.SetStateAction<string | null>>;
 }
+interface RendererCommandScope {
+  assertCurrent(): void;
+  elementId: string;
+  signal?: AbortSignal;
+}
 export function useCanvasCommands(options: CanvasCommandsOptions) {
   const {
     canvas,
@@ -66,6 +73,8 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
   const { commitHistory } = history;
   const clipboardElements = useRef<CanvasElement[]>([]);
   const commands = useMemo(() => new EditorCommandService(), []);
+  // Keep renderer lifetime and origin out of JSON command inputs while sharing normal dispatch and eligibility.
+  const rendererCommandScopes = useRef(new WeakMap<JsonObject, RendererCommandScope>());
   const commandState = useRef({
     canvas,
     selectedIds,
@@ -74,9 +83,6 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
     nodeElementIds: [] as string[]
   });
   const commandActions = useRef<Record<string, () => Promise<void> | void>>({});
-  const extensionTransact = useRef<
-    (pluginId: string, label: string, operations: readonly BrowserOwnCanvasOperation[]) => Promise<void>
-  >(async () => undefined);
   const extensionAbort = useRef(new AbortController());
   commandState.current = {
     canvas,
@@ -178,12 +184,25 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
   async function transactExtensionOperations(
     pluginId: string,
     label: string,
-    operations: readonly BrowserOwnCanvasOperation[]
+    operations: readonly BrowserOwnCanvasOperation[],
+    assertCurrent: () => void,
+    options?: { expectedRevision?: number }
   ) {
-    if (commandState.current.readOnly) throw new Error('The canvas is read-only.');
-    const { forward, inverse, affected } = extensionOperations(history.getConfirmedDocument(), pluginId, operations);
-    await commitHistory(label, forward, inverse, affected);
+    const capturedOperations = structuredClone(operations);
+    const expectedRevision = options?.expectedRevision;
+    await commitHistory(label, (document) => {
+      assertCurrent();
+      if (
+        expectedRevision !== undefined &&
+        (!Number.isSafeInteger(expectedRevision) || expectedRevision !== document.revision)
+      ) {
+        throw new Error(`Canvas revision conflict: expected ${expectedRevision}, current ${document.revision}.`);
+      }
+      const { forward, inverse, affected } = extensionOperations(document, pluginId, capturedOperations);
+      return { forward, inverse, affectedElementIds: affected };
+    });
   }
+  const extensionTransact = useRef(transactExtensionOperations);
   extensionTransact.current = transactExtensionOperations;
 
   commandActions.current = {
@@ -201,18 +220,55 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
     [CORE_EDITOR_COMMANDS.toggleGridSnap]: () => setGridSnapEnabled((value) => !value)
   };
 
-  function browserCommandContext(pluginId: string): BrowserCommandContext {
+  function browserCommandContext(pluginId: string, rendererScope?: RendererCommandScope): BrowserCommandContext {
     const state = commandState.current;
-    const selection = state.canvas.elements.filter((element) => state.selectedIds.includes(element.id));
+    const signal = rendererScope?.signal
+      ? AbortSignal.any([extensionAbort.current.signal, rendererScope.signal])
+      : extensionAbort.current.signal;
+    const assertCurrent = () => {
+      rendererScope?.assertCurrent();
+      if (signal.aborted || commandState.current.canvas.id !== state.canvas.id) {
+        throw new Error('The command context is no longer active.');
+      }
+    };
     return {
       pluginId,
-      readOnly: state.readOnly,
-      selection,
+      get theme() {
+        return commandState.current.canvas.theme ?? DEFAULT_CANVAS_THEME;
+      },
+      get readOnly() {
+        return commandState.current.readOnly;
+      },
+      get selection() {
+        const selected = rendererScope ? [rendererScope.elementId] : commandState.current.selectedIds;
+        return currentHistory.current
+          .getConfirmedDocument()
+          .elements.filter((element) => selected.includes(element.id))
+          .map(cloneElement);
+      },
       viewport: state.viewport,
-      signal: extensionAbort.current.signal,
+      signal,
       overlays,
-      executeCommand: (commandId) => commands.execute(commandId),
+      executeCommand: async (commandId, input) => {
+        assertCurrent();
+        const payload = { ...input, ...(rendererScope ? { elementId: rendererScope.elementId } : {}) };
+        if (rendererScope) rendererCommandScopes.current.set(payload, rendererScope);
+        try {
+          return await commands.execute(commandId, payload);
+        } finally {
+          rendererCommandScopes.current.delete(payload);
+        }
+      },
+      getElement: (elementId) => {
+        assertCurrent();
+        const document = currentHistory.current.getConfirmedDocument();
+        const element = document.elements.find((candidate) => candidate.id === elementId);
+        return element?.type.startsWith(`${pluginId}/`)
+          ? { element: cloneElement(element), revision: document.revision }
+          : null;
+      },
       reveal: (rect) => {
+        assertCurrent();
         const width = viewportNode.current?.clientWidth || DEFAULT_REPORTED_VIEWPORT_WIDTH;
         const height = viewportNode.current?.clientHeight || DEFAULT_REPORTED_VIEWPORT_HEIGHT;
         setViewport((current) =>
@@ -224,7 +280,10 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
           })
         );
       },
-      transact: (label, operations) => extensionTransact.current(pluginId, label, operations),
+      transact: async (label, operations, options) => {
+        assertCurrent();
+        return extensionTransact.current(pluginId, label, operations, assertCurrent, options);
+      },
       reportDiagnostic
     };
   }
@@ -317,8 +376,16 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
         id: command.id,
         title: command.descriptor.title,
         category: command.descriptor.category,
-        execute: () => command.descriptor.execute(contextFactory.current(command.pluginId)),
-        isEnabled: () => command.descriptor.isEnabled?.(contextFactory.current(command.pluginId)) ?? true
+        hidden: command.descriptor.hidden,
+        execute: (input) =>
+          command.descriptor.execute(
+            contextFactory.current(command.pluginId, input ? rendererCommandScopes.current.get(input) : undefined),
+            input
+          ),
+        isEnabled: (input) =>
+          command.descriptor.isEnabled?.(
+            contextFactory.current(command.pluginId, input ? rendererCommandScopes.current.get(input) : undefined)
+          ) ?? true
       })
     );
     return () => {
@@ -363,5 +430,48 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
     setSelectedIds([]);
     clipboardElements.current = [];
   }, [canvas.id, setSelectedIds]);
-  return { commands, handleCommandKeyDown };
+  const currentRegistry = useRef(browserRegistry);
+  currentRegistry.current = browserRegistry;
+  const executeRendererCommand = useCallback(
+    async (
+      canvasId: string,
+      origin: Readonly<CanvasElement>,
+      commandId: string,
+      input?: JsonObject,
+      lifetimeSignal?: AbortSignal
+    ) => {
+      const assertCurrent = () => {
+        if (
+          lifetimeSignal?.aborted ||
+          extensionAbort.current.signal.aborted ||
+          commandState.current.canvas.id !== canvasId
+        ) {
+          throw new Error('The renderer canvas is no longer active.');
+        }
+        const document = currentHistory.current.getConfirmedDocument();
+        const element = document.elements.find((candidate) => candidate.id === origin.id);
+        if (!element || element.type !== origin.type) throw new Error('The renderer element no longer exists.');
+      };
+      assertCurrent();
+      const pluginId = origin.type.slice(0, origin.type.lastIndexOf('/'));
+      const coreHistory = commandId === CORE_EDITOR_COMMANDS.undo || commandId === CORE_EDITOR_COMMANDS.redo;
+      if (!coreHistory && currentRegistry.current.commands.get(commandId)?.pluginId !== pluginId) {
+        throw new Error('A renderer may only execute its own extension commands or core undo/redo.');
+      }
+      if (
+        coreHistory &&
+        currentHistory.current.getConfirmedDocument().elements.find((element) => element.id === origin.id)?.locked
+      )
+        throw new Error(`Element is locked: ${origin.id}`);
+      const payload = { ...input, elementId: origin.id };
+      rendererCommandScopes.current.set(payload, { assertCurrent, elementId: origin.id, signal: lifetimeSignal });
+      try {
+        return await commands.execute(commandId, payload);
+      } finally {
+        rendererCommandScopes.current.delete(payload);
+      }
+    },
+    [commands]
+  );
+  return { commands, handleCommandKeyDown, executeRendererCommand };
 }

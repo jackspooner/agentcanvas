@@ -75,6 +75,8 @@ export interface ElementTypeDescriptor {
   defaultFrame?: ElementDefaultFrame;
   browser: boolean;
   snapshot: 'supported' | 'unsupported';
+  /** Snapshot renderer deadline in milliseconds, an integer from 1 through 30000. */
+  snapshotTimeoutMs?: number;
   schemaMigrations?: readonly ElementSchemaMigration[];
   validate?(element: Readonly<CanvasElement>, context: ElementValidationContext): readonly PluginValidationIssue[];
   /**
@@ -90,6 +92,11 @@ export interface ElementTypeDescriptor {
     element: Readonly<CanvasElement>,
     context: SnapshotRendererContext
   ): SnapshotContribution | Promise<SnapshotContribution>;
+}
+
+/** Shared deadline constraint for descriptor registration and snapshot collection. */
+export function isSnapshotTimeoutMs(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 30_000;
 }
 
 export interface PluginToolAnnotations {

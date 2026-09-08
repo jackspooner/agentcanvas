@@ -52,14 +52,21 @@ export type BrowserOwnCanvasOperation =
 
 export interface BrowserCommandContext {
   pluginId: string;
+  theme?: Readonly<CanvasThemeV1>;
   readOnly: boolean;
   selection: readonly Readonly<CanvasElement>[];
   viewport: Readonly<{ centerX: number; centerY: number; zoom: number }>;
   signal: AbortSignal;
   overlays: RendererOverlayService;
-  executeCommand(commandId: string): Promise<boolean>;
+  executeCommand(commandId: string, input?: JsonObject): Promise<boolean>;
+  /** Reads a current, confirmed element owned by this extension. */
+  getElement?(elementId: string): { element: Readonly<CanvasElement>; revision: number } | null;
   reveal(rect: CanvasRect): void;
-  transact(label: string, operations: readonly BrowserOwnCanvasOperation[]): Promise<void>;
+  transact(
+    label: string,
+    operations: readonly BrowserOwnCanvasOperation[],
+    options?: { expectedRevision?: number }
+  ): Promise<void>;
   reportDiagnostic(diagnostic: PluginDiagnostic): void;
 }
 
@@ -67,12 +74,16 @@ export interface BrowserCommandDescriptor {
   name: string;
   title: string;
   category?: string;
+  hidden?: boolean;
   isEnabled?(context: BrowserCommandContext): boolean;
-  execute(context: BrowserCommandContext): void | Promise<void>;
+  execute(context: BrowserCommandContext, input?: JsonObject): void | Promise<void>;
 }
 
 export interface RendererContext {
   element: Readonly<CanvasElement>;
+  canvasRevision?: number;
+  /** Executes this extension's registered commands or core undo/redo, bound to this element. */
+  executeCommand?(commandId: string, input?: JsonObject): Promise<boolean>;
   runtime: Readonly<JsonObject> | null;
   readOnly: boolean;
   selected: boolean;

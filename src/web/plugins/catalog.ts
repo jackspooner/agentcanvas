@@ -242,6 +242,7 @@ export async function loadBrowserPluginRegistry(options: {
             typeof command.title !== 'string' ||
             command.title.length === 0 ||
             !(command.category === undefined || typeof command.category === 'string') ||
+            !(command.hidden === undefined || typeof command.hidden === 'boolean') ||
             !(command.isEnabled === undefined || typeof command.isEnabled === 'function') ||
             typeof command.execute !== 'function'
           ) {

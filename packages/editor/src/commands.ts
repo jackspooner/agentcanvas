@@ -1,9 +1,12 @@
+import type { JsonObject } from '@agentcanvas/plugin-sdk';
+
 export interface EditorCommandDescriptor {
   id: string;
   title: string;
   category?: string;
-  execute(): Promise<void> | void;
-  isEnabled?(): boolean;
+  hidden?: boolean;
+  execute(input?: JsonObject): Promise<void> | void;
+  isEnabled?(input?: JsonObject): boolean;
 }
 
 export type EditorCommandRegistration = () => void;
@@ -33,15 +36,15 @@ export class EditorCommandService {
     return [...this.commands.values()];
   }
 
-  isEnabled(id: string): boolean {
+  isEnabled(id: string, input?: JsonObject): boolean {
     const command = this.commands.get(id);
-    return Boolean(command && (command.isEnabled?.() ?? true));
+    return Boolean(command && (command.isEnabled?.(input) ?? true));
   }
 
-  async execute(id: string): Promise<boolean> {
+  async execute(id: string, input?: JsonObject): Promise<boolean> {
     const command = this.commands.get(id);
-    if (!command || !(command.isEnabled?.() ?? true)) return false;
-    await command.execute();
+    if (!command || !(command.isEnabled?.(input) ?? true)) return false;
+    await command.execute(input);
     this.notify();
     return true;
   }

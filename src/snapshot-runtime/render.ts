@@ -6,11 +6,13 @@ import type {
   PluginDiagnostic,
   SnapshotContribution
 } from '@agentcanvas/plugin-sdk';
-import { DEFAULT_CANVAS_THEME, resolveElementFrame } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME, isSnapshotTimeoutMs, resolveElementFrame } from '@agentcanvas/plugin-sdk';
 import type { SnapshotRenderItem } from './compositor.js';
 
 export interface SnapshotDescriptorRegistry {
-  getElementType(type: string): Pick<ElementTypeDescriptor, 'snapshot' | 'renderSnapshot'> | undefined;
+  getElementType(
+    type: string
+  ): Pick<ElementTypeDescriptor, 'snapshot' | 'snapshotTimeoutMs' | 'renderSnapshot'> | undefined;
 }
 
 export interface CollectSnapshotItemsOptions {
@@ -73,8 +75,7 @@ async function renderWithDeadline(
 export async function collectSnapshotItems(
   options: CollectSnapshotItemsOptions
 ): Promise<readonly SnapshotRenderItem[]> {
-  const timeoutMs = options.rendererTimeoutMs ?? 2_000;
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30_000) {
+  if (options.rendererTimeoutMs !== undefined && !isSnapshotTimeoutMs(options.rendererTimeoutMs)) {
     throw new TypeError('rendererTimeoutMs must be an integer from 1 through 30000');
   }
   return Promise.all(
@@ -82,6 +83,9 @@ export async function collectSnapshotItems(
       const element = { ...source, ...resolveElementFrame(source) };
       const descriptor = options.registry.getElementType(element.type);
       if (!descriptor) return { element, status: 'missing' };
+      const timeoutMs = options.rendererTimeoutMs ?? descriptor.snapshotTimeoutMs ?? 2_000;
+      if (!isSnapshotTimeoutMs(timeoutMs))
+        throw new TypeError('snapshotTimeoutMs must be an integer from 1 through 30000');
       if (descriptor.snapshot === 'unsupported') return { element, status: 'unsupported' };
       if (!descriptor.renderSnapshot) {
         return {

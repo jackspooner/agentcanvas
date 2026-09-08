@@ -80,6 +80,47 @@ describe('snapshot compositor', () => {
 });
 
 describe('snapshot renderer collection', () => {
+  it.each([
+    [undefined, undefined, 2000],
+    [undefined, 5000, 5000],
+    [10, 5000, 10]
+  ] as const)('prioritizes explicit deadline %s over descriptor %s with a bounded default', async (rendererTimeoutMs, snapshotTimeoutMs, deadline) => {
+    vi.useFakeTimers();
+    try {
+      const settled = vi.fn();
+      const pending = collectSnapshotItems({
+        canvasId: 'canvas',
+        elements: [element('slow')],
+        rendererTimeoutMs,
+        registry: {
+          getElementType: () => ({
+            snapshot: 'supported',
+            snapshotTimeoutMs,
+            renderSnapshot: () => new Promise(() => {})
+          })
+        }
+      }).then(settled);
+      await vi.advanceTimersByTimeAsync(deadline - 1);
+      expect(settled).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await pending;
+      expect(settled).toHaveBeenCalledWith([
+        expect.objectContaining({ diagnostic: expect.objectContaining({ code: 'snapshot_renderer_timeout' }) })
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([0, 1.5, 30001, Number.NaN])('rejects invalid descriptor deadline %s', async (snapshotTimeoutMs) => {
+    await expect(
+      collectSnapshotItems({
+        canvasId: 'canvas',
+        elements: [element('invalid')],
+        registry: { getElementType: () => ({ snapshot: 'supported', snapshotTimeoutMs }) }
+      })
+    ).rejects.toThrow('snapshotTimeoutMs');
+  });
   it('uses registry descriptors without a type switch and passes runtime projections', async () => {
     const renderSnapshot = vi.fn((_element, context) => ({
       space: 'frame' as const,

@@ -1,3 +1,4 @@
+import { type ElementTypeDescriptor, isSnapshotTimeoutMs } from '@agentcanvas/plugin-sdk';
 import type {
   ContributionDeclarations,
   ContributionRegistrations,
@@ -6,6 +7,25 @@ import type {
 } from './types.js';
 
 type ContributionKind = 'elements' | 'commands' | 'tools' | 'procedures' | 'migrations';
+
+/** Checks the optional renderer deadline using the host's shared constraint. */
+export function validateElementSnapshotTimeout(
+  descriptor: Pick<ElementTypeDescriptor, 'snapshotTimeoutMs'>
+): TestkitValidationResult {
+  const valid = descriptor.snapshotTimeoutMs === undefined || isSnapshotTimeoutMs(descriptor.snapshotTimeoutMs);
+  return {
+    ok: valid,
+    issues: valid
+      ? []
+      : [
+          {
+            path: '/snapshotTimeoutMs',
+            code: 'invalid_snapshot_timeout',
+            message: 'snapshotTimeoutMs must be an integer from 1 through 30000.'
+          }
+        ]
+  };
+}
 
 function declaredNames(declarations: ContributionDeclarations, kind: ContributionKind): readonly string[] {
   if (kind === 'elements') return declarations.elements.map((element) => element.name);

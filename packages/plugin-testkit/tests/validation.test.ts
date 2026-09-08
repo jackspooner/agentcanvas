@@ -5,8 +5,25 @@ import {
   getManifestReferencedPaths,
   validateContributionRegistrations,
   validateDistributionArtifacts,
+  validateElementSnapshotTimeout,
   validatePluginManifestStructure
 } from '../src/index.js';
+
+it.each([undefined, 1, 30000])('accepts bounded snapshot deadline %s', (snapshotTimeoutMs) => {
+  expect(validateElementSnapshotTimeout({ snapshotTimeoutMs })).toEqual({ ok: true, issues: [] });
+});
+it.each([
+  0,
+  1.5,
+  30001,
+  Number.NaN,
+  Number.POSITIVE_INFINITY
+])('rejects invalid snapshot deadline %s', (snapshotTimeoutMs) => {
+  expect(validateElementSnapshotTimeout({ snapshotTimeoutMs })).toMatchObject({
+    ok: false,
+    issues: [{ path: '/snapshotTimeoutMs' }]
+  });
+});
 
 const validManifest = {
   apiVersion: 'agentcanvas.plugin/v1',

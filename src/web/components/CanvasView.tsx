@@ -221,7 +221,7 @@ export function CanvasView({
     return () => window.clearInterval(timer);
   }, [canvas.id, loadViewport]);
 
-  const { commands, handleCommandKeyDown } = useCanvasCommands({
+  const { commands, handleCommandKeyDown, executeRendererCommand } = useCanvasCommands({
     canvas,
     selectedIds,
     readOnly,
@@ -249,7 +249,10 @@ export function CanvasView({
         style={{ zIndex: element.zIndex ?? 0 }}
       >
         <PluginRendererSurface
+          canvasId={canvas.id}
+          canvasRevision={canvas.revision}
           element={element}
+          executeCommand={(id, input, signal) => executeRendererCommand(canvas.id, element, id, input, signal)}
           runtime={elementRuntime[element.id] ?? null}
           renderer={rendererFor(element)}
           geometry={geometry}
@@ -295,22 +298,20 @@ export function CanvasView({
         </div>
         <div className="topbar-controls">
           {!readOnly && (
-            <>
-              <button
-                type="button"
-                className="macro-trigger"
-                aria-expanded={macroDrawerOpen}
-                aria-controls="macro-drawer"
-                onClick={() => setMacroDrawerOpen((value) => !value)}
-              >
-                Macros
-              </button>
-              <EditorToolbar
-                commands={commands}
-                onCommandError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
-              />
-            </>
+            <button
+              type="button"
+              className="macro-trigger"
+              aria-expanded={macroDrawerOpen}
+              aria-controls="macro-drawer"
+              onClick={() => setMacroDrawerOpen((value) => !value)}
+            >
+              Macros
+            </button>
           )}
+          <EditorToolbar
+            commands={commands}
+            onCommandError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
+          />
           <div className="viewport-status">
             center {Math.round(viewport.centerX)}, {Math.round(viewport.centerY)} · zoom{' '}
             {Math.round(viewport.zoom * 100)}%
@@ -355,7 +356,10 @@ export function CanvasView({
           showGrid={canvas.background?.grid !== false}
           renderElement={({ element, selected }) => (
             <PluginRendererSurface
+              canvasId={canvas.id}
+              canvasRevision={canvas.revision}
               element={element}
+              executeCommand={(id, input, signal) => executeRendererCommand(canvas.id, element, id, input, signal)}
               runtime={elementRuntime[element.id] ?? null}
               renderer={rendererFor(element)}
               geometry={geometry}
@@ -374,6 +378,8 @@ export function CanvasView({
                 elements={macroPlan?.canvasRevision === canvas.revision ? macroPlan.previewElements : []}
                 renderElement={(element) => (
                   <PluginRendererSurface
+                    canvasId={canvas.id}
+                    canvasRevision={canvas.revision}
                     element={element}
                     runtime={elementRuntime[element.id] ?? null}
                     renderer={rendererFor(element)}

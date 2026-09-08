@@ -97,6 +97,27 @@ Command IDs are namespaced as `<extension-id>.<local-name>`. A command receives:
 - overlays and scoped diagnostics;
 - an abort signal.
 
+Host API `1.2.0` adds JSON command inputs (`execute(context, input?)`) and
+`hidden: true` for internal commands that remain callable without appearing in
+the extension menu. `context.getElement?(id)` returns a cloned, current confirmed
+owned element plus its canvas revision, or `null`. `context.theme` contains the
+same resolved canvas theme as renderers. Call
+`context.transact(label, operations, { expectedRevision })` to reject stale edits;
+the revision, ownership, existence, and lock checks run inside the shared save
+queue, and undo captures the confirmed pre-save state. Read-only commands may
+still open overlays or export; transactions reject read-only canvases.
+
+Renderer contexts optionally expose `canvasRevision` and
+`executeCommand(id, input?)`. Renderer dispatch is bound to its originating
+canvas and element, overwrites `input.elementId`, and permits only the owning
+extension's registered commands plus `agentcanvas.undo` and `agentcanvas.redo`.
+Disposed or superseded renderer contexts cannot dispatch, and retained command
+contexts cannot transact after their renderer lifetime ends or the canvas changes.
+Renderer command eligibility and execution receive the originating element as
+their selection. `context.signal` combines the canvas and renderer lifetimes;
+ordinary renderer updates do not abort open command dialogs. Retained command
+contexts expose current `readOnly` and `theme` values through getters.
+
 The context deliberately does not expose React Flow or host-private React
 state. Activation may return a disposable, which the browser registry invokes
 once during teardown.

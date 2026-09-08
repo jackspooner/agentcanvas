@@ -40,6 +40,7 @@ export function extensionOperations(
     if (!element.type.startsWith(`${pluginId}/`)) {
       throw new Error(`${pluginId} cannot mutate an element owned by ${element.type}`);
     }
+    if (element.locked) throw new Error(`Element is locked: ${elementId}`);
     return element;
   };
   for (const operation of operations) {
@@ -51,6 +52,7 @@ export function extensionOperations(
       if (previous && !previous.type.startsWith(`${pluginId}/`)) {
         throw new Error(`${pluginId} cannot replace an element owned by ${previous.type}`);
       }
+      if (previous?.locked) throw new Error(`Element is locked: ${previous.id}`);
       forward.push(operation);
       inverse.unshift(
         previous

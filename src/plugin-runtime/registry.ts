@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { isSnapshotTimeoutMs } from '@agentcanvas/plugin-sdk';
 import type {
   AgentCanvasServerPlugin,
   CapabilityHandle,
@@ -84,7 +85,15 @@ export async function activatePlugins(
       config: plugin.config,
       kv: services.kv(plugin.manifest.id),
       diagnostics: services.diagnostics(plugin.manifest.id),
-      registerElementType: (descriptor) => elements.push(descriptor),
+      registerElementType: (descriptor) => {
+        if (descriptor.snapshotTimeoutMs !== undefined && !isSnapshotTimeoutMs(descriptor.snapshotTimeoutMs)) {
+          throw new PluginRuntimeError(
+            'plugin_activation_invalid',
+            `${plugin.manifest.id}/${descriptor.name} snapshotTimeoutMs must be an integer from 1 through 30000`
+          );
+        }
+        elements.push(descriptor);
+      },
       registerTool: (descriptor) => tools.push(descriptor),
       registerProcedure: (descriptor) => procedures.push(descriptor),
       registerMigration: (descriptor) => migrations.push(descriptor),

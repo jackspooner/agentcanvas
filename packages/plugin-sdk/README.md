@@ -56,3 +56,10 @@ maintaining separate browser and snapshot defaults.
 - [Plugin API reference](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-api-reference.md)
 - [Manifest reference](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-manifest-reference.md)
 - [Capabilities and permissions](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-capabilities-and-permissions.md)
+
+Host API `1.2.0` adds JSON command inputs, hidden browser commands, current owned
+`getElement` reads, command themes, revision-checked transactions, and renderer
+command dispatch with canvas/element lifetime guards. Extensions using these
+features or `ElementTypeDescriptor.snapshotTimeoutMs` must require `^1.2.0`.
+See [the command contract](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-api-reference.md) and
+[snapshot deadlines](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-snapshot-runtime.md).
