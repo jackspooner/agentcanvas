@@ -17,6 +17,11 @@ export default defineConfig({
       name: 'macro-live',
       testMatch: '**/macros-proof.spec.ts',
       use: { baseURL: 'http://127.0.0.1:23174' }
+    },
+    {
+      name: 'diagrams-live',
+      testMatch: '**/diagrams.spec.ts',
+      use: { baseURL: 'http://127.0.0.1:23175' }
     }
   ],
   webServer: [
@@ -29,6 +34,12 @@ export default defineConfig({
     {
       command: 'npx tsx macro-live-server.ts',
       url: 'http://127.0.0.1:23174/health',
+      reuseExistingServer: false,
+      timeout: 120_000
+    },
+    {
+      command: 'npx tsx diagrams-live-server.ts',
+      url: 'http://127.0.0.1:23175/health',
       reuseExistingServer: false,
       timeout: 120_000
     }
