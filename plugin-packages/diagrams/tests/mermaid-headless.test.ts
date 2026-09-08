@@ -4,6 +4,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const runtime = vi.hoisted(() => ({
   launched: 0,
   closed: 0,
+  closeCalls: 0,
+  launchGate: undefined as Promise<void> | undefined,
   hanging: true,
   calls: [] as Array<{ resolve: (value: unknown) => void; reject: (error: unknown) => void }>
 }));
@@ -12,10 +14,12 @@ vi.mock('playwright', () => ({
   chromium: {
     launch: async () => {
       runtime.launched++;
+      await runtime.launchGate;
       let call: (typeof runtime.calls)[number] | undefined;
       let closed = false;
       return {
         close: async () => {
+          runtime.closeCalls++;
           if (!closed) {
             closed = true;
             runtime.closed++;
@@ -49,6 +53,8 @@ const flush = async () => {
 beforeEach(() => {
   runtime.launched = 0;
   runtime.closed = 0;
+  runtime.closeCalls = 0;
+  runtime.launchGate = undefined;
   runtime.hanging = true;
   runtime.calls = [];
   vi.useFakeTimers();
@@ -66,7 +72,26 @@ it('uses two browser slots, eight queued jobs, and includes queue time in the de
   const errors = await Promise.all(jobs);
   expect(errors.every((error) => error instanceof Error && error.message.includes('20 second deadline'))).toBe(true);
   expect(runtime.closed).toBe(2);
+  expect(runtime.closeCalls).toBe(2);
   expect(runtime.launched).toBe(2);
+});
+
+it('closes Chromium exactly once when cancellation arrives during launch', async () => {
+  let finishLaunch!: () => void;
+  runtime.launchGate = new Promise<void>((resolve) => {
+    finishLaunch = resolve;
+  });
+  const controller = new AbortController();
+  const result = validateMermaid('flowchart LR\nAbortedLaunch --> B', controller.signal).catch((error: Error) => error);
+  await flush();
+  expect(runtime.launched).toBe(1);
+  controller.abort();
+  expect(await result).toBeInstanceOf(Error);
+  finishLaunch();
+  await flush();
+  expect(runtime.closed).toBe(1);
+  expect(runtime.closeCalls).toBe(1);
+  expect(runtime.calls).toEqual([]);
 });
 
 it('coalesces identical jobs and keeps failures out of the result cache', async () => {

@@ -27,6 +27,7 @@ describe('pinned Mermaid in real Chromium', () => {
       expect(png.width).toBeGreaterThan(0);
       expect(png.width).toBeLessThanOrEqual(1200);
       expect(png.height).toBeLessThanOrEqual(800);
+      expect(png.diagnostics).toEqual([]);
     }
   });
   it('adapts parser IDs, asymmetric cardinalities, keys, aliases and comments and round trips', async () => {
@@ -74,6 +75,7 @@ describe('pinned Mermaid in real Chromium', () => {
     expect(png.width).toBeLessThanOrEqual(4096);
     expect(png.height).toBeLessThanOrEqual(4096);
     expect(png.width * png.height).toBeLessThanOrEqual(16_000_000);
+    expect(png.diagnostics).toEqual([expect.objectContaining({ code: 'mermaid.render.resolution-limit' })]);
     png.bytes[0] = 0;
     expect((await renderMermaidPng(source, DEFAULT_CANVAS_THEME, 100_000, 100_000)).bytes[0]).toBe(137);
   });

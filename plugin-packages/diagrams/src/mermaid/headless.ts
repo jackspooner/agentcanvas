@@ -83,7 +83,7 @@ function request<T extends Result>(input: Request, signal?: AbortSignal): Promis
   signal?.throwIfAborted();
   const diagnostics = validateMermaidSource(input.source);
   if (diagnostics.length) return Promise.reject(new MermaidSourceError(diagnostics));
-  const key = JSON.stringify(input);
+  const key = JSON.stringify({ engineVersion: '11.17.2', ...input });
   const hit = cache.get(key);
   if (hit) {
     cache.delete(key);
@@ -164,13 +164,17 @@ async function execute(input: Request, signal: AbortSignal, deadline: number): P
   const bundle = await readFile(new URL('./headless/engine.js', import.meta.url), 'utf8');
   signal.throwIfAborted();
   const browser = await chromium.launch({ headless: true, timeout: Math.max(1, deadline - Date.now()) });
+  let closing: Promise<void> | undefined;
+  const close = () => (closing ??= browser.close());
   const abort = () => {
-    void browser.close();
+    // The finally boundary awaits this same promise and handles any cleanup failure.
+    void close().catch(() => undefined);
   };
   signal.addEventListener('abort', abort, { once: true });
   try {
     signal.throwIfAborted();
     const context = await browser.newContext({
+      acceptDownloads: false,
       deviceScaleFactor: 2,
       viewport: { width: 2048, height: 2048 },
       serviceWorkers: 'block'
@@ -190,15 +194,25 @@ async function execute(input: Request, signal: AbortSignal, deadline: number): P
         if (request.operation === 'parse') return { value: await engine.parseMermaidSource(request.source) };
         if (request.operation === 'convert') return { value: await engine.extractErd(request.source) };
         const rendered = await engine.renderMermaid(request.source, request.theme);
+        const requestedScale = Math.min(request.width / rendered.width, request.height / rendered.height);
         const scale = Math.min(
-          request.width / rendered.width,
-          request.height / rendered.height,
+          requestedScale,
           2048 / rendered.width,
           2048 / rendered.height,
           Math.sqrt(4_000_000 / (rendered.width * rendered.height))
         );
         const width = Math.max(1, Math.floor(rendered.width * scale));
         const height = Math.max(1, Math.floor(rendered.height * scale));
+        const diagnostics: DiagramIssue[] =
+          scale < requestedScale
+            ? [
+                {
+                  path: '/dimensions',
+                  code: 'mermaid.render.resolution-limit',
+                  message: 'PNG resolution was reduced to stay within 4,096 pixels per side and 16 million pixels.'
+                }
+              ]
+            : [];
         document.body.innerHTML = rendered.svg;
         document.body.style.background = request.theme.colors.canvas;
         const svg = document.querySelector('svg');
@@ -207,7 +221,7 @@ async function execute(input: Request, signal: AbortSignal, deadline: number): P
         svg.setAttribute('width', String(width));
         svg.setAttribute('height', String(height));
         await document.fonts.ready;
-        return { value: { width, height } };
+        return { value: { width, height, diagnostics } };
       } catch (caught) {
         return {
           diagnostics: (caught as { diagnostics?: DiagramIssue[] }).diagnostics ?? [
@@ -222,17 +236,21 @@ async function execute(input: Request, signal: AbortSignal, deadline: number): P
     }, input);
     if (value.diagnostics) throw new MermaidSourceError(value.diagnostics);
     if (input.operation !== 'png') return value.value as Result;
-    const dimensions = value.value as { width: number; height: number };
-    const bytes = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, ...dimensions }, animations: 'disabled' });
+    const dimensions = value.value as { width: number; height: number; diagnostics: DiagramIssue[] };
+    const bytes = await page.screenshot({
+      type: 'png',
+      clip: { x: 0, y: 0, width: dimensions.width, height: dimensions.height },
+      animations: 'disabled'
+    });
     return {
       bytes: new Uint8Array(bytes),
       width: dimensions.width * 2,
       height: dimensions.height * 2,
-      diagnostics: []
+      diagnostics: dimensions.diagnostics
     };
   } finally {
     signal.removeEventListener('abort', abort);
-    await browser.close();
+    await close();
   }
 }
 
