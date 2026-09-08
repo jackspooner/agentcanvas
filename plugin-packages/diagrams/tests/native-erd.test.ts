@@ -170,6 +170,22 @@ describe('native ERD validation and operations', () => {
     expect(result.removedRelationshipIds).toEqual(['owns']);
   });
 
+  it('validates the final graph after a batch creates referenced entities and attributes', () => {
+    const data: ErdData = { title: '', entities: [], relationships: [] };
+    const graph = example();
+    const result = applyErdOperations(data, [
+      { op: 'add-relationship', relationship: graph.relationships[0] },
+      { op: 'add-entity', entity: { ...graph.entities[0], attributes: [] } },
+      { op: 'add-entity', entity: graph.entities[1] },
+      { op: 'add-attribute', entityId: 'users', attribute: graph.entities[0].attributes[0], index: 0 }
+    ]);
+    expect(result.data).toEqual({ ...graph, title: '' });
+    expect(() => applyErdOperations(data, [{ op: 'add-relationship', relationship: graph.relationships[0] }])).toThrow(
+      CanvasError
+    );
+    expect(data).toEqual({ title: '', entities: [], relationships: [] });
+  });
+
   it.each([
     { op: 'move-entity', entityId: 'missing', x: 1, y: 2 },
     { op: 'add-entity', entity: entity('users') },

@@ -121,8 +121,8 @@ export function applyErdOperations(
         for (const item of result.entities) affected.add(item.id);
         break;
     }
-    assertErd(result);
   }
+  assertErd(result);
   return { data: result, affectedIds: [...affected], removedRelationshipIds: [...removed] };
 }
 
