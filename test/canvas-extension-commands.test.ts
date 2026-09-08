@@ -93,6 +93,7 @@ it('binds renderer input to its origin and reads only current owned confirmed el
   });
   expect(h.execute.mock.calls[0][1]).toEqual({ elementId: 'one', value: 3 });
   expect(h.result.current.commands.get('fixture.inspect')?.hidden).toBe(true);
+  expect(h.contexts[0].canvasRevision).toBe(1);
   expect(h.contexts[0].getElement?.('one')).toMatchObject({ revision: 1, element: { id: 'one' } });
   expect(h.contexts[0].getElement?.('missing')).toBeNull();
   const owned = h.contexts[0].getElement?.('one');
@@ -108,6 +109,7 @@ it('binds renderer input to its origin and reads only current owned confirmed el
   };
   h.rerender({ document: changed, readOnly: true });
   expect(h.contexts[0].readOnly).toBe(true);
+  expect(h.contexts[0].canvasRevision).toBe(2);
   expect(h.contexts[0].getElement?.('one')).toMatchObject({ revision: 2, element: { data: { value: 2 } } });
   expect(h.contexts[0].getElement?.('foreign')).toBeNull();
   await expect(h.result.current.executeRendererCommand(canvas.id, canvas.elements[0], 'fixture.inspect')).resolves.toBe(
@@ -182,6 +184,7 @@ it('prepares queued inverses from the confirmed document and checks expected rev
     await h.result.current.history.undo();
   });
   expect(persisted.elements[0].data).toEqual({ value: 1 });
+  expect(context.canvasRevision).toBe(4);
   expect(save.mock.calls.map((call) => call[1])).toEqual([1, 2, 3]);
   h.unmount();
 });

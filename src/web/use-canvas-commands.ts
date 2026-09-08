@@ -233,6 +233,10 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
     };
     return {
       pluginId,
+      get canvasRevision() {
+        assertCurrent();
+        return currentHistory.current.getConfirmedDocument().revision;
+      },
       get theme() {
         return commandState.current.canvas.theme ?? DEFAULT_CANVAS_THEME;
       },

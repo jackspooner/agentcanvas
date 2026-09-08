@@ -117,6 +117,8 @@ Renderer command eligibility and execution receive the originating element as
 their selection. `context.signal` combines the canvas and renderer lifetimes;
 ordinary renderer updates do not abort open command dialogs. Retained command
 contexts expose current `readOnly` and `theme` values through getters.
+`context.canvasRevision` reads the current confirmed revision, including on an
+empty canvas, so creation commands can also supply `expectedRevision`.
 
 The context deliberately does not expose React Flow or host-private React
 state. Activation may return a disposable, which the browser registry invokes

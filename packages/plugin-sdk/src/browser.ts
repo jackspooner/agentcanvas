@@ -52,6 +52,8 @@ export type BrowserOwnCanvasOperation =
 
 export interface BrowserCommandContext {
   pluginId: string;
+  /** Current confirmed canvas revision, including when no elements exist. */
+  canvasRevision?: number;
   theme?: Readonly<CanvasThemeV1>;
   readOnly: boolean;
   selection: readonly Readonly<CanvasElement>[];
