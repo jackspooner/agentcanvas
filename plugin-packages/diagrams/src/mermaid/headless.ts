@@ -160,10 +160,35 @@ function request<T extends Result>(input: Request, signal?: AbortSignal): Promis
 }
 
 async function execute(input: Request, signal: AbortSignal, deadline: number): Promise<Result> {
+  try {
+    return await executeInChromium(input, signal, deadline);
+  } catch (caught) {
+    if (signal.aborted) throw signal.reason;
+    if (caught instanceof MermaidSourceError) throw caught;
+    if (caught instanceof Error && caught.name === 'TimeoutError')
+      throw error('mermaid.headless.timeout', 'Mermaid job exceeded its 20 second deadline.');
+    throw error(
+      'mermaid.headless.failed',
+      'Mermaid rendering failed. Verify the extension build and Chromium runtime, then retry.'
+    );
+  }
+}
+
+async function executeInChromium(input: Request, signal: AbortSignal, deadline: number): Promise<Result> {
   signal.throwIfAborted();
   const bundle = await readFile(new URL('./headless/engine.js', import.meta.url), 'utf8');
   signal.throwIfAborted();
-  const browser = await chromium.launch({ headless: true, timeout: Math.max(1, deadline - Date.now()) });
+  const browser = await chromium
+    .launch({ headless: true, timeout: Math.max(1, deadline - Date.now()) })
+    .catch((caught: unknown) => {
+      if (signal.aborted) throw signal.reason;
+      if (caught instanceof MermaidSourceError || (caught instanceof Error && caught.name === 'TimeoutError'))
+        throw caught;
+      throw error(
+        'mermaid.headless.browser-unavailable',
+        'Chromium could not start. Verify the pinned Playwright Chromium installation and process permissions, then retry.'
+      );
+    });
   let closing: Promise<void> | undefined;
   const close = () => (closing ??= browser.close());
   const abort = () => {
@@ -227,8 +252,8 @@ async function execute(input: Request, signal: AbortSignal, deadline: number): P
           diagnostics: (caught as { diagnostics?: DiagramIssue[] }).diagnostics ?? [
             {
               path: '/source',
-              code: 'mermaid.render',
-              message: caught instanceof Error ? caught.message : String(caught)
+              code: 'mermaid.headless.failed',
+              message: 'Mermaid rendering failed. Check the source and retry.'
             }
           ]
         };
