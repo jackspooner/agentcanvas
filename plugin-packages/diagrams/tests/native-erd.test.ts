@@ -1,5 +1,5 @@
-import { DEFAULT_CANVAS_THEME, type SnapshotNode } from '@agentcanvas/extension-sdk';
 import { CanvasError } from '@agentcanvas/core/errors';
+import { DEFAULT_CANVAS_THEME, type SnapshotNode } from '@agentcanvas/extension-sdk';
 import { describe, expect, it } from 'vitest';
 import type { Cardinality, ErdData, ErdEntity, ErdOperation } from '../src/contracts.js';
 import {
@@ -286,6 +286,17 @@ describe('native shared geometry and vector scenes', () => {
       expect(applyErdOperations(data, [{ op: 'auto-layout', direction }]).data).toEqual(result);
     }
     expect(data.entities[0].x).toBe(0);
+  });
+
+  it('preserves normal relationship labels and long attribute names in the shared scene', () => {
+    const data = example();
+    data.relationships[0].label = 'places';
+    data.entities[0].attributes[0].name = 'customer_id';
+    const labels = flatten(renderErdScene(data, DEFAULT_CANVAS_THEME).nodes).flatMap((node) =>
+      node.kind === 'text' ? [node.text] : []
+    );
+    expect(labels).toContain('places');
+    expect(labels).toContain('customer_id');
   });
 
   it('handles an empty diagram without nonfinite bounds', () => {

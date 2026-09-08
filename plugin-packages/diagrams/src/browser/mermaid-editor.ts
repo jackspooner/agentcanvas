@@ -37,7 +37,7 @@ export function mermaidPreview(root: HTMLElement, signal: AbortSignal) {
       const image = document.createElement('img');
       image.src = url;
       image.alt = `${rendered.diagramType} diagram`;
-      image.style.cssText = 'width:100%;height:100%;object-fit:contain';
+      image.style.cssText = 'display:block;width:100%;height:100%;object-fit:contain';
       root.append(image);
       return true;
     } catch (error) {

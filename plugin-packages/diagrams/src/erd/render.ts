@@ -1,6 +1,6 @@
 import type { CanvasThemeV1, SnapshotNode, SnapshotTextNode } from '@agentcanvas/extension-sdk';
 import type { ErdData } from '../contracts.js';
-import { diagramGeometry, type Bounds } from './geometry.js';
+import { type Bounds, diagramGeometry, textWidth } from './geometry.js';
 
 /** Vector scene shared by browser rendering and server snapshots; all appearance comes from the host theme. */
 export function renderErdScene(
@@ -44,7 +44,7 @@ export function renderErdScene(
         children.push({ ...marker, stroke: theme.colors.textMuted, fill: theme.colors.canvas });
     }
     if (relationship.label) {
-      const width = Math.min(320, relationship.label.length * 7);
+      const width = Math.min(320, textWidth(relationship.label));
       children.push({
         kind: 'rect',
         x: edge.label.x - width / 2 - 6,
@@ -104,9 +104,7 @@ export function renderErdScene(
       });
     for (const [rowIndex, row] of frame.rows.entries()) {
       const attribute = entity.attributes[rowIndex];
-      const available = frame.width - 156;
-      const nameWidth = available * 0.55;
-      const typeWidth = available * 0.45;
+      const { nameWidth, typeWidth } = frame;
       children.push({
         kind: 'group',
         id: `attribute:${entity.id}:${attribute.id}`,

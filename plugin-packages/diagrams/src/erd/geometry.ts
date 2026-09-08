@@ -14,6 +14,8 @@ export interface EntityGeometry extends Bounds {
   id: string;
   headerHeight: number;
   rowHeight: number;
+  nameWidth: number;
+  typeWidth: number;
   rows: { id: string; y: number; centerY: number }[];
 }
 export interface RelationshipGeometry {
@@ -24,19 +26,36 @@ export interface RelationshipGeometry {
   targetMarkers: SnapshotNode[];
 }
 
+/** Conservative width estimate shared by geometry and clipping; no DOM measurement is persisted. */
+export function textWidth(value: string, fontSize = 12): number {
+  return Math.ceil(value.length * fontSize * 0.7);
+}
+
 export function entityGeometry(entity: ErdEntity): EntityGeometry {
   const headerHeight = entity.alias ? 56 : 36;
   const rowHeight = 28;
-  const textWidth = Math.max(
-    entity.name.length * 8,
-    (entity.alias?.length ?? 0) * 7,
-    ...entity.attributes.map((attribute) => attribute.name.length * 7 + attribute.dataType.length * 7 + 156)
+  const attributeNameWidth = Math.max(1, ...entity.attributes.map((attribute) => textWidth(attribute.name)));
+  const attributeTypeWidth = Math.max(1, ...entity.attributes.map((attribute) => textWidth(attribute.dataType)));
+  const width = Math.min(
+    640,
+    Math.max(
+      280,
+      24 +
+        Math.max(
+          textWidth(entity.name, 14),
+          textWidth(entity.alias ?? ''),
+          attributeNameWidth + attributeTypeWidth + 156
+        )
+    )
   );
+  const nameWidth = ((width - 156) * attributeNameWidth) / (attributeNameWidth + attributeTypeWidth);
   return {
     id: entity.id,
     x: entity.x,
     y: entity.y,
-    width: Math.min(640, Math.max(280, textWidth + 24)),
+    width,
+    nameWidth,
+    typeWidth: width - 156 - nameWidth,
     height: headerHeight + Math.max(1, entity.attributes.length) * rowHeight,
     headerHeight,
     rowHeight,
