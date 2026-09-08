@@ -1,8 +1,8 @@
 import type { AgentCanvasBrowserPlugin, JsonObject, RendererContext } from '@agentcanvas/extension-sdk';
 import type { ErdData } from '../contracts.js';
+import { closeDiagramEditors, registerDiagramCommands, updateDiagramEditors } from './commands.js';
 import { mountErdEditor } from './erd-editor.js';
-import { registerDiagramCommands, updateDiagramEditors, closeDiagramEditors } from './commands.js';
-import { mermaidPreview, errorText } from './mermaid-editor.js';
+import { errorText, mermaidPreview } from './mermaid-editor.js';
 
 function dispatch(context: RendererContext, name: string, input?: JsonObject): Promise<boolean> {
   if (!context.executeCommand) throw new Error('Diagrams requires host API 1.2 renderer commands.');
@@ -18,12 +18,6 @@ const extension: AgentCanvasBrowserPlugin = {
       type: 'agentcanvas.diagrams/erd',
       schemaVersions: [1],
       placement: 'node',
-      details: {
-        label: 'Expand diagram',
-        open: async (context) => {
-          await dispatch(context, 'edit');
-        }
-      },
       mount(root, initial) {
         let context = initial;
         const editor = mountErdEditor(root, {
@@ -107,12 +101,6 @@ const extension: AgentCanvasBrowserPlugin = {
       type: 'agentcanvas.diagrams/mermaid',
       schemaVersions: [1],
       placement: 'node',
-      details: {
-        label: 'Edit Mermaid source',
-        open: async (context) => {
-          await dispatch(context, 'edit');
-        }
-      },
       mount(root, initial) {
         let context = initial,
           last = '';

@@ -1,6 +1,6 @@
 import type { RendererOverlayService } from '@agentcanvas/extension-sdk';
 
-/** Native dialog owns focus trapping; the host overlay owns canvas-lifetime placement. */
+/** The native dialog and explicit Tab wrapping contain focus; the host owns overlay lifetime. */
 export function diagramModal(
   overlays: RendererOverlayService,
   signal: AbortSignal,
@@ -69,6 +69,23 @@ export function diagramModal(
     if (!busy()) close();
   };
   signal.addEventListener('abort', close, { once: true });
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const controls = [
+      ...dialog.querySelectorAll<HTMLElement>('button, input, textarea, select, a[href], [tabindex]')
+    ].filter(
+      (control) => control.tabIndex >= 0 && !control.matches(':disabled') && control.getClientRects().length > 0
+    );
+    const first = controls[0] ?? closeButton;
+    const last = controls.at(-1) ?? closeButton;
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
   dialog.showModal();
   closeButton.focus();
   if (signal.aborted) close();
