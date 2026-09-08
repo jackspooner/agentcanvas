@@ -1,6 +1,5 @@
-import { createServer } from 'node:http';
 import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
-import os from 'node:os';
+import { createServer } from 'node:http';
 import path from 'node:path';
 import { STANDARD_PLUGINS } from '../../src/cli/openapi.js';
 import { createV2Runtime, createV2ServiceHandler } from '../../src/server-v2.js';
@@ -8,7 +7,9 @@ import { createV2Runtime, createV2ServiceHandler } from '../../src/server-v2.js'
 const host = '127.0.0.1';
 const port = 23175;
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'agentcanvas-diagrams-e2e-'));
+const tempBase = path.join(repositoryRoot, 'tmp');
+await mkdir(tempBase, { recursive: true });
+const tempRoot = await mkdtemp(path.join(tempBase, 'diagrams-e2e-'));
 const pluginsRoot = path.join(tempRoot, 'plugins');
 await mkdir(pluginsRoot);
 for (const id of [...STANDARD_PLUGINS, 'agentcanvas.diagrams'])
@@ -23,10 +24,7 @@ const server = createServer(createV2ServiceHandler(runtime));
 async function cleanup(): Promise<void> {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   runtime.dispose();
-  if (
-    path.dirname(tempRoot) !== path.resolve(os.tmpdir()) ||
-    !path.basename(tempRoot).startsWith('agentcanvas-diagrams-e2e-')
-  )
+  if (path.dirname(tempRoot) !== tempBase || !path.basename(tempRoot).startsWith('diagrams-e2e-'))
     throw new Error('Refusing to remove an unverified diagram fixture path.');
   await rm(tempRoot, { recursive: true, force: true });
 }

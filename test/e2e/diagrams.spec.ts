@@ -1,6 +1,6 @@
 import type { CanvasOperation, CanvasRecord } from '@agentcanvas/core';
 import type { CanvasElement } from '@agentcanvas/plugin-sdk';
-import { type APIRequestContext, type Locator, type Page, expect, test } from '@playwright/test';
+import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test';
 import type { ErdData } from '../../plugin-packages/diagrams/src/contracts.js';
 
 const erd: ErdData = {
@@ -50,6 +50,37 @@ async function seed(request: APIRequestContext, element: Record<string, unknown>
 function native(element: CanvasElement): ErdData {
   return element.data as unknown as ErdData;
 }
+
+test('creates native entities and attributes from the public extension command', async ({ page, request }) => {
+  const response = await request.post('/api/v1/canvases', { data: { title: 'New ERD' } });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const id = (await response.json()).canvas.id as string;
+  await page.goto(`/canvases/${id}`);
+  await page.getByLabel('Extension commands', { exact: true }).selectOption('agentcanvas.diagrams.create-erd');
+  const dialog = page.getByRole('dialog', { name: 'Edit Entity relationship diagram', exact: true });
+  await dialog.getByRole('button', { name: 'Add entity', exact: true }).click();
+  await dialog.getByLabel('Entity name', { exact: true }).fill('Publishers');
+  await dialog.getByLabel('Alias', { exact: true }).fill('publisher');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect.poll(async () => (await currentErd(request, id)).entities.length).toBe(1);
+  await dialog.getByRole('button', { name: 'Entity Publishers', exact: true }).dblclick();
+  await dialog.getByRole('button', { name: 'Add attribute', exact: true }).click();
+  await dialog.getByLabel('Attribute name', { exact: true }).fill('id');
+  await dialog.getByLabel('Data type', { exact: true }).fill('uuid');
+  await dialog.getByLabel('PK', { exact: true }).check();
+  await dialog.getByRole('combobox', { name: 'Nullable', exact: true }).selectOption('no');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect.poll(async () => (await currentErd(request, id)).entities[0].attributes.length).toBe(1);
+  const saved = (await currentErd(request, id)).entities[0];
+  expect(saved).toMatchObject({
+    name: 'Publishers',
+    alias: 'publisher',
+    attributes: [{ name: 'id', dataType: 'uuid', keys: ['PK'], nullable: false }]
+  });
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Attribute Publishers.id', exact: true })).toBeVisible();
+});
 async function currentErd(request: APIRequestContext, id: string): Promise<ErdData> {
   const element = (await read(request, id)).elements.find((item) => item.type === 'agentcanvas.diagrams/erd');
   if (!element) throw new Error('Missing native ERD');
@@ -145,20 +176,30 @@ test('native forms, connection handles, cascade confirmation and transient expan
     data: erd
   });
   await page.goto(`/canvases/${id}`);
-  await page.getByRole('button', { name: 'Expand', exact: true }).click();
+  const expand = page.getByRole('button', { name: 'Expand', exact: true });
+  await expand.click();
   const dialog = page.getByRole('dialog', { name: 'Edit Library', exact: true });
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(expand).toBeFocused();
+  await expand.click();
   await dialog.getByRole('button', { name: 'Attribute Authors.id', exact: true }).dblclick();
   await dialog.getByLabel('Attribute name', { exact: true }).fill('author_key');
   await dialog.getByLabel('UK', { exact: true }).check();
-  await dialog.getByLabel('Nullable', { exact: true }).selectOption('unspecified');
+  await dialog.getByRole('combobox', { name: 'Nullable', exact: true }).selectOption('unspecified');
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect.poll(async () => (await currentErd(request, id)).entities[0].attributes[0].name).toBe('author_key');
   await dialog.getByRole('button', { name: 'Connect', exact: true }).click();
   await dialog.getByRole('button', { name: 'Connect Authors attribute author_key', exact: true }).click();
   await dialog.getByRole('button', { name: 'Connect Books attribute author_id', exact: true }).click();
   await dialog.getByLabel('Relationship label', { exact: true }).fill('writes');
-  await dialog.getByLabel('Target cardinality', { exact: true }).selectOption('zero-or-many');
+  await dialog.getByRole('combobox', { name: 'Target cardinality', exact: true }).selectOption('zero-or-many');
   await dialog.getByLabel('Identifying relationship', { exact: true }).check();
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect.poll(async () => (await currentErd(request, id)).relationships.length).toBe(1);
