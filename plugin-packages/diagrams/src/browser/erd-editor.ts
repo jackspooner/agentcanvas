@@ -174,6 +174,11 @@ export function mountErdEditor(
     deleteButton.disabled = disabled || !selection;
     form?.setReadOnly(disabled);
     connectButton.setAttribute('aria-pressed', String(connecting));
+    for (const node of svg.querySelectorAll<SVGElement>('[data-scene-id]')) {
+      const item = selectionAt(node);
+      if (item) node.dataset.selected = String(JSON.stringify(item) === JSON.stringify(selection));
+      if (item?.kind === 'relationship') node.setAttribute('opacity', node.dataset.selected === 'true' ? '.65' : '1');
+    }
   }
   function selectItem(next: ErdSelection) {
     selection = next;
@@ -338,7 +343,6 @@ export function mountErdEditor(
     selectItem(next);
     if (edit) openForm(next);
     else {
-      draw();
       const id =
         next.kind === 'relationship'
           ? `relationship:${next.relationshipId}`
@@ -431,7 +435,7 @@ export function mountErdEditor(
         ],
         current.revision
       );
-    draw();
+    if (current && (cancel || current.dx !== 0 || current.dy !== 0)) draw();
   }
   svg.addEventListener('pointerup', (event) => finishGesture(event), { signal });
   svg.addEventListener('pointercancel', (event) => finishGesture(event, true), { signal });

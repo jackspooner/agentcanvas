@@ -156,3 +156,12 @@ it('keeps dirty inputs across updates and asks before Escape discards them', () 
   click('Keep editing');
   expect(root.querySelector('input')).toBe(input);
 });
+
+it('keeps click targets attached so a real second click can open attribute editing', () => {
+  const { root } = mount();
+  const attribute = required(root, '[data-scene-id="attribute:a:id"]');
+  attribute.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  expect(attribute.isConnected).toBe(true);
+  attribute.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+  expect(root.querySelector('input')?.value).toBe('id');
+});
