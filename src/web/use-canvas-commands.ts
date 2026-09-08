@@ -48,6 +48,7 @@ interface CanvasCommandsOptions {
 }
 interface RendererCommandScope {
   assertCurrent(): void;
+  assertCommand(commandId: string): void;
   elementId: string;
   signal?: AbortSignal;
 }
@@ -255,6 +256,7 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
       overlays,
       executeCommand: async (commandId, input) => {
         assertCurrent();
+        rendererScope?.assertCommand(commandId);
         const payload = { ...input, ...(rendererScope ? { elementId: rendererScope.elementId } : {}) };
         if (rendererScope) rendererCommandScopes.current.set(payload, rendererScope);
         try {
@@ -456,19 +458,27 @@ export function useCanvasCommands(options: CanvasCommandsOptions) {
         const element = document.elements.find((candidate) => candidate.id === origin.id);
         if (!element || element.type !== origin.type) throw new Error('The renderer element no longer exists.');
       };
-      assertCurrent();
       const pluginId = origin.type.slice(0, origin.type.lastIndexOf('/'));
-      const coreHistory = commandId === CORE_EDITOR_COMMANDS.undo || commandId === CORE_EDITOR_COMMANDS.redo;
-      if (!coreHistory && currentRegistry.current.commands.get(commandId)?.pluginId !== pluginId) {
-        throw new Error('A renderer may only execute its own extension commands or core undo/redo.');
-      }
-      if (
-        coreHistory &&
-        currentHistory.current.getConfirmedDocument().elements.find((element) => element.id === origin.id)?.locked
-      )
-        throw new Error(`Element is locked: ${origin.id}`);
+      const assertCommand = (id: string) => {
+        assertCurrent();
+        const coreHistory = id === CORE_EDITOR_COMMANDS.undo || id === CORE_EDITOR_COMMANDS.redo;
+        if (!coreHistory && currentRegistry.current.commands.get(id)?.pluginId !== pluginId) {
+          throw new Error('A renderer may only execute its own extension commands or core undo/redo.');
+        }
+        if (
+          coreHistory &&
+          currentHistory.current.getConfirmedDocument().elements.find((element) => element.id === origin.id)?.locked
+        )
+          throw new Error(`Element is locked: ${origin.id}`);
+      };
+      assertCommand(commandId);
       const payload = { ...input, elementId: origin.id };
-      rendererCommandScopes.current.set(payload, { assertCurrent, elementId: origin.id, signal: lifetimeSignal });
+      rendererCommandScopes.current.set(payload, {
+        assertCurrent,
+        assertCommand,
+        elementId: origin.id,
+        signal: lifetimeSignal
+      });
       try {
         return await commands.execute(commandId, payload);
       } finally {

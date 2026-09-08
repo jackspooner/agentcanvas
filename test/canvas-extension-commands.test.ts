@@ -37,6 +37,7 @@ function harness(
   const execute = vi.fn<BrowserCommandDescriptor['execute']>((context) => {
     contexts.push(context);
   });
+  const executeOther = vi.fn<BrowserCommandDescriptor['execute']>();
   const registry = {
     plugins: { plugins: [] },
     renderers: new Map(),
@@ -49,6 +50,20 @@ function harness(
           id: 'fixture.inspect',
           pluginId: 'fixture',
           descriptor: { name: 'inspect', title: 'Inspect', hidden: true, execute, isEnabled }
+        }
+      ],
+      [
+        'other.inspect',
+        {
+          id: 'other.inspect',
+          pluginId: 'other',
+          descriptor: {
+            name: 'inspect',
+            title: 'Other inspect',
+            hidden: false,
+            execute: executeOther,
+            isEnabled: undefined
+          }
         }
       ]
     ])
@@ -82,8 +97,64 @@ function harness(
     },
     { initialProps: { document: canvas, readOnly: false } }
   );
-  return { ...hook, contexts, execute };
+  return { ...hook, contexts, execute, executeOther };
 }
+
+it('preserves renderer ownership across redispatch while keeping legacy command contexts unrestricted', async () => {
+  const h = harness(vi.fn());
+  await h.result.current.executeRendererCommand(canvas.id, canvas.elements[0], 'fixture.inspect');
+  await expect(h.contexts[0].executeCommand('other.inspect')).rejects.toThrow('own extension commands');
+  await expect(h.contexts[0].executeCommand(CORE_EDITOR_COMMANDS.delete)).rejects.toThrow('own extension commands');
+  expect(h.executeOther).not.toHaveBeenCalled();
+  await h.contexts[0].executeCommand('fixture.inspect', { elementId: 'spoofed' });
+  await expect(h.contexts[1].executeCommand('other.inspect')).rejects.toThrow('own extension commands');
+  expect(h.execute.mock.calls[1][1]).toEqual({ elementId: 'one' });
+  await h.result.current.commands.execute('fixture.inspect');
+  await expect(h.contexts[2].executeCommand('other.inspect')).resolves.toBe(true);
+  expect(h.executeOther).toHaveBeenCalledTimes(1);
+  h.unmount();
+});
+
+it.each([
+  'undo',
+  'redo'
+] as const)('blocks scoped %s from a locked origin before invoking persistence', async (direction) => {
+  let persisted: CanvasDocument = { ...canvas, elements: [{ ...canvas.elements[0], locked: true }] };
+  const save = vi.fn(async (operations: readonly CanvasOperation[], revision: number): Promise<CanvasDocument> => {
+    const next = new Map(persisted.elements.map((element) => [element.id, element]));
+    for (const operation of operations) {
+      if (operation.op === 'upsertElement') {
+        const element = operation.element as CanvasDocument['elements'][number];
+        next.set(element.id, element);
+      } else if (operation.op === 'deleteElement') next.delete(operation.elementId);
+      else throw new Error('Unexpected fixture operation');
+    }
+    persisted = { ...persisted, revision: revision + 1, elements: [...next.values()] };
+    return persisted;
+  });
+  const h = harness(save);
+  h.rerender({ document: persisted, readOnly: false });
+  const other = { ...canvas.elements[0], id: 'two' };
+  await act(async () => {
+    await h.result.current.history.commitHistory(
+      'Add other card',
+      [{ op: 'upsertElement', element: other }],
+      [{ op: 'deleteElement', elementId: other.id }],
+      [other.id]
+    );
+    if (direction === 'redo') await h.result.current.history.undo();
+  });
+  const commandId = CORE_EDITOR_COMMANDS[direction];
+  expect(h.result.current.commands.isEnabled(commandId)).toBe(true);
+  await h.result.current.executeRendererCommand(canvas.id, canvas.elements[0], 'fixture.inspect');
+  save.mockClear();
+  await expect(h.result.current.executeRendererCommand(canvas.id, canvas.elements[0], commandId)).rejects.toThrow(
+    'locked'
+  );
+  await expect(h.contexts[0].executeCommand(commandId)).rejects.toThrow('locked');
+  expect(save).not.toHaveBeenCalled();
+  h.unmount();
+});
 
 it('binds renderer input to its origin and reads only current owned confirmed elements', async () => {
   const h = harness(vi.fn());
