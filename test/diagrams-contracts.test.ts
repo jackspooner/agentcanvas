@@ -6,6 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createMcpToolCatalog } from '../src/api-v2/mcp-catalog.js';
+import { mcpOutputSchema } from '../src/api-v2/problem-contract.js';
 import { createRegistryElementSchemas } from '../src/api-v2/openapi.js';
 import { STANDARD_PLUGINS } from '../src/cli/openapi.js';
 import { createMcpV2Server } from '../src/mcp-v2/server.js';
@@ -126,7 +127,7 @@ describe('installed Diagrams public contracts', () => {
     for (const tool of expected) {
       const wire = listed.find((item) => item.name === tool.name);
       expect(wire?.inputSchema).toEqual(tool.inputSchema);
-      expect(wire?.outputSchema).toEqual(tool.outputSchema);
+      expect(wire?.outputSchema).toEqual(mcpOutputSchema(tool.outputSchema));
     }
     const openapi = await (await app.request('/openapi.json')).json();
     const schemas = createRegistryElementSchemas(offline.registry);
