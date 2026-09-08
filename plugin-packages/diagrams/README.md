@@ -116,7 +116,7 @@ npm run plugins:verify
 ```
 
 Restart AgentCanvas through its supported service manager after installation.
-Check `/whoami`, `/plugins`, active `/openapi.json`, and the seven resident MCP
+Check `/whoami`, `/api/v1/plugins`, active `/openapi.json`, and the seven resident MCP
 tools. Reload MCP clients after restart. Create a native diagram and a Mermaid
 diagram, reload the browser, and request a cold canvas snapshot.
 
@@ -126,7 +126,11 @@ interactive user's. Install Chromium into a shared, service-readable directory
 by setting `PLAYWRIGHT_BROWSERS_PATH` during installation and in the service's
 environment. Grant that account read/execute access. Verify an actual cold PNG
 snapshot from the running service; an interactive `playwright install` alone
-does not prove service-account visibility. Missing Chromium does not prevent
+does not prove service-account visibility. This service's verified default profile
+cache is `C:\Windows\ServiceProfiles\Workspace2AgentCanvas\AppData\Local\ms-playwright`;
+an administrator can install there using the same `PLAYWRIGHT_BROWSERS_PATH`
+for the installation command, without changing the service environment.
+Missing Chromium does not prevent
 activation, but Mermaid authoring validation/resolution/snapshots require it.
 
 The standard Docker image stays lightweight. An optional derived image may run
@@ -140,7 +144,7 @@ install `dist/plugin-catalog/agentcanvas.diagrams` into `plugins/`, and return t
 ```text
 npm run test --workspace @agentcanvas/extension-diagrams
 npm run test:chromium --workspace @agentcanvas/extension-diagrams
-npx playwright test --config test/e2e/playwright.config.ts --project diagrams
+npx playwright test --config test/e2e/playwright.config.ts --project diagrams-live
 ```
 
 Chromium-dependent integration tests are separate from normal unit tests. Build

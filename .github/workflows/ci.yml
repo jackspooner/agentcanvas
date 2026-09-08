@@ -78,10 +78,8 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Build and materialize standard plugins
-        run: |
-          npm run plugins:build
-          npm run plugins:materialize -- --defaults
+      - name: Materialize standard plugins from the tested catalog
+        run: npm run plugins:materialize -- --defaults
 
       - name: Verify plugins
         run: npm run plugins:verify

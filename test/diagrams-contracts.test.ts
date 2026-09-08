@@ -302,6 +302,30 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
     expect(runtime.store.getCanvas(canvas.id)).toEqual(locked);
   });
 
+  it('returns registered validation details for unrepresentable exports and renders extreme native positions', async () => {
+    const { runtime, app, client } = await openRuntime();
+    const canvas = runtime.store.createCanvas({ title: 'Native boundary cases' });
+    const diagram = nativeElement();
+    for (const entity of diagram.data.entities as JsonObject[]) {
+      entity.x = 100000;
+      entity.y = 100000;
+    }
+    (diagram.data.entities as JsonObject[])[0].name = 'Cannot "quote" this name';
+    runtime.store.applyOperations(canvas.id, {
+      operations: [{ op: 'upsertElement', element: { ...diagram, width: 100000, height: 100000 } }]
+    });
+    const exported = await client.callTool({
+      name: name('export-mermaid'),
+      arguments: { canvasId: canvas.id, elementId: diagram.id }
+    });
+    expect(exported.isError).toBe(true);
+    expect(exported.structuredContent).toMatchObject({ problem: { code: 'validation_error', status: 400 } });
+    expect(JSON.stringify(exported.structuredContent)).toContain('mermaid.erd.unrepresentable');
+    const snapshot = await (await app.request(`/api/v1/canvases/${canvas.id}/snapshot`, { method: 'POST' })).json();
+    expect(snapshot.diagnostics.filter((issue: { severity: string }) => issue.severity === 'error')).toEqual([]);
+    expect(snapshot.snapshot.mimeType).toBe('image/svg+xml');
+  });
+
   it('preserves exact diagrams when the optional extension is absent after restart', async () => {
     const root = installDistributions();
     const databasePath = path.join(root, 'canvas.sqlite');

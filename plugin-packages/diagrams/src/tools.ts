@@ -2,11 +2,11 @@ import { CanvasError } from '@agentcanvas/core/errors';
 import type { CanvasElement, JsonObject, PluginInvocationContext, ServerPluginHost } from '@agentcanvas/extension-sdk';
 import type { DiagramIssue, ErdData, ErdOperation, MermaidData } from './contracts.js';
 import { applyErdOperations } from './erd/domain.js';
-import { assertErd } from './erd/validation.js';
 import { layoutErd } from './erd/layout.js';
+import { assertErd } from './erd/validation.js';
 import { exportErdMermaid } from './mermaid/export.js';
-import { validateMermaid, convertMermaidErd } from './mermaid/headless.js';
-import { toolInputs, mutationOutputSchema, validationOutputSchema, exportOutputSchema } from './schemas.js';
+import { convertMermaidErd, validateMermaid } from './mermaid/headless.js';
+import { exportOutputSchema, mutationOutputSchema, toolInputs, validationOutputSchema } from './schemas.js';
 
 export function diagramIssues(error: unknown): DiagramIssue[] {
   if (error && typeof error === 'object' && 'diagnostics' in error && Array.isArray(error.diagnostics))
@@ -184,7 +184,12 @@ export function registerDiagramTools(host: ServerPluginHost): void {
           ['edit-erd', 'export-mermaid'].includes(name) ? 'erd' : 'mermaid'
         );
         if (name === 'export-mermaid') {
-          const exported = exportErdMermaid(element.data as unknown as ErdData);
+          let exported: ReturnType<typeof exportErdMermaid>;
+          try {
+            exported = exportErdMermaid(element.data as unknown as ErdData);
+          } catch (error) {
+            invalid(diagramIssues(error));
+          }
           await validate(exported.source, context.signal);
           return json({ ok: true, ...exported });
         }

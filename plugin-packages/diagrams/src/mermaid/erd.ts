@@ -1,6 +1,7 @@
 import { type CanvasThemeV1, DEFAULT_CANVAS_THEME } from '@agentcanvas/extension-sdk';
 import type { ErDB } from 'mermaid/dist/diagrams/er/erDb.js';
 import type { Cardinality, DiagramIssue, ErdData } from '../contracts.js';
+import { validateErd } from '../erd/validation.js';
 import { MermaidSourceError, withMermaid } from './engine.js';
 
 const cardinalities: Record<string, Cardinality> = {
@@ -84,7 +85,10 @@ export function extractErd(
       warnings.push(issue('mermaid.erd.direction', 'Mermaid layout direction is not preserved as native positions.'));
     if (db.getAccTitle() || db.getAccDescription())
       warnings.push(issue('mermaid.erd.accessibility', 'Mermaid accessibility metadata is not imported.'));
-    return { data: { title: db.getDiagramTitle() || '', entities, relationships }, warnings };
+    const data: ErdData = { title: db.getDiagramTitle() || '', entities, relationships };
+    const issues = validateErd(data);
+    if (issues.length) throw new MermaidSourceError(issues);
+    return { data, warnings };
   });
 }
 

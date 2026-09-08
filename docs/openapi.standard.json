@@ -5808,7 +5808,7 @@
   "info": {
     "description": "Standard AgentCanvas distribution contract. Runtime OpenAPI reflects the exact active extension set.",
     "title": "AgentCanvas API",
-    "version": "0.3.0-alpha.2"
+    "version": "0.3.0-alpha.3"
   },
   "openapi": "3.1.0",
   "paths": {

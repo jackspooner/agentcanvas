@@ -3,14 +3,14 @@ import type {
   ElementResolution,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/extension-sdk';
-import { erdDataSchema, mermaidDataSchema } from './schemas.js';
-import { validateErd } from './erd/validation.js';
-import { diagramGeometry } from './erd/geometry.js';
 import type { ErdData } from './contracts.js';
-import { validateMermaidSource } from './mermaid/policy.js';
+import { diagramGeometry } from './erd/geometry.js';
+import { validateErd } from './erd/validation.js';
 import { validateMermaid } from './mermaid/headless.js';
+import { validateMermaidSource } from './mermaid/policy.js';
+import { erdDataSchema, mermaidDataSchema } from './schemas.js';
+import { renderMermaidSnapshot, renderNativeSnapshot } from './snapshot.js';
 import { diagramIssues, registerDiagramTools } from './tools.js';
-import { renderNativeSnapshot, renderMermaidSnapshot } from './snapshot.js';
 
 const extension: AgentCanvasServerPlugin = {
   activate(host) {
@@ -81,8 +81,24 @@ const extension: AgentCanvasServerPlugin = {
           };
         }
       },
-      renderSnapshot: (element, context) =>
-        renderMermaidSnapshot(element, context.theme, context.signal, resources.get())
+      async renderSnapshot(element, context) {
+        try {
+          return await renderMermaidSnapshot(element, context.theme, context.signal, resources.get());
+        } catch (error) {
+          return {
+            space: 'frame',
+            layer: 'content',
+            nodes: [],
+            diagnostics: diagramIssues(error).map((issue) => ({
+              ...issue,
+              severity: 'error' as const,
+              retryable: false,
+              pluginId: 'agentcanvas.diagrams',
+              elementId: element.id
+            }))
+          };
+        }
+      }
     });
     registerDiagramTools(host);
   }

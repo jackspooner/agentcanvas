@@ -24,10 +24,10 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "generate:manifest": "tsx scripts/generate-manifest.mts",
-    "build": "npm run generate:manifest && tsc -p tsconfig.json && node scripts/build.mjs",
-    "check": "tsc -p tsconfig.test.json --noEmit",
-    "test": "vitest run",
+    "generate:manifest": "tsx scripts/generate-manifest.mts && biome format --write agentcanvas.plugin.json",
+    "build": "npm run generate:manifest && tsx scripts/generate-validators.mts && tsc -p tsconfig.json && node scripts/build.mjs",
+    "check": "tsx scripts/generate-validators.mts --check && tsc -p tsconfig.test.json --noEmit",
+    "test": "tsx scripts/generate-validators.mts --check && vitest run",
     "test:chromium": "vitest run --config vitest.chromium.config.ts",
     "generate:notices": "node scripts/generate-notices.mjs",
     "check:notices": "node scripts/generate-notices.mjs --check"

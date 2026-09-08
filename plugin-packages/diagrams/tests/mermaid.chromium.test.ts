@@ -62,6 +62,13 @@ describe('pinned Mermaid in real Chromium', () => {
     );
     await expect(convertMermaidErd('erDiagram\nsubgraph group[Group]\nA\nend')).rejects.toThrow('subgraphs');
   });
+  it('rejects valid Mermaid that exceeds native conversion limits with path-specific issues', async () => {
+    const source = `erDiagram\n${Array.from({ length: 101 }, (_, index) => `E${index}`).join('\n')}`;
+    expect(await validateMermaid(source)).toEqual({ diagramType: 'er' });
+    await expect(convertMermaidErd(source)).rejects.toMatchObject({
+      diagnostics: expect.arrayContaining([expect.objectContaining({ path: '/entities' })])
+    });
+  });
   it('bounds physical PNG pixels and separates cancelled coalesced callers', async () => {
     const source = 'flowchart LR\nUniqueA --> UniqueB';
     const controller = new AbortController();

@@ -22,15 +22,8 @@ export function renderNativeSnapshot(
     nodes: [
       {
         kind: 'group',
-        transform: [
-          scale,
-          0,
-          0,
-          scale,
-          (width - bounds.width * scale) / 2 - bounds.x * scale,
-          (height - bounds.height * scale) / 2 - bounds.y * scale
-        ],
-        children: nodes
+        transform: [scale, 0, 0, scale, (width - bounds.width * scale) / 2, (height - bounds.height * scale) / 2],
+        children: [{ kind: 'group', transform: [1, 0, 0, 1, -bounds.x, -bounds.y], children: nodes }]
       }
     ]
   };
