@@ -1,11 +1,11 @@
 export const erdEditorStyles = `
 :host{display:block;width:100%;height:100%}
-*{box-sizing:border-box}
+.erd-editor,.erd-editor *{box-sizing:border-box}
 .erd-editor{height:100%;width:100%;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--erd-surface);color:var(--erd-text);font:13px/1.4 var(--erd-font);border:1px solid var(--erd-border);border-radius:8px}
 .erd-toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:6px;border-bottom:1px solid var(--erd-border)}
-button,input,select,textarea{font:inherit;color:inherit;background:var(--erd-surface);border:1px solid var(--erd-border);border-radius:4px;padding:5px 7px}
-button{cursor:pointer}button:hover:not(:disabled){background:var(--erd-muted)}button:disabled{opacity:.5;cursor:default}
-:focus-visible{outline:2px solid var(--erd-accent);outline-offset:2px}
+.erd-editor :is(button,input,select,textarea){font:inherit;color:inherit;background:var(--erd-surface);border:1px solid var(--erd-border);border-radius:4px;padding:5px 7px}
+.erd-editor button{cursor:pointer}.erd-editor button:hover:not(:disabled){background:var(--erd-muted)}.erd-editor button:disabled{opacity:.5;cursor:default}
+.erd-editor :focus-visible{outline:2px solid var(--erd-accent);outline-offset:2px}
 .erd-stage{display:block;width:100%;flex:1;min-height:80px;touch-action:none;background:var(--erd-muted)}
 .erd-stage [data-entity-id],.erd-stage [data-relationship-id],.erd-stage [data-connect-entity]{cursor:pointer}
 .erd-stage [data-drag-entity]{cursor:grab}.erd-stage [data-selected=true]>rect:first-child{stroke:var(--erd-accent);stroke-width:3}
