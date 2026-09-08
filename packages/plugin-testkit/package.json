@@ -1,6 +1,6 @@
 {
   "name": "@agentcanvas/plugin-testkit",
-  "version": "0.2.0",
+  "version": "0.3.0-alpha.1",
   "description": "Conformance helpers for AgentCanvas plugin distributions using the canonical manifest schema.",
   "license": "MIT",
   "repository": {
@@ -48,7 +48,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@agentcanvas/plugin-sdk": "0.2.0",
+    "@agentcanvas/plugin-sdk": "0.3.0-alpha.1",
     "ajv": "^8.20.0"
   }
 }

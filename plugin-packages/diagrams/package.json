@@ -5,16 +5,45 @@
   "type": "module",
   "description": "Native editable ERDs and Mermaid diagrams for AgentCanvas.",
   "license": "MIT",
-  "exports": { ".": { "types": "./dist/contracts.d.ts", "import": "./dist/contracts.js" }, "./schemas": { "types": "./dist/schemas.d.ts", "import": "./dist/schemas.js" } },
-  "files": ["agentcanvas.plugin.json", "dist", "README.md", "CHANGELOG.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "exports": {
+    ".": {
+      "types": "./dist/contracts.d.ts",
+      "import": "./dist/contracts.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas.d.ts",
+      "import": "./dist/schemas.js"
+    }
+  },
+  "files": [
+    "agentcanvas.plugin.json",
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "scripts": {
     "generate:manifest": "tsx scripts/generate-manifest.mts",
     "build": "npm run generate:manifest && tsc -p tsconfig.json && node scripts/build.mjs",
     "check": "tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run",
-    "test:chromium": "vitest run --config vitest.chromium.config.ts"
+    "test:chromium": "vitest run --config vitest.chromium.config.ts",
+    "generate:notices": "node scripts/generate-notices.mjs",
+    "check:notices": "node scripts/generate-notices.mjs --check"
   },
-  "dependencies": { "@agentcanvas/extension-sdk": "0.3.0-alpha.1", "@agentcanvas/core": "0.2.0", "mermaid": "11.17.2", "@dagrejs/dagre": "3.1.1", "playwright": "1.61.1" },
-  "devDependencies": { "@agentcanvas/extension-testkit": "0.3.0-alpha.1" },
-  "engines": { "node": ">=24.0.0" }
+  "dependencies": {
+    "@agentcanvas/extension-sdk": "0.3.0-alpha.2",
+    "@agentcanvas/core": "0.2.0",
+    "mermaid": "11.17.2",
+    "@dagrejs/dagre": "3.1.1",
+    "playwright": "1.61.1",
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "@agentcanvas/extension-testkit": "0.3.0-alpha.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
 }

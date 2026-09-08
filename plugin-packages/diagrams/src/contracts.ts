@@ -1,11 +1,46 @@
 export type Cardinality = 'zero-or-one' | 'one' | 'zero-or-many' | 'one-or-many';
-export interface ErdAttribute { id: string; name: string; dataType: string; keys: Array<'PK' | 'FK' | 'UK'>; nullable: boolean | null; comment?: string }
-export interface ErdEntity { id: string; name: string; alias?: string; x: number; y: number; attributes: ErdAttribute[] }
-export interface ErdEndpoint { entityId: string; attributeId?: string; cardinality: Cardinality }
-export interface ErdRelationship { id: string; source: ErdEndpoint; target: ErdEndpoint; label: string; identifying: boolean }
-export interface ErdData { title: string; entities: ErdEntity[]; relationships: ErdRelationship[] }
-export interface MermaidData { title: string; source: string }
-export interface DiagramIssue { path: string; code: string; message: string }
+export interface ErdAttribute {
+  id: string;
+  name: string;
+  dataType: string;
+  keys: Array<'PK' | 'FK' | 'UK'>;
+  nullable: boolean | null;
+  comment?: string;
+}
+export interface ErdEntity {
+  id: string;
+  name: string;
+  alias?: string;
+  x: number;
+  y: number;
+  attributes: ErdAttribute[];
+}
+export interface ErdEndpoint {
+  entityId: string;
+  attributeId?: string;
+  cardinality: Cardinality;
+}
+export interface ErdRelationship {
+  id: string;
+  source: ErdEndpoint;
+  target: ErdEndpoint;
+  label: string;
+  identifying: boolean;
+}
+export interface ErdData {
+  title: string;
+  entities: ErdEntity[];
+  relationships: ErdRelationship[];
+}
+export interface MermaidData {
+  title: string;
+  source: string;
+}
+export interface DiagramIssue {
+  path: string;
+  code: string;
+  message: string;
+}
 export type ErdOperation =
   | { op: 'set-title'; title: string }
   | { op: 'add-entity'; entity: ErdEntity }

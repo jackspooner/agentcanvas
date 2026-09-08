@@ -8,11 +8,23 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./validation": { "types": "./dist/validation.d.ts", "import": "./dist/validation.js" },
-    "./errors": { "types": "./dist/errors.d.ts", "import": "./dist/errors.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "import": "./dist/validation.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsc -p tsconfig.json",
@@ -20,7 +32,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@agentcanvas/plugin-sdk": "0.2.0"
+    "@agentcanvas/plugin-sdk": "0.3.0-alpha.1"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

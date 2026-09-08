@@ -30,6 +30,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Understand how extensions load | [How extensions load](plugins.md) |
 | Understand persisted data | [Data contracts](data-contracts.md) |
 | Create or apply a canvas theme | [Canvas themes](canvas-themes.md) |
+| Create editable ERDs or Mermaid diagrams | [Diagrams extension](../plugin-packages/diagrams/README.md) |
 | Create an extension | [Extension authoring](plugin-authoring/README.md) |
 | Follow a complete extension example | [Build your first extension](plugin-authoring/tutorial.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |
@@ -88,6 +89,7 @@ Runtime `GET /openapi.json` is authoritative for the exact active plugin set. Th
 - [v0.2.0 release notes](release-notes-v0.2.0.md)
 - [v0.3.0 alpha implementation notes](release-notes-v0.3.0-alpha.1.md)
 - [v0.3.0-alpha.2 API contract migration](release-notes-v0.3.0-alpha.2.md)
+- [v0.3.0-alpha.3 Diagrams and host API 1.2](release-notes-v0.3.0-alpha.3.md)
 - [Completed v0.2 refactor plan](plugin-refactor-implementation-plan.md)
 - [Reference migration status](v0.1-to-v0.2-migration.md#reference-cutover-status)
 

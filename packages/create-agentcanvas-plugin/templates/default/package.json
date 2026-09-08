@@ -26,10 +26,10 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@agentcanvas/extension-sdk": "^0.3.0-alpha.1"
+    "@agentcanvas/extension-sdk": "^0.3.0-alpha.2"
   },
   "devDependencies": {
-    "@agentcanvas/extension-testkit": "^0.3.0-alpha.1",
+    "@agentcanvas/extension-testkit": "^0.3.0-alpha.2",
     "@types/node": "^26.1.0",
     "jsdom": "^29.1.1",
     "tsx": "^4.23.0",

@@ -179,6 +179,7 @@ The catalog also builds these optional plugins without activating them by defaul
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
 - `agentcanvas.glb-viewer`
+- `agentcanvas.diagrams` — [native editable ERDs and Mermaid](plugin-packages/diagrams/README.md)
 
 Removing an optional plugin preserves canonical stored envelopes. Reads show an explicit diagnostic; frame and metadata edits, deletion, and clear remain available. Reinstalling a compatible plugin restores validation and rendering without rewriting the document.
 

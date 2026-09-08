@@ -1,6 +1,6 @@
 {
   "name": "create-agentcanvas-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Scaffold standalone AgentCanvas plugins that use only the public SDK and testkit.",
   "license": "MIT",
   "repository": {
@@ -48,7 +48,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agentcanvas/plugin-testkit": "0.2.0",
+    "@agentcanvas/plugin-testkit": "0.3.0-alpha.1",
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

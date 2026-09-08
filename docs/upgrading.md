@@ -5,6 +5,14 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## 0.3.0-alpha.3
+
+Rebuild packages and the extension catalog. The optional [Diagrams extension](../plugin-packages/diagrams/README.md)
+requires host API 1.2 and Chromium visible to the service account for Mermaid
+server rendering. Install it explicitly, restart AgentCanvas, and reload MCP
+clients. The three standard extensions and database schema remain unchanged.
+See [release notes](release-notes-v0.3.0-alpha.3.md).
+
 ## 0.3.0-alpha.2
 
 Canvas list limits now enforce the documented integer range of 1 through 200.

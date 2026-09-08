@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const root = resolve(import.meta.dirname, '..');
 const sourceRoot = join(root, 'plugin-packages');
@@ -135,6 +136,7 @@ const bundledDependencies = await productionDependencyClosure('@google/model-vie
 await assertThirdPartyNotice(glbSource, bundledDependencies);
 
 const catalogDirectories = await visibleDirectories(catalogRoot);
+execFileSync(process.execPath, [join(sourceRoot, 'diagrams', 'scripts', 'generate-notices.mjs'), '--check'], { stdio: 'inherit' });
 const catalogIds = new Set();
 for (const directory of catalogDirectories) {
   const manifest = await assertPluginArtifacts(directory, false);
@@ -143,6 +145,11 @@ for (const directory of catalogDirectories) {
   if (manifest.id === glbPluginId) {
     await assertPluginArtifacts(directory, true);
     await assertThirdPartyNotice(directory, bundledDependencies);
+  }
+  if (manifest.id === 'agentcanvas.diagrams') {
+    await assertPluginArtifacts(directory, true);
+    if (await readFile(join(directory, 'THIRD_PARTY_NOTICES.md'), 'utf8') !== await readFile(join(sourceRoot, 'diagrams', 'THIRD_PARTY_NOTICES.md'), 'utf8'))
+      throw new Error('Catalog Diagrams notices differ from source notices. Rebuild the catalog.');
   }
 }
 for (const pluginId of sourceById.keys()) {

@@ -149,6 +149,9 @@ jobs:
       - name: Run browser tests
         run: npm run test:e2e
 
+      - name: Verify Mermaid Chromium snapshots and conversion
+        run: npm run test:chromium --workspace @agentcanvas/extension-diagrams
+
       - name: Upload browser failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

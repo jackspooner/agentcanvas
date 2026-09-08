@@ -1,0 +1,59 @@
+{
+  "id": "agentcanvas.diagrams",
+  "version": "0.1.0",
+  "displayName": "Diagrams",
+  "description": "Editable entity relationship diagrams and Mermaid diagrams.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs",
+    "browser": "dist/browser/entry.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.2.0",
+    "plugins": {},
+    "capabilities": {
+      "agentcanvas.snapshot-resources": "^1.0.0"
+    }
+  },
+  "provides": {
+    "capabilities": {}
+  },
+  "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
+  "apiVersion": "agentcanvas.plugin/v1",
+  "contributes": {
+    "elements": [
+      {
+        "name": "erd",
+        "schemaVersion": 1,
+        "browser": true,
+        "snapshot": "supported"
+      },
+      {
+        "name": "mermaid",
+        "schemaVersion": 1,
+        "browser": true,
+        "snapshot": "supported"
+      }
+    ],
+    "commands": [
+      "create-erd",
+      "create-mermaid",
+      "edit",
+      "export-mermaid",
+      "convert-mermaid-erd",
+      "apply-erd",
+      "apply-mermaid"
+    ],
+    "tools": [
+      "create-erd",
+      "edit-erd",
+      "create-mermaid",
+      "update-mermaid",
+      "validate-mermaid",
+      "export-mermaid",
+      "convert-mermaid-erd"
+    ],
+    "procedures": [],
+    "migrations": []
+  }
+}
