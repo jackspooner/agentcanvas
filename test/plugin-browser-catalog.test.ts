@@ -37,10 +37,19 @@ describe('browser plugin catalog', () => {
   it('loads and validates the sanitized catalog projection', async () => {
     const fetcher = vi.fn(
       async () =>
-        new Response(JSON.stringify(catalog()), { status: 200, headers: { 'content-type': 'application/json' } })
+        new Response(
+          JSON.stringify({
+            plugins: catalog(undefined, ['reset-card']).plugins.map(({ commands, ...plugin }) => ({
+              ...plugin,
+              contributions: { commands }
+            }))
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
     );
     const loaded = await fetchBrowserPluginCatalog(fetcher as typeof fetch);
     expect(loaded.plugins[0].id).toBe('acme.cards');
+    expect(loaded.plugins[0].commands).toEqual(['reset-card']);
     expect(fetcher).toHaveBeenCalledWith('/api/v1/plugins', {
       headers: { accept: 'application/json' },
       credentials: 'same-origin'

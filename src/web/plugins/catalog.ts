@@ -1,7 +1,7 @@
 import {
-  isLocalContributionName,
   type BrowserCommandDescriptor,
   type BrowserElementRenderer,
+  isLocalContributionName,
   type PluginDiagnostic
 } from '@agentcanvas/plugin-sdk';
 
@@ -103,7 +103,8 @@ function parseCatalog(value: unknown): BrowserPluginCatalog {
       !(candidate.buildHash === null || typeof candidate.buildHash === 'string') ||
       !(candidate.browserEntryUrl === null || typeof candidate.browserEntryUrl === 'string') ||
       !Array.isArray(candidate.elements) ||
-      !(candidate.commands === undefined || Array.isArray(candidate.commands)) ||
+      !isObject(candidate.contributions) ||
+      !Array.isArray(candidate.contributions.commands) ||
       !Array.isArray(candidate.diagnostics)
     ) {
       throw new TypeError('Plugin catalog entry has an invalid shape');
@@ -135,7 +136,7 @@ function parseCatalog(value: unknown): BrowserPluginCatalog {
       browserEntryUrl: candidate.browserEntryUrl,
       elements: Object.freeze(elements),
       commands: Object.freeze(
-        (candidate.commands ?? []).map((command) => {
+        candidate.contributions.commands.map((command) => {
           if (typeof command !== 'string' || !isLocalContributionName(command)) {
             throw new TypeError(`Invalid browser command declaration for ${candidate.id}`);
           }

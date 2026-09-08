@@ -9,7 +9,8 @@ export function diagramModal(
   busy: () => boolean = () => false
 ) {
   signal.throwIfAborted();
-  const previous = document.activeElement;
+  let previous = document.activeElement;
+  while (previous?.shadowRoot?.activeElement) previous = previous.shadowRoot.activeElement;
   const dialog = document.createElement('dialog');
   dialog.setAttribute('aria-label', label);
   dialog.dataset.agentcanvasInteractive = '';

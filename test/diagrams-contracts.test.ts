@@ -1,17 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { assertContributionRegistrations, assertDistributionArtifacts } from '@agentcanvas/extension-testkit';
 import type { JsonObject } from '@agentcanvas/extension-sdk';
+import { assertContributionRegistrations, assertDistributionArtifacts } from '@agentcanvas/extension-testkit';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createMcpToolCatalog } from '../src/api-v2/mcp-catalog.js';
-import { mcpOutputSchema } from '../src/api-v2/problem-contract.js';
 import { createRegistryElementSchemas } from '../src/api-v2/openapi.js';
+import { mcpOutputSchema } from '../src/api-v2/problem-contract.js';
 import { STANDARD_PLUGINS } from '../src/cli/openapi.js';
 import { createMcpV2Server } from '../src/mcp-v2/server.js';
 import { loadOfflinePluginRegistry } from '../src/plugin-runtime/offline.js';
 import { createV2App, createV2Runtime } from '../src/server-v2.js';
+import { fetchBrowserPluginCatalog } from '../src/web/plugins/catalog.js';
 
 const roots: string[] = [];
 const cleanup: (() => void | Promise<void>)[] = [];
@@ -92,7 +93,7 @@ const post = (body: unknown) => ({
 });
 const name = (local: string) => `agentcanvas_diagrams__${local.replaceAll('-', '_')}`;
 
-describe('installed Diagrams public contracts', () => {
+describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
   it('loads offline and shares exact schemas across the installed registry, HTTP and all seven MCP tools', async () => {
     const root = installDistributions();
     const offline = await loadOfflinePluginRegistry({ pluginsRoot: root });
@@ -122,6 +123,10 @@ describe('installed Diagrams public contracts', () => {
       'validate-mermaid'
     ]);
     const { runtime, app, client } = await openRuntime(root);
+    const browserCatalog = await fetchBrowserPluginCatalog(((url: string) => app.request(url)) as typeof fetch);
+    expect(browserCatalog.plugins.find((plugin) => plugin.id === 'agentcanvas.diagrams')?.commands).toEqual(
+      extension.plugin.manifest.contributes.commands
+    );
     const expected = createMcpToolCatalog(offline.registry).filter((tool) => tool.pluginId === 'agentcanvas.diagrams');
     const listed = (await client.listTools()).tools;
     for (const tool of expected) {

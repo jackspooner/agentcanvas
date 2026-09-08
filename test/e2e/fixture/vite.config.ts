@@ -92,7 +92,7 @@ function catalog() {
         buildHash,
         browserEntryUrl: `/api/v1/plugin-modules/${id}/${buildHash}/entry.mjs`,
         elements: declarations.get(id),
-        commands: id === 'external.signal-card' ? ['toggle-status'] : [],
+        contributions: { commands: id === 'external.signal-card' ? ['toggle-status'] : [] },
         diagnostics: []
       };
     })
