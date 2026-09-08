@@ -2,6 +2,7 @@ export * from './browser.js';
 export * from './capabilities.js';
 export * from './diagnostics.js';
 export * from './element.js';
+export * from './geometry.js';
 export * from './identifiers.js';
 export * from './json.js';
 export * from './manifest.js';

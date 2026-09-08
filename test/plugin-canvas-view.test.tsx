@@ -59,6 +59,22 @@ function canvas(): CanvasDocument {
 }
 
 describe('plugin canvas React host', () => {
+  it('exposes the same default frame and anchor to browser renderers as the editor', async () => {
+    const mount = vi.fn<BrowserElementRenderer['mount']>(() => ({ update() {}, dispose() {} }));
+    const browserRegistry = registry();
+    browserRegistry.renderers = new Map([[renderer.type, { ...renderer, mount }]]);
+    const document = canvas();
+    document.elements[0].width = null;
+    document.elements[0].height = null;
+    const { unmount } = render(
+      <CanvasView canvas={document} elementRuntime={{}} diagnostics={[]} browserRegistry={browserRegistry} />
+    );
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+    const context = mount.mock.calls[0][1];
+    expect(context.geometry.getElementFrame('card_1')).toEqual({ x: 10, y: 20, width: 240, height: 120 });
+    expect(context.geometry.resolveAnchor('card_1', 'center')).toEqual({ x: 130, y: 80 });
+    unmount();
+  });
   it('updates selection and runtime context without remounting and disposes the renderer on unmount', async () => {
     const update = vi.fn();
     const dispose = vi.fn();

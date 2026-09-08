@@ -269,7 +269,7 @@ export class V2SqliteCanvasStore {
   }
 
   updateConfiguration(input: UpdateAgentCanvasConfigurationInput | Record<string, unknown>): AgentCanvasConfiguration {
-    return writeAgentCanvasConfiguration(this.db, normalizeConfigurationUpdate(input));
+    return writeAgentCanvasConfiguration(this.db, normalizeConfigurationUpdate(input), this.config.defaultCanvasSize);
   }
 
   updateCanvasBounds(canvasId: string, input: UpdateCanvasBoundsInput): V2CanvasRecord {

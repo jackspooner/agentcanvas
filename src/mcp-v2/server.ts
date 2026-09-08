@@ -489,8 +489,8 @@ function json(value: unknown): JsonObject {
   return JSON.parse(JSON.stringify(value)) as JsonObject;
 }
 
-function withInspection(canvas: InspectableCanvas, registry: FrozenPluginRegistry): JsonObject {
-  const inspection = inspectCanvas(canvas, registry);
+function withInspection(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonObject {
+  const inspection = inspectCanvas(canvas, runtime.registry, runtime.store.getConfiguration().diagnostics);
   return json({
     ...canvas,
     diagnostics: inspection.diagnostics,
@@ -499,7 +499,7 @@ function withInspection(canvas: InspectableCanvas, registry: FrozenPluginRegistr
 }
 
 function withInspectionAndUrl(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonObject {
-  return { ...withInspection(canvas, runtime.registry), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
+  return { ...withInspection(canvas, runtime), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
 }
 
 async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Promise<JsonObject> {
@@ -550,14 +550,14 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   if (name === 'canvas_create') return withInspectionAndUrl(store.createCanvas(input as never), runtime);
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
-  if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime.registry);
+  if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime);
   if (name === 'canvas_get_url') {
     const canvas = store.getCanvas(canvasId);
     return { canvasId: canvas.id, url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
   }
   if (name === 'canvas_inspect') {
     const canvas = store.getCanvas(canvasId);
-    const inspection = inspectCanvas(canvas, runtime.registry);
+    const inspection = inspectCanvas(canvas, runtime.registry, store.getConfiguration().diagnostics);
     return json({
       canvasId,
       revision: canvas.revision,
@@ -571,17 +571,17 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
         title: input.title as string,
         expectedRevision
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_set_theme') {
     return withInspection(
       store.updateCanvasTheme(canvasId, { theme: input.theme as unknown as CanvasThemeV1, expectedRevision }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_clear_theme') {
-    return withInspection(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }), runtime.registry);
+    return withInspection(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }), runtime);
   }
   if (name === 'canvas_upsert_element') {
     return withInspection(
@@ -589,7 +589,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
         expectedRevision,
         operations: [{ op: 'upsertElement', element: input.element as JsonObject }]
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_patch_element_frame') {
@@ -600,7 +600,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
           { op: 'patchElementFrame', elementId: input.elementId as string, frame: input.frame as JsonObject }
         ]
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_replace_element_data') {
@@ -616,7 +616,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
           }
         ]
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_replace_element_metadata') {
@@ -627,7 +627,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
           { op: 'replaceElementMetadata', elementId: input.elementId as string, metadata: input.metadata as JsonObject }
         ]
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_delete_element') {
@@ -636,13 +636,13 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
         expectedRevision,
         operations: [{ op: 'deleteElement', elementId: input.elementId as string }]
       }),
-      runtime.registry
+      runtime
     );
   }
   if (name === 'canvas_clear')
     return withInspection(
       store.applyOperations(canvasId, { expectedRevision, operations: [{ op: 'clear' }] }),
-      runtime.registry
+      runtime
     );
   const status = createPluginStatusCatalog(runtime.registry, {
     browserEntries: runtime.browserCatalog.entries,

@@ -70,6 +70,110 @@ afterEach(() => {
 });
 
 describe('v0.2 assembled runtime', () => {
+  it('persists diagnostics independently of size and applies changes to HTTP, MCP, shares, embeds and snapshots', async () => {
+    const pluginsRoot = fixturePlugins();
+    const databasePath = path.join(pluginsRoot, 'settings.sqlite');
+    const runtime = await createV2Runtime({ pluginsRoot, databasePath });
+    const mcp = createMcpV2Server({ ...runtime, publicBaseUrl: runtime.config.publicBaseUrl, diagnostics: () => [] });
+    const client = new Client({ name: 'diagnostics-test', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    try {
+      await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
+      const app = createV2App(runtime);
+      const created = runtime.store.createCanvas({ title: 'Overlapping cards' });
+      const canvas = runtime.store.applyOperations(created.id, {
+        operations: Array.from({ length: 3 }, (_, index) => ({
+          op: 'upsertElement',
+          element: {
+            id: `card_${index}`,
+            type: 'fixture.cards/card',
+            schemaVersion: 1,
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 80,
+            data: { title: 'Card' }
+          }
+        }))
+      });
+      const share = runtime.store.createShareLink(canvas.id, {});
+      const embed = runtime.embedSessions.create(
+        { canvasIds: [canvas.id], parentOrigin: 'https://host.example', mode: 'read', expiresInSeconds: 300 },
+        () => {}
+      );
+      const embedToken = new URL(embed.url).pathname.split('/').at(-1);
+      const patch = (body: unknown) =>
+        app.request('/api/v1/configuration', { method: 'PATCH', body: JSON.stringify(body) });
+      const size = { mode: 'fixed', width: 800, height: 600 };
+      expect((await patch({ defaultCanvasSize: size })).status).toBe(200);
+      expect(runtime.store.getConfiguration().diagnostics).toEqual({ overlapMode: 'bounded', maxOverlapWarnings: 100 });
+      for (const [overlapMode, expected] of [
+        ['off', 0],
+        ['bounded', 2],
+        ['all', 3]
+      ] as const) {
+        const response = await patch({ diagnostics: { overlapMode, maxOverlapWarnings: 1 } });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+          configuration: { defaultCanvasSize: size, diagnostics: { overlapMode, maxOverlapWarnings: 1 } }
+        });
+        for (const [url, method] of [
+          [`/api/v1/canvases/${canvas.id}`, 'GET'],
+          [`/api/v1/share/${share.token}`, 'GET'],
+          [`/api/v1/embed-sessions/${embedToken}`, 'GET'],
+          [`/api/v1/canvases/${canvas.id}/snapshot`, 'POST']
+        ]) {
+          const result = await app.request(url, { method });
+          expect(result.status).toBe(200);
+          expect((await result.json()).diagnostics).toHaveLength(expected);
+        }
+        for (const name of ['canvas_get', 'canvas_inspect', 'canvas_rename']) {
+          const result = await client.callTool({
+            name,
+            arguments: { canvasId: canvas.id, ...(name === 'canvas_rename' ? { title: canvas.title } : {}) }
+          });
+          expect(result.isError).not.toBe(true);
+          expect(result.structuredContent).toMatchObject({ diagnostics: expect.any(Array) });
+          expect((result.structuredContent as { diagnostics: unknown[] }).diagnostics).toHaveLength(expected);
+        }
+        expect(runtime.store.getCanvas(canvas.id).revision).toBe(canvas.revision);
+      }
+      for (const body of [
+        {},
+        { actor: 'test' },
+        { diagnostics: null },
+        { diagnostics: {} },
+        { diagnostics: { overlapMode: 'unknown', maxOverlapWarnings: 1 } },
+        ...[0, -1, 1.5, 10001, '10'].map((maxOverlapWarnings) => ({
+          diagnostics: { overlapMode: 'bounded', maxOverlapWarnings }
+        })),
+        { diagnostics: { overlapMode: 'off', maxOverlapWarnings: 1, extra: true } }
+      ])
+        expect((await patch(body)).status).toBe(400);
+      expect(runtime.store.getConfiguration().diagnostics.overlapMode).toBe('all');
+      expect((await patch({ defaultCanvasSize: { mode: 'unlimited' } })).status).toBe(200);
+      expect(runtime.store.getConfiguration().diagnostics.overlapMode).toBe('all');
+    } finally {
+      await Promise.all([client.close(), mcp.server.close()]);
+      runtime.dispose();
+    }
+    const reopened = await createV2Runtime({ pluginsRoot, databasePath });
+    try {
+      expect(reopened.store.getConfiguration()).toMatchObject({
+        defaultCanvasSize: { mode: 'unlimited' },
+        diagnostics: { overlapMode: 'all', maxOverlapWarnings: 1 }
+      });
+      reopened.store.db
+        .prepare('UPDATE agent_canvas_configuration SET configuration_json=? WHERE id=1')
+        .run(JSON.stringify({ defaultCanvasSize: { mode: 'unlimited' } }));
+      expect(reopened.store.getConfiguration().diagnostics).toEqual({
+        overlapMode: 'bounded',
+        maxOverlapWarnings: 100
+      });
+    } finally {
+      reopened.dispose();
+    }
+  });
   it('validates core requests before writes and correlates sanitized internal failures', async () => {
     const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
     try {

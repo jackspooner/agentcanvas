@@ -1,5 +1,25 @@
 # Change history
 
+## Unreleased — diagnostics configuration and geometry
+
+- Added installation-wide overlap modes Off, Limited and All in the canvas index
+  and configuration API. The default is bounded at 100 warnings; the limit accepts
+  1–10,000. Excess overlap warnings stop inspection with an explicit info notice.
+  All mode preserves exhaustive pair reporting by user choice. Other diagnostics
+  and validation remain enabled.
+- Configuration PATCH accepts diagnostics or canvas defaults independently and
+  preserves omitted settings. Old stored configuration uses bounded/100. HTTP,
+  MCP, share, embed and snapshot reads use the current policy; canvas revisions
+  remain unchanged. No environment variables, MCP tool names or database schema
+  versions change. OpenAPI documents the additive settings and response schema.
+- SDK geometry helpers now own 240×120 null/absent frame defaults and envelope
+  anchors for editor, browser, server and snapshots. Explicit zero is preserved.
+  Snapshot renderers receive effective dimensions on a copy; stored envelopes
+  remain unchanged. This fixes differing connector anchors and implicit snapshot
+  sizes. The editor now depends on the existing SDK workspace.
+- Package versions remain unreleased; publishing these new SDK exports requires
+  coordinated SDK/editor versioning. No packages or tags are published here.
+
 ## Unreleased — code-quality remediation
 
 - Macro invocation inputs are literal JSON. Only saved templates interpret macro references. Callers relying on expressions inside input must move them into templates; no request field, error code, document format or database migration is added.

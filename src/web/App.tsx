@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { AgentCanvasConfiguration } from '../configuration';
+import type { AgentCanvasConfiguration, UpdateAgentCanvasConfigurationInput } from '../configuration';
 import {
   applyCanvasOperations,
   executeMacro,
@@ -41,6 +41,14 @@ export function App() {
   const mounted = useRef(false);
   const readGeneration = useRef(0);
   const refreshAfterMutation = useRef<() => Promise<void>>(async () => {});
+
+  async function saveConfiguration(settings: UpdateAgentCanvasConfigurationInput) {
+    const generation = ++readGeneration.current;
+    const configuration = await updateAgentCanvasConfiguration(settings);
+    if (!mounted.current || generation !== readGeneration.current) return;
+    readGeneration.current += 1;
+    setState((current) => (current?.mode === 'index' ? { ...current, configuration } : current));
+  }
 
   function installMutation(next: { canvas: CanvasDocument } & Partial<CanvasProjection>) {
     if (!mounted.current) return;
@@ -113,12 +121,12 @@ export function App() {
     }
 
     async function refresh() {
+      const generation = readGeneration.current;
       if (indexMode) {
         const [canvases, configuration] = await Promise.all([fetchCanvasList(), fetchAgentCanvasConfiguration()]);
-        if (!cancelled) setState({ mode: 'index', canvases, configuration });
+        if (!cancelled && generation === readGeneration.current) setState({ mode: 'index', canvases, configuration });
         return;
       }
-      const generation = readGeneration.current;
       const loaded = await fetchCanvasFromLocation();
       if (cancelled || generation !== readGeneration.current) return;
       setState((current) => {
@@ -248,10 +256,8 @@ export function App() {
         <CanvasIndex
           canvases={state.canvases}
           configuration={state.configuration}
-          onDefaultCanvasSizeChange={async (defaultCanvasSize) => {
-            const configuration = await updateAgentCanvasConfiguration(defaultCanvasSize);
-            setState((current) => (current?.mode === 'index' ? { ...current, configuration } : current));
-          }}
+          onDefaultCanvasSizeChange={(defaultCanvasSize) => saveConfiguration({ defaultCanvasSize })}
+          onDiagnosticsChange={(diagnostics) => saveConfiguration({ diagnostics })}
         />
       </>
     );

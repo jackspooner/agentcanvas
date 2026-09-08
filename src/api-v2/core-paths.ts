@@ -1,7 +1,7 @@
 import type { JsonObject } from '@agentcanvas/plugin-sdk';
 import { EMBED_SESSION_CREATE_REQUEST_SCHEMA, EMBED_SESSION_LIMITS } from '../embed-sessions.js';
 import { codesForStatus, problemResponse } from './problem-contract.js';
-import { CANVAS_LIST_LIMIT_SCHEMA, CORE_REQUEST_SCHEMAS } from './schemas.js';
+import { CANVAS_LIST_LIMIT_SCHEMA, CORE_REQUEST_SCHEMAS, CONFIGURATION_RESPONSE_SCHEMA } from './schemas.js';
 
 export function coreOpenApiPaths(): Record<string, JsonObject> {
   const canvasId = { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } };
@@ -397,18 +397,27 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     '/api/v1/configuration': {
       get: {
         operationId: 'canvasGetConfiguration',
-        summary: 'Get AgentCanvas document defaults',
+        summary: 'Get AgentCanvas document defaults and diagnostics settings',
         tags: ['Configuration'],
-        responses: { 200: response('Current configuration') },
+        responses: { 200: response('Current configuration', CONFIGURATION_RESPONSE_SCHEMA) },
         'x-agent-notes': agentNotes()
       },
       patch: {
         operationId: 'canvasUpdateConfiguration',
-        summary: 'Replace AgentCanvas document defaults',
+        summary: 'Update AgentCanvas document defaults or diagnostics settings',
         tags: ['Configuration'],
         requestBody: jsonBody(CORE_REQUEST_SCHEMAS.configuration),
-        responses: { 200: response('Updated configuration'), ...errorResponses },
-        'x-agent-notes': agentNotes(['Changes defaults for canvases created later.'])
+        responses: { 200: response('Updated configuration', CONFIGURATION_RESPONSE_SCHEMA), ...errorResponses },
+        'x-agent-notes': {
+          ...agentNotes([
+            'Changes supplied settings only. Canvas size affects future canvases; diagnostics affect subsequent HTTP, MCP, share, embed and snapshot reads without changing revisions.'
+          ]),
+          consistency: {
+            refresh: [
+              'Reload configuration and any open canvas projections or inspections. Browser polling refreshes diagnostics even when the canvas revision is unchanged.'
+            ]
+          }
+        }
       }
     },
     '/api/v1/canvases': {

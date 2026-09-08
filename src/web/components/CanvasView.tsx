@@ -1,6 +1,6 @@
 import { AgentCanvasEditor, type EditorFrame, EditorToolbar, EditorViewportToolbar } from '@agentcanvas/editor';
 import type { CanvasElement, JsonObject, PluginDiagnostic, RendererGeometryService } from '@agentcanvas/plugin-sdk';
-import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME, resolveElementFrame, resolveFrameAnchor } from '@agentcanvas/plugin-sdk';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CanvasOperation } from '../../contracts';
 import type { MacroExecutionResult, MacroPlan, MacroServiceExecuteRequest } from '../../macros/types';
@@ -115,21 +115,12 @@ export function CanvasView({
         if (transient) return transient;
         const element = elements.get(elementId);
         if (!element) return null;
-        return {
-          x: element.x,
-          y: element.y,
-          width: element.width ?? 240,
-          height: element.height ?? 120
-        };
+        return resolveElementFrame(element);
       },
       resolveAnchor(elementId, anchor) {
         const frame = this.getElementFrame(elementId);
         if (!frame) return null;
-        if (anchor === 'top') return { x: frame.x + frame.width / 2, y: frame.y };
-        if (anchor === 'right') return { x: frame.x + frame.width, y: frame.y + frame.height / 2 };
-        if (anchor === 'bottom') return { x: frame.x + frame.width / 2, y: frame.y + frame.height };
-        if (anchor === 'left') return { x: frame.x, y: frame.y + frame.height / 2 };
-        return { x: frame.x + frame.width / 2, y: frame.y + frame.height / 2 };
+        return resolveFrameAnchor(frame, anchor);
       }
     }),
     [elements, transientFrames]
@@ -180,12 +171,7 @@ export function CanvasView({
       resetViewport();
       return;
     }
-    const frames = nodeElements.map((element) => ({
-      x: element.x,
-      y: element.y,
-      width: element.width ?? 240,
-      height: element.height ?? 120
-    }));
+    const frames = nodeElements.map(resolveElementFrame);
     const left = Math.min(...frames.map((frame) => frame.x));
     const top = Math.min(...frames.map((frame) => frame.y));
     const right = Math.max(...frames.map((frame) => frame.x + frame.width));

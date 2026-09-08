@@ -1,7 +1,7 @@
 # AgentCanvas Plugin SDK
 
 `@agentcanvas/plugin-sdk` is the public, framework-neutral contract for AgentCanvas plugins. It contains only
-types and deterministic identifier/JSON helpers. It does not import the AgentCanvas server, React, Hono,
+types and deterministic identifier/JSON/geometry helpers. It does not import the AgentCanvas server, React, Hono,
 SQLite, or provider-specific code.
 
 Plugins are trusted application dependencies. The permission declarations in a plugin manifest describe the
@@ -27,6 +27,13 @@ aborts only when the renderer is disposed. Extensions using the new fields
 must require `hostApi: "^1.1.0"`.
 
 ## Persisted elements
+
+`resolveElementFrame(element)` and `resolveFrameAnchor(frame, anchor)` provide
+the host's shared geometry. Null/absent dimensions use 240×120, explicit zero is
+preserved, and anchors use the axis-aligned envelope. Extension write defaults
+still apply to omitted dimensions. The snapshot host passes renderers a copy with
+effective dimensions, keeping snapshot geometry aligned with the editor without
+rewriting stored elements.
 
 The host owns the stable `CanvasElement` envelope. A plugin owns only the JSON data and optional style schemas
 for its registered element types. Runtime provider results belong in the read projection, never in persisted

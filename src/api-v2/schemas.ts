@@ -1,5 +1,6 @@
 import { CANVAS_THEME_V1_SCHEMA, type JsonObject, type JsonSchema } from '@agentcanvas/plugin-sdk';
 import { CANVAS_LIST_LIMITS } from '../contracts.js';
+import { DIAGNOSTICS_CONFIGURATION_SCHEMA } from '../configuration.js';
 
 export const CANVAS_LIST_LIMIT_SCHEMA: JsonObject = { type: 'integer', ...CANVAS_LIST_LIMITS };
 
@@ -153,6 +154,26 @@ export const CANVAS_RECORD_SCHEMA: JsonSchema = {
   }
 };
 
+export const CONFIGURATION_RESPONSE_SCHEMA: JsonObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['ok', 'configuration'],
+  properties: {
+    ok: { const: true },
+    configuration: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['defaultCanvasSize', 'diagnostics', 'source', 'updatedAt'],
+      properties: {
+        defaultCanvasSize: CANVAS_BOUNDS_SCHEMA,
+        diagnostics: DIAGNOSTICS_CONFIGURATION_SCHEMA,
+        source: { type: 'string', enum: ['runtime-default', 'stored'] },
+        updatedAt: { type: ['string', 'null'], format: 'date-time' }
+      }
+    }
+  }
+};
+
 export const VIEWPORT_SCHEMA: JsonSchema = {
   type: 'object',
   additionalProperties: false,
@@ -209,8 +230,15 @@ export const CORE_REQUEST_SCHEMAS: Record<
   configuration: {
     type: 'object',
     additionalProperties: false,
-    required: ['defaultCanvasSize'],
-    properties: { defaultCanvasSize: { $ref: '#/components/schemas/CanvasBounds' }, actor: { type: 'string' } }
+    anyOf: [
+      { required: ['defaultCanvasSize'], properties: { defaultCanvasSize: true } },
+      { required: ['diagnostics'], properties: { diagnostics: true } }
+    ],
+    properties: {
+      defaultCanvasSize: { $ref: '#/components/schemas/CanvasBounds' },
+      diagnostics: DIAGNOSTICS_CONFIGURATION_SCHEMA,
+      actor: { type: 'string' }
+    }
   },
   create: {
     type: 'object',

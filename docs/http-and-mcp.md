@@ -14,6 +14,41 @@ AgentCanvas exposes one registry-derived contract through HTTP, runtime OpenAPI,
 
 The owning schemas live in the frozen registry. Plugins register JSON Schema 2020-12 for elements, tools, and procedures; the host must not maintain a parallel handwritten schema.
 
+## Diagnostics configuration
+
+Use the canvas index's **Diagnostics** control or `PATCH /api/v1/configuration`:
+
+```json
+{
+  "diagnostics": {
+    "overlapMode": "bounded",
+    "maxOverlapWarnings": 100
+  }
+}
+```
+
+`overlapMode` is `off`, `bounded`, or `all`. The integer `maxOverlapWarnings` is
+required (1–10,000) and used only in bounded mode. Off skips overlap inspection;
+all emits every detected pair. Bounded stops after detecting one overlap beyond
+the limit and adds `overlap_diagnostics_truncated` with severity `info`. It does
+not count the unexamined pairs. Inspection summaries count returned diagnostics,
+not all possible warnings. All mode retains the quadratic scan and potentially
+large response cost by explicit choice. Missing-extension, extension-owned,
+resource, and snapshot diagnostics remain enabled, as does write validation.
+
+Configuration PATCH changes only supplied settings; `defaultCanvasSize` remains
+accepted independently, and updating either setting preserves the other. GET and
+PATCH return `{ "ok": true, "configuration": { ... } }` including diagnostics,
+defaultCanvasSize, source, and updatedAt. Malformed settings return 400
+`validation_error` without changing persisted configuration. Existing settings
+rows without diagnostics use bounded/100; no database migration is required.
+
+Settings apply installation-wide on subsequent HTTP, MCP inspection/mutation,
+share, embed, and snapshot reads. They neither modify canvases nor advance
+revisions. Browser polling refreshes diagnostics even at an unchanged revision;
+API clients should refresh configuration and affected projections after saving.
+Configuration continues to use the existing HTTP surface; no MCP tools are added.
+
 ## Macro input semantics
 
 Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON. This applies to HTTP and MCP planning, including input values shaped like `$macroRef` expressions. Callers that previously placed reference expressions inside invocation input must move those expressions into the saved template. Planning remains read-only; execution retains revision checks and idempotent replay. See [macro guidance](proposals/macros.md).

@@ -32,6 +32,12 @@ button {
   color: #111827;
 }
 
+.canvas-index-settings {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .canvas-index-header {
   position: sticky;
   top: 0;

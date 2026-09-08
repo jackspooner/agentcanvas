@@ -20796,10 +20796,116 @@
         "operationId": "canvasGetConfiguration",
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "configuration": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "defaultCanvasSize": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "mode": {
+                                  "const": "unlimited"
+                                }
+                              },
+                              "required": [
+                                "mode"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "height": {
+                                  "exclusiveMinimum": 0,
+                                  "type": "number"
+                                },
+                                "mode": {
+                                  "const": "fixed"
+                                },
+                                "width": {
+                                  "exclusiveMinimum": 0,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "mode",
+                                "width",
+                                "height"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "diagnostics": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "maxOverlapWarnings": {
+                              "description": "Overlap warning limit in bounded mode; other diagnostics are unaffected.",
+                              "maximum": 10000,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "overlapMode": {
+                              "description": "off skips overlap checks; bounded stops after the warning limit; all reports every overlap.",
+                              "enum": [
+                                "off",
+                                "bounded",
+                                "all"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "overlapMode",
+                            "maxOverlapWarnings"
+                          ],
+                          "type": "object"
+                        },
+                        "source": {
+                          "enum": [
+                            "runtime-default",
+                            "stored"
+                          ],
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "defaultCanvasSize",
+                        "diagnostics",
+                        "source",
+                        "updatedAt"
+                      ],
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "configuration"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
             "description": "Current configuration"
           }
         },
-        "summary": "Get AgentCanvas document defaults",
+        "summary": "Get AgentCanvas document defaults and diagnostics settings",
         "tags": [
           "Configuration"
         ],
@@ -20820,17 +20926,57 @@
             "application/json": {
               "schema": {
                 "additionalProperties": false,
+                "anyOf": [
+                  {
+                    "properties": {
+                      "defaultCanvasSize": true
+                    },
+                    "required": [
+                      "defaultCanvasSize"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "diagnostics": true
+                    },
+                    "required": [
+                      "diagnostics"
+                    ]
+                  }
+                ],
                 "properties": {
                   "actor": {
                     "type": "string"
                   },
                   "defaultCanvasSize": {
                     "$ref": "#/components/schemas/CanvasBounds"
+                  },
+                  "diagnostics": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "maxOverlapWarnings": {
+                        "description": "Overlap warning limit in bounded mode; other diagnostics are unaffected.",
+                        "maximum": 10000,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "overlapMode": {
+                        "description": "off skips overlap checks; bounded stops after the warning limit; all reports every overlap.",
+                        "enum": [
+                          "off",
+                          "bounded",
+                          "all"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "overlapMode",
+                      "maxOverlapWarnings"
+                    ],
+                    "type": "object"
                   }
                 },
-                "required": [
-                  "defaultCanvasSize"
-                ],
                 "type": "object"
               }
             }
@@ -20840,6 +20986,112 @@
         },
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "configuration": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "defaultCanvasSize": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "mode": {
+                                  "const": "unlimited"
+                                }
+                              },
+                              "required": [
+                                "mode"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "height": {
+                                  "exclusiveMinimum": 0,
+                                  "type": "number"
+                                },
+                                "mode": {
+                                  "const": "fixed"
+                                },
+                                "width": {
+                                  "exclusiveMinimum": 0,
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "mode",
+                                "width",
+                                "height"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "diagnostics": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "maxOverlapWarnings": {
+                              "description": "Overlap warning limit in bounded mode; other diagnostics are unaffected.",
+                              "maximum": 10000,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "overlapMode": {
+                              "description": "off skips overlap checks; bounded stops after the warning limit; all reports every overlap.",
+                              "enum": [
+                                "off",
+                                "bounded",
+                                "all"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "overlapMode",
+                            "maxOverlapWarnings"
+                          ],
+                          "type": "object"
+                        },
+                        "source": {
+                          "enum": [
+                            "runtime-default",
+                            "stored"
+                          ],
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "defaultCanvasSize",
+                        "diagnostics",
+                        "source",
+                        "updatedAt"
+                      ],
+                      "type": "object"
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "configuration"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
             "description": "Updated configuration"
           },
           "400": {
@@ -22026,18 +22278,18 @@
             ]
           }
         },
-        "summary": "Replace AgentCanvas document defaults",
+        "summary": "Update AgentCanvas document defaults or diagnostics settings",
         "tags": [
           "Configuration"
         ],
         "x-agent-notes": {
           "consistency": {
             "refresh": [
-              "Refresh the affected canvas, list, or configuration after success."
+              "Reload configuration and any open canvas projections or inspections. Browser polling refreshes diagnostics even when the canvas revision is unchanged."
             ]
           },
           "sideEffects": [
-            "Changes defaults for canvases created later."
+            "Changes supplied settings only. Canvas size affects future canvases; diagnostics affect subsequent HTTP, MCP, share, embed and snapshot reads without changing revisions."
           ],
           "useWhen": [
             "Use when this exact AgentCanvas mutation is required."

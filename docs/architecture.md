@@ -55,6 +55,18 @@ through `@agentcanvas/plugin-sdk`.
 
 Renderer context changes update an existing renderer; element identity/type or renderer changes dispose and remount it. The editor's render callback is an explicit projection dependency so runtime-only updates reach mounted renderers without changing node identity.
 
+`packages/plugin-sdk/src/geometry.ts` owns effective frames and axis-aligned
+anchors. Editor projection, browser geometry, fit/preview geometry, server
+resolution, and snapshot preparation consume it. Null or absent dimensions use
+240×120 host defaults; explicit zero remains zero. Write-time extension defaults
+still fill omitted dimensions. Snapshot renderers receive an effective frame on
+a copy of the element; stored envelopes are preserved.
+
+SQLite's existing configuration document owns overlap inspection policy. HTTP,
+MCP and snapshot projections read it for each operation; there is no second
+runtime setting or diagnostics cache. The browser updates settings through the
+same configuration API used for document defaults.
+
 ## Runtime state
 
 - `plugin-packages/`: source workspaces.

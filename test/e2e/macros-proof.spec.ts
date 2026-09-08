@@ -362,3 +362,40 @@ test('proves the standard comparison-table macro through public HTTP, MCP, and b
   const inspection = await mcp.callTool('canvas_inspect', { canvasId: canvas.id });
   expect(inspection).toHaveProperty('canvasId', canvas.id);
 });
+
+test('saves diagnostics from the canvas index and preserves settings across reloads and default-size changes', async ({
+  page,
+  request
+}) => {
+  await page.goto('/');
+  await page.getByText('Diagnostics', { exact: true }).click();
+  await page.getByRole('combobox', { name: 'Overlap warnings', exact: true }).selectOption('bounded');
+  await page.getByLabel('Maximum overlap warnings').fill('7');
+  await page.getByRole('button', { name: 'Save diagnostics' }).click();
+  const configuration = async () => (await (await request.get('/api/v1/configuration')).json()).configuration;
+  await expect
+    .poll(async () => (await configuration()).diagnostics)
+    .toEqual({ overlapMode: 'bounded', maxOverlapWarnings: 7 });
+  await page.reload();
+  await page.getByText('Diagnostics', { exact: true }).click();
+  await expect(page.getByLabel('Maximum overlap warnings')).toHaveValue('7');
+  await page.getByLabel('Maximum overlap warnings').fill('');
+  await page.getByRole('combobox', { name: 'Overlap warnings', exact: true }).selectOption('all');
+  await expect(page.getByText('All checks every pair', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Save diagnostics' }).click();
+  await expect.poll(async () => (await configuration()).diagnostics.overlapMode).toBe('all');
+  const response = await request.patch('/api/v1/configuration', {
+    data: { defaultCanvasSize: { mode: 'fixed', width: 800, height: 600 } }
+  });
+  expect(response.ok()).toBe(true);
+  expect((await configuration()).diagnostics).toEqual({ overlapMode: 'all', maxOverlapWarnings: 7 });
+  await page.getByRole('combobox', { name: 'Overlap warnings', exact: true }).selectOption('off');
+  await page.getByRole('button', { name: 'Save diagnostics' }).click();
+  await expect.poll(async () => (await configuration()).diagnostics.overlapMode).toBe('off');
+  await page.reload();
+  await page.getByText('Diagnostics', { exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Overlap warnings', exact: true })).toHaveValue('off');
+  await request.patch('/api/v1/configuration', {
+    data: { diagnostics: { overlapMode: 'bounded', maxOverlapWarnings: 100 }, defaultCanvasSize: { mode: 'unlimited' } }
+  });
+});

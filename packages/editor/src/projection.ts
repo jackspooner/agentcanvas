@@ -1,8 +1,7 @@
 import type { Node } from '@xyflow/react';
 import type { EditorElement, EditorFrame } from './types.js';
-
-export const DEFAULT_ELEMENT_WIDTH = 240;
-export const DEFAULT_ELEMENT_HEIGHT = 120;
+import { resolveElementFrame } from '@agentcanvas/plugin-sdk';
+export { DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT } from '@agentcanvas/plugin-sdk';
 
 export interface AgentCanvasNodeData<TElement extends EditorElement> extends Record<string, unknown> {
   element: TElement;
@@ -13,14 +12,7 @@ export type AgentCanvasNode<TElement extends EditorElement = EditorElement> = No
   'agentcanvas-element'
 >;
 
-export function elementFrame(element: EditorElement): EditorFrame {
-  return {
-    x: element.x,
-    y: element.y,
-    width: element.width ?? DEFAULT_ELEMENT_WIDTH,
-    height: element.height ?? DEFAULT_ELEMENT_HEIGHT
-  };
-}
+export const elementFrame = resolveElementFrame;
 
 export function projectElement<TElement extends EditorElement>(
   element: TElement,
@@ -48,12 +40,12 @@ export function projectElement<TElement extends EditorElement>(
 }
 
 export function nodeFrame(node: AgentCanvasNode): EditorFrame {
-  return {
+  return resolveElementFrame({
     x: node.position.x,
     y: node.position.y,
-    width: node.width ?? node.measured?.width ?? DEFAULT_ELEMENT_WIDTH,
-    height: node.height ?? node.measured?.height ?? DEFAULT_ELEMENT_HEIGHT
-  };
+    width: node.width ?? node.measured?.width,
+    height: node.height ?? node.measured?.height
+  });
 }
 
 export function frameMap(nodes: readonly AgentCanvasNode[]): ReadonlyMap<string, EditorFrame> {

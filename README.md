@@ -182,6 +182,16 @@ The catalog also builds these optional plugins without activating them by defaul
 
 Removing an optional plugin preserves canonical stored envelopes. Reads show an explicit diagnostic; frame and metadata edits, deletion, and clear remain available. Reinstalling a compatible plugin restores validation and rendering without rewriting the document.
 
+## Diagnostics
+
+On the canvas index, **Diagnostics** configures overlap warnings for the installation:
+**Off**, **Limited** (default: 100 warnings), or **All**. Limited mode accepts a limit
+from 1 through 10,000 and reports when it stops early. All mode can produce very
+large responses. Other diagnostics and write validation remain enabled. Settings
+persist across restarts and apply to subsequent browser, HTTP, MCP, share, embed,
+and snapshot reads without changing document revisions. See
+[diagnostics configuration](docs/http-and-mcp.md#diagnostics-configuration).
+
 ## Canvas themes
 
 Agents can assign one validated semantic theme to a canvas instead of repeating colors, fonts, borders, and

@@ -1364,6 +1364,7 @@
         "canvasCreate",
         "canvasCreateShareLink",
         "canvasFocusAgentViewport",
+        "canvasList",
         "canvasMutateElements",
         "canvasRename",
         "canvasRevokeShareLink",

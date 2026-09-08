@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/web/App';
 import { applyCanvasOperations, saveUserViewport } from '../src/web/api';
@@ -69,6 +69,44 @@ afterEach(() => {
 });
 
 describe('browser projection reconciliation', () => {
+  it('does not let an earlier index poll reset saved diagnostics settings', async () => {
+    window.history.replaceState({}, '', '/');
+    const initial = {
+      defaultCanvasSize: { mode: 'unlimited' },
+      diagnostics: { overlapMode: 'bounded', maxOverlapWarnings: 100 },
+      source: 'runtime-default',
+      updatedAt: null
+    };
+    const saved = { ...initial, diagnostics: { overlapMode: 'all', maxOverlapWarnings: 100 } };
+    const stale = deferred<Response>();
+    let configurationReads = 0;
+    requests.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'PATCH') return Response.json({ configuration: saved });
+      if (url === '/api/v1/configuration') {
+        configurationReads += 1;
+        return configurationReads === 1 ? Response.json({ configuration: initial }) : stale.promise;
+      }
+      return Response.json({ canvases: [] });
+    });
+    const screen = await act(async () => render(<App />));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Overlap warnings'), { target: { value: 'all' } });
+    });
+    await act(async () => {
+      fireEvent.submit(screen.getByRole('button', { name: 'Save diagnostics' }).closest('form') as HTMLFormElement);
+    });
+    await act(async () => {
+      stale.resolve(Response.json({ configuration: initial }));
+    });
+    expect((screen.getByLabelText('Overlap warnings') as HTMLSelectElement).value).toBe('all');
+    expect(requests).toHaveBeenCalledWith(
+      '/api/v1/configuration',
+      expect.objectContaining({ body: JSON.stringify({ diagnostics: saved.diagnostics, actor: 'web-ui' }) })
+    );
+  });
   it('keeps embed notifications stable on polls and refreshes changed session authority', async () => {
     window.history.replaceState({}, '', '/embed/token');
     let session = {

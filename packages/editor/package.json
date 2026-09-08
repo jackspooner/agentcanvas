@@ -39,6 +39,7 @@
     "react-dom": ">=19.0.0"
   },
   "dependencies": {
+    "@agentcanvas/plugin-sdk": "0.2.0",
     "@xyflow/react": "^12.11.2",
     "lucide-react": "^1.24.0"
   },

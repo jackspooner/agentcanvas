@@ -1,4 +1,4 @@
-import type { AgentCanvasConfiguration } from '../configuration';
+import type { AgentCanvasConfiguration, UpdateAgentCanvasConfigurationInput } from '../configuration';
 import type { CanvasThemeV1 } from '@agentcanvas/plugin-sdk';
 import type { CanvasBounds, CanvasOperation, CanvasViewport, CanvasViewportState } from '../contracts';
 import type { CanvasDocument, CanvasProjection } from './v2-types';
@@ -45,13 +45,13 @@ export async function fetchAgentCanvasConfiguration(): Promise<AgentCanvasConfig
 }
 
 export async function updateAgentCanvasConfiguration(
-  defaultCanvasSize: CanvasBounds
+  settings: UpdateAgentCanvasConfigurationInput
 ): Promise<AgentCanvasConfiguration> {
   const body = await jsonResponse<{ configuration: AgentCanvasConfiguration }>(
     await fetch('/api/v1/configuration', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ defaultCanvasSize, actor: 'web-ui' })
+      body: JSON.stringify({ ...settings, actor: 'web-ui' })
     }),
     'failed to update AgentCanvas configuration'
   );

@@ -6,7 +6,7 @@ import type {
   PluginDiagnostic,
   SnapshotContribution
 } from '@agentcanvas/plugin-sdk';
-import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME, resolveElementFrame } from '@agentcanvas/plugin-sdk';
 import type { SnapshotRenderItem } from './compositor.js';
 
 export interface SnapshotDescriptorRegistry {
@@ -78,7 +78,8 @@ export async function collectSnapshotItems(
     throw new TypeError('rendererTimeoutMs must be an integer from 1 through 30000');
   }
   return Promise.all(
-    options.elements.map(async (element): Promise<SnapshotRenderItem> => {
+    options.elements.map(async (source): Promise<SnapshotRenderItem> => {
+      const element = { ...source, ...resolveElementFrame(source) };
       const descriptor = options.registry.getElementType(element.type);
       if (!descriptor) return { element, status: 'missing' };
       if (descriptor.snapshot === 'unsupported') return { element, status: 'unsupported' };

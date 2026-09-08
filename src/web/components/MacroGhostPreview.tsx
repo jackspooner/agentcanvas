@@ -1,4 +1,4 @@
-import type { CanvasElement } from '@agentcanvas/plugin-sdk';
+import { resolveElementFrame, type CanvasElement } from '@agentcanvas/plugin-sdk';
 import React from 'react';
 
 interface MacroGhostPreviewProps {
@@ -19,8 +19,8 @@ export function MacroGhostPreview({ elements, renderElement }: MacroGhostPreview
           style={{
             left: element.x,
             top: element.y,
-            width: element.width ?? 240,
-            height: element.height ?? 120,
+            width: resolveElementFrame(element).width,
+            height: resolveElementFrame(element).height,
             zIndex: element.zIndex ?? 0,
             pointerEvents: 'none'
           }}

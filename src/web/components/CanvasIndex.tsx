@@ -1,13 +1,15 @@
 import React from 'react';
-import type { AgentCanvasConfiguration } from '../../configuration';
+import type { AgentCanvasConfiguration, DiagnosticsConfiguration } from '../../configuration';
 import type { CanvasBounds } from '../../contracts';
 import type { CanvasDocument } from '../v2-types';
 import { CanvasBoundsControl } from './CanvasBoundsControl';
+import { DiagnosticsControl } from './DiagnosticsControl';
 
 interface CanvasIndexProps {
   canvases: CanvasDocument[];
   configuration: AgentCanvasConfiguration;
   onDefaultCanvasSizeChange: (size: CanvasBounds) => Promise<void> | void;
+  onDiagnosticsChange: (diagnostics: DiagnosticsConfiguration) => Promise<void>;
 }
 
 function formatDate(value: string): string {
@@ -27,7 +29,12 @@ function canvasMeta(canvas: CanvasDocument): string {
   return parts.join(' · ');
 }
 
-export function CanvasIndex({ canvases, configuration, onDefaultCanvasSizeChange }: CanvasIndexProps) {
+export function CanvasIndex({
+  canvases,
+  configuration,
+  onDefaultCanvasSizeChange,
+  onDiagnosticsChange
+}: CanvasIndexProps) {
   const defaultSize = configuration.defaultCanvasSize;
   const defaultSizeLabel =
     defaultSize.mode === 'unlimited' ? 'Default: Unlimited' : `Default: ${defaultSize.width} × ${defaultSize.height}`;
@@ -40,15 +47,18 @@ export function CanvasIndex({ canvases, configuration, onDefaultCanvasSizeChange
             {canvases.length} {canvases.length === 1 ? 'canvas' : 'canvases'}
           </p>
         </div>
-        <CanvasBoundsControl
-          bounds={defaultSize}
-          readOnly={false}
-          onChange={onDefaultCanvasSizeChange}
-          summaryLabel={defaultSizeLabel}
-          selectLabel="Default canvas size"
-          helpText="Used when a new canvas does not provide its own size."
-          applyLabel="Save default"
-        />
+        <div className="canvas-index-settings">
+          <CanvasBoundsControl
+            bounds={defaultSize}
+            readOnly={false}
+            onChange={onDefaultCanvasSizeChange}
+            summaryLabel={defaultSizeLabel}
+            selectLabel="Default canvas size"
+            helpText="Used when a new canvas does not provide its own size."
+            applyLabel="Save default"
+          />
+          <DiagnosticsControl value={configuration.diagnostics} onChange={onDiagnosticsChange} />
+        </div>
       </header>
 
       {canvases.length === 0 ? (

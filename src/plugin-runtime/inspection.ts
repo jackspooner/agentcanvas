@@ -1,5 +1,6 @@
 import type { CanvasElement, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
 import type { FrozenPluginRegistry } from './registry.js';
+import { DEFAULT_DIAGNOSTICS_CONFIGURATION, type DiagnosticsConfiguration } from '../configuration.js';
 
 export interface InspectableCanvas {
   id: string;
@@ -22,7 +23,11 @@ export interface CanvasInspection {
  * These diagnostics are advisory: schema and invariant enforcement remains in
  * the write validator, while rendered/network verification remains external.
  */
-export function inspectCanvasElements(canvas: InspectableCanvas, registry: FrozenPluginRegistry): PluginDiagnostic[] {
+export function inspectCanvasElements(
+  canvas: InspectableCanvas,
+  registry: FrozenPluginRegistry,
+  options: Readonly<DiagnosticsConfiguration> = DEFAULT_DIAGNOSTICS_CONFIGURATION
+): PluginDiagnostic[] {
   const diagnostics: PluginDiagnostic[] = [];
   for (const element of canvas.elements) {
     const split = element.type.lastIndexOf('/');
@@ -55,6 +60,8 @@ export function inspectCanvasElements(canvas: InspectableCanvas, registry: Froze
       });
     }
   }
+  if (options.overlapMode === 'off') return diagnostics;
+  let overlapCount = 0;
   const framed = canvas.elements.filter(
     (element) =>
       typeof element.width === 'number' &&
@@ -64,6 +71,7 @@ export function inspectCanvasElements(canvas: InspectableCanvas, registry: Froze
       !element.type.endsWith('/line') &&
       !element.type.endsWith('/arrow')
   );
+  // ponytail: pairwise scan; bounded mode stops on excess warnings. Use a spatial index if sparse canvases become slow.
   for (let leftIndex = 0; leftIndex < framed.length; leftIndex += 1) {
     const left = framed[leftIndex];
     for (let rightIndex = leftIndex + 1; rightIndex < framed.length; rightIndex += 1) {
@@ -74,6 +82,16 @@ export function inspectCanvasElements(canvas: InspectableCanvas, registry: Froze
       const overlapHeight =
         Math.min(left.y + (left.height as number), right.y + (right.height as number)) - Math.max(left.y, right.y);
       if (overlapWidth <= 0 || overlapHeight <= 0) continue;
+      if (options.overlapMode === 'bounded' && overlapCount === options.maxOverlapWarnings) {
+        diagnostics.push({
+          code: 'overlap_diagnostics_truncated',
+          severity: 'info',
+          message: `Overlap inspection stopped after ${overlapCount} warnings. More overlaps exist; change Diagnostics settings to increase the limit or report all.`,
+          retryable: false
+        });
+        return diagnostics;
+      }
+      overlapCount += 1;
       diagnostics.push({
         code: 'element_frames_overlap',
         severity: 'warning',
@@ -87,8 +105,12 @@ export function inspectCanvasElements(canvas: InspectableCanvas, registry: Froze
 }
 
 /** Returns the diagnostics and severity counts used by both mutation responses and explicit inspection. */
-export function inspectCanvas(canvas: InspectableCanvas, registry: FrozenPluginRegistry): CanvasInspection {
-  const diagnostics = inspectCanvasElements(canvas, registry);
+export function inspectCanvas(
+  canvas: InspectableCanvas,
+  registry: FrozenPluginRegistry,
+  options: Readonly<DiagnosticsConfiguration> = DEFAULT_DIAGNOSTICS_CONFIGURATION
+): CanvasInspection {
+  const diagnostics = inspectCanvasElements(canvas, registry, options);
   return {
     diagnostics,
     summary: {

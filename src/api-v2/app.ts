@@ -154,7 +154,13 @@ setInterval(async () => {
     const selected = embedSessions.select(c.req.param('token'), c.req.query('canvasId'));
     const canvas = store.getCanvas(selected.canvasId);
     const readOnly = selected.session.mode === 'read';
-    const projection = await resolveCanvasProjection(canvas, registry, readOnly, c.req.raw.signal);
+    const projection = await resolveCanvasProjection(
+      canvas,
+      registry,
+      readOnly,
+      c.req.raw.signal,
+      store.getConfiguration().diagnostics
+    );
     return c.json({ ok: true, session: selected.session, canvas, ...projection, readOnly });
   });
   app.delete('/api/v1/embed-sessions/:token', (c) =>

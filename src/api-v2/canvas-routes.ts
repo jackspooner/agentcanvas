@@ -61,7 +61,13 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
   });
   app.get('/api/v1/canvases/:canvasId', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
-    const projection = await resolveCanvasProjection(canvas, registry, false, c.req.raw.signal);
+    const projection = await resolveCanvasProjection(
+      canvas,
+      registry,
+      false,
+      c.req.raw.signal,
+      store.getConfiguration().diagnostics
+    );
     return c.json({ ok: true, canvas, ...projection });
   });
   app.patch('/api/v1/canvases/:canvasId', async (c) =>
@@ -75,7 +81,13 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
   );
   app.post('/api/v1/canvases/:canvasId/elements:batch', async (c) => {
     const canvas = store.applyOperations(c.req.param('canvasId'), await readCoreJson(c, 'batch'));
-    const projection = await resolveCanvasProjection(canvas, registry, false, c.req.raw.signal);
+    const projection = await resolveCanvasProjection(
+      canvas,
+      registry,
+      false,
+      c.req.raw.signal,
+      store.getConfiguration().diagnostics
+    );
     return c.json({ ok: true, canvas, revision: canvas.revision, ...projection });
   });
   app.post('/api/v1/canvases/:canvasId/share-links', async (c) => {
@@ -106,7 +118,13 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
   );
   app.post('/api/v1/canvases/:canvasId/snapshot', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
-    const projection = await resolveCanvasProjection(canvas, registry, true, c.req.raw.signal);
+    const projection = await resolveCanvasProjection(
+      canvas,
+      registry,
+      true,
+      c.req.raw.signal,
+      store.getConfiguration().diagnostics
+    );
     const items = await collectSnapshotItems({
       canvasId: canvas.id,
       elements: canvas.elements,
@@ -131,7 +149,13 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
 
   app.get('/api/v1/share/:token', async (c) => {
     const resolved = store.resolveShareToken(c.req.param('token'));
-    const projection = await resolveCanvasProjection(resolved.canvas, registry, true, c.req.raw.signal);
+    const projection = await resolveCanvasProjection(
+      resolved.canvas,
+      registry,
+      true,
+      c.req.raw.signal,
+      store.getConfiguration().diagnostics
+    );
     return c.json({ ok: true, ...resolved, ...projection, readOnly: true });
   });
 }

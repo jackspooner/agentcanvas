@@ -1,28 +1,22 @@
-import type { CanvasElement, JsonObject, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
+import {
+  resolveElementFrame,
+  resolveFrameAnchor,
+  type JsonObject,
+  type PluginDiagnostic
+} from '@agentcanvas/plugin-sdk';
 import { type FrozenPluginRegistry, inspectCanvasElements } from '../plugin-runtime/index.js';
 import type { V2CanvasRecord } from '../store/v2.js';
-
-function anchorPoint(
-  element: Readonly<CanvasElement>,
-  anchor: 'center' | 'top' | 'right' | 'bottom' | 'left' = 'center'
-): { x: number; y: number } {
-  const width = element.width ?? 0;
-  const height = element.height ?? 0;
-  if (anchor === 'top') return { x: element.x + width / 2, y: element.y };
-  if (anchor === 'right') return { x: element.x + width, y: element.y + height / 2 };
-  if (anchor === 'bottom') return { x: element.x + width / 2, y: element.y + height };
-  if (anchor === 'left') return { x: element.x, y: element.y + height / 2 };
-  return { x: element.x + width / 2, y: element.y + height / 2 };
-}
+import { DEFAULT_DIAGNOSTICS_CONFIGURATION, type DiagnosticsConfiguration } from '../configuration.js';
 
 export async function resolveCanvasProjection(
   canvas: V2CanvasRecord,
   registry: FrozenPluginRegistry,
   readOnly: boolean,
-  signal: AbortSignal
+  signal: AbortSignal,
+  diagnosticsConfiguration: Readonly<DiagnosticsConfiguration> = DEFAULT_DIAGNOSTICS_CONFIGURATION
 ): Promise<{ elementRuntime: Record<string, JsonObject>; diagnostics: PluginDiagnostic[] }> {
   const elementRuntime: Record<string, JsonObject> = {};
-  const diagnostics: PluginDiagnostic[] = inspectCanvasElements(canvas, registry);
+  const diagnostics: PluginDiagnostic[] = inspectCanvasElements(canvas, registry, diagnosticsConfiguration);
   const elements = new Map(canvas.elements.map((element) => [element.id, element]));
   for (const element of canvas.elements) {
     const descriptor = registry.getElementType(element.type);
@@ -37,11 +31,11 @@ export async function resolveCanvasProjection(
           geometry: {
             getElementFrame(elementId) {
               const target = elements.get(elementId);
-              return target ? { x: target.x, y: target.y, width: target.width ?? 0, height: target.height ?? 0 } : null;
+              return target ? resolveElementFrame(target) : null;
             },
             resolveAnchor(elementId, anchor) {
               const target = elements.get(elementId);
-              return target ? anchorPoint(target, anchor) : null;
+              return target ? resolveFrameAnchor(resolveElementFrame(target), anchor) : null;
             }
           }
         });
