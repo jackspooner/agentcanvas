@@ -2,6 +2,8 @@
 
 This release makes the HTTP and MCP application-error contract enforceable.
 
+- Editor edits, macros, Undo, and Redo now serialize persistence and history updates together. Rapid Undo/Redo requests consume successive history entries; failed saves preserve the entry for a later attempt without blocking the queue.
+
 - MCP canvas responses preserve missing-extension elements without reporting successful mutations as failures; empty element registries retain canvas creation/read support while rejecting upserts.
 - Canvas lists share a default of 50 and a strict integer range of 1–200 across store, HTTP, OpenAPI, and MCP. HTTP rejects invalid limits with `400 validation_error` instead of clamping or returning a server error.
 - Formatting and lint checks now include package and extension-package TSX. The keyboard-focusable canvas retains a documented, local lint exception for its custom keyboard interaction.

@@ -472,11 +472,13 @@ describe('macro canvas lifecycle', () => {
     await waitFor(() => expect((getByRole('button', { name: 'Run macro' }) as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(getByRole('button', { name: 'Run macro' }));
     await waitFor(() => expect(onRun).toHaveBeenCalledOnce());
+    await waitFor(() => expect((getByRole('button', { name: 'Undo' }) as HTMLButtonElement).disabled).toBe(false));
     expect(operations).toHaveLength(0);
     const shell = container.querySelector('.canvas-shell') as HTMLElement;
     fireEvent.keyDown(shell, { key: 'z', ctrlKey: true });
     await waitFor(() => expect(operations).toHaveLength(1));
     expect(operations[0]).toEqual([{ op: 'deleteElement', elementId: ghost.id }]);
+    await waitFor(() => expect((getByRole('button', { name: 'Redo' }) as HTMLButtonElement).disabled).toBe(false));
     fireEvent.keyDown(shell, { key: 'y', ctrlKey: true });
     await waitFor(() => expect(operations).toHaveLength(2));
     expect(operations[1]).toEqual(plan.operations);
