@@ -119,6 +119,7 @@ it('retains aliases, parallel and self connectors in the visual projection', asy
     'graph LR\nA-->A\nA-->B\nA-->B',
     'stateDiagram\nA --> B : next',
     'classDiagram\nA --> A : self\nA --> B : one\nA --> B : two',
+    'classDiagram\nclass Order {\n +string id\n +submit()\n}\nclass Customer\nCustomer "1" --> "*" Order',
     'erDiagram\nA[Alias]\nA ||--o{ A : self\nA ||--o{ B : owns\nA ||--o{ B : also',
     'sequenceDiagram\nactor A\nparticipant B\nA->>A: self\nA->>B: next'
   ]) {

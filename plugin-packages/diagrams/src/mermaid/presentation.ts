@@ -257,6 +257,13 @@ export function presentGraph(root: SVGSVGElement, raw: unknown, presentation?: M
       );
       let terminal = label.nextElementSibling;
       for (const side of terminalSides) {
+        // Empty class labels may have a separate background group before the terminal labels.
+        if (
+          terminal?.matches('g:not([class])') &&
+          terminal.children.length === 1 &&
+          terminal.firstElementChild?.matches('rect.background')
+        )
+          terminal = terminal.nextElementSibling;
         if (!(terminal instanceof SVGGraphicsElement) || !terminal.classList.contains('edgeTerminals'))
           fail('Mermaid terminal-label contract changed.');
         const start = side.startsWith('start'),
