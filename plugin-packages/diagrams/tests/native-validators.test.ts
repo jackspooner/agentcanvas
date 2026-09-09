@@ -5,7 +5,7 @@ import { transform } from 'esbuild';
 import { expect, it } from 'vitest';
 
 it('initializes and validates standalone schemas when runtime string code generation is forbidden', async () => {
-  const source = await readFile(new URL('../src/erd/schema-validators.ts', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../src/schema-validators.ts', import.meta.url), 'utf8');
   const compiled = await transform(source, { loader: 'ts', format: 'iife', globalName: 'validators' });
   const result = runInNewContext(
     `${compiled.code}\n({

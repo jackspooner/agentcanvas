@@ -13,6 +13,7 @@ import { renderMermaid, parseMermaidSource } from '../mermaid/engine.js';
 import { mountErdEditor } from './erd-editor.js';
 import { mountMermaidEditor, errorText } from './mermaid-editor.js';
 import { diagramModal } from './modal.js';
+import { mountMermaidVisualEditor } from './mermaid-visual-editor.js';
 
 const editors = new Map<string, Set<() => void>>();
 const editorClosers = new Map<string, Set<() => void>>();
@@ -96,7 +97,7 @@ function historyKeys(root: HTMLElement, context: BrowserCommandContext): void {
       );
   });
 }
-function openEditor(context: BrowserCommandContext, id: string): void {
+function openEditor(context: BrowserCommandContext, id: string, visual = false): void {
   const current = state(context, id);
   let dirty = () => false;
   let saving = false;
@@ -154,6 +155,32 @@ function openEditor(context: BrowserCommandContext, id: string): void {
     });
     dirty = editor.hasUnsavedChanges;
     observe(id, modal.signal, editor.update);
+  } else if (visual) {
+    const editor = mountMermaidVisualEditor(modal.body, {
+      getState: () => ({ ...getState(), data: getState().data as unknown as MermaidData }),
+      signal: modal.signal,
+      editSource: () => {
+        if (editor.hasUnsavedChanges()) return;
+        modal.close();
+        openEditor(context, id);
+      },
+      save: async (data, revision) => {
+        saving = true;
+        try {
+          await renderMermaid(data.source, theme(context), modal.signal, data.presentation);
+          await context.transact(
+            'Edit Mermaid presentation',
+            [{ op: 'replaceElementData', elementId: id, data: json(data) }],
+            { expectedRevision: revision }
+          );
+          updateDiagramEditors(id);
+        } finally {
+          saving = false;
+        }
+      }
+    });
+    dirty = editor.hasUnsavedChanges;
+    observe(id, modal.signal, editor.update);
   } else {
     const editor = mountMermaidEditor(modal.body, {
       getState: () => ({ ...getState(), data: getState().data as unknown as MermaidData }),
@@ -202,6 +229,12 @@ async function convert(context: BrowserCommandContext, id: string): Promise<void
   const current = state(context, id);
   checkType(current.element, 'mermaid');
   const converted = await extractErd(current.element.data.source as string, theme(context), context.signal);
+  if (current.element.data.presentation)
+    converted.warnings.push({
+      path: '/presentation',
+      code: 'mermaid.erd.presentation',
+      message: 'Saved Mermaid appearance and manual geometry are omitted from the independent native copy.'
+    });
   const modal = diagramModal(context.overlays, context.signal, 'Convert Mermaid ERD');
   const heading = document.createElement('p');
   heading.textContent = 'Create an independent editable ERD. The original Mermaid element remains unchanged.';
@@ -231,7 +264,7 @@ async function convert(context: BrowserCommandContext, id: string): Promise<void
       const element: CanvasElement = {
         id: crypto.randomUUID(),
         type: 'agentcanvas.diagrams/erd',
-        schemaVersion: 1,
+        schemaVersion: 2,
         x: current.element.x + (current.element.width ?? 720) + 40,
         y: current.element.y,
         width: 960,
@@ -263,7 +296,7 @@ export function registerDiagramCommands(host: BrowserPluginHost): void {
         const element: CanvasElement = {
           id: crypto.randomUUID(),
           type: `agentcanvas.diagrams/${kind}`,
-          schemaVersion: 1,
+          schemaVersion: 2,
           x: context.viewport.centerX - 360,
           y: context.viewport.centerY - 240,
           width: kind === 'erd' ? 960 : 720,
@@ -284,6 +317,12 @@ export function registerDiagramCommands(host: BrowserPluginHost): void {
     title: 'Edit diagram',
     isEnabled: (context) => context.selection.some((element) => element.type.startsWith('agentcanvas.diagrams/')),
     execute: (context, input) => openEditor(context, selected(context, input))
+  });
+  host.registerCommand({
+    name: 'edit-visuals',
+    title: 'Edit Mermaid appearance',
+    isEnabled: (context) => context.selection.some((element) => element.type === 'agentcanvas.diagrams/mermaid'),
+    execute: (context, input) => openEditor(context, selected(context, input), true)
   });
   host.registerCommand({
     name: 'export-mermaid',
@@ -324,10 +363,11 @@ export function registerDiagramCommands(host: BrowserPluginHost): void {
       const id = selected(context, input);
       checkType(state(context, id).element, 'mermaid');
       const data = input.data as unknown as MermaidData;
-      await renderMermaid(data.source, theme(context), context.signal);
+      await renderMermaid(data.source, theme(context), context.signal, data.presentation);
       await context.transact('Edit Mermaid diagram', [{ op: 'replaceElementData', elementId: id, data: json(data) }], {
         expectedRevision: input.expectedRevision as number
       });
+      updateDiagramEditors(id);
     }
   });
 }

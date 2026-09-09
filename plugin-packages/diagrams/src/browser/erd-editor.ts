@@ -1,8 +1,8 @@
 import type { CanvasThemeV1 } from '@agentcanvas/extension-sdk';
 import type { ErdData, ErdEndpoint, ErdOperation } from '../contracts.js';
-import { diagramGeometry, renderErdScene } from '../erd/index.js';
+import { diagramGeometry, renderErdScene, applyErdOperations } from '../erd/index.js';
 import { button, type ErdFormTarget, type ErdSelection, mountErdForm } from './erd-forms.js';
-import { sceneToSvg, svgElement } from './scene-dom.js';
+import { sceneToSvg, svgElement, preserveSvgFocus } from './scene-dom.js';
 import { erdEditorStyles } from './styles.js';
 
 export interface ErdEditorOptions {
@@ -64,6 +64,7 @@ export function mountErdEditor(
         inverse: DOMMatrix;
         dx: number;
         dy: number;
+        operation?: (dx: number, dy: number) => ErdOperation;
       }
     | undefined;
   let pan: { pointerId: number; start: DOMPoint; inverse: DOMMatrix; x: number; y: number } | undefined;
@@ -200,15 +201,18 @@ export function mountErdEditor(
   }
   function draw() {
     if (disposed) return;
+    const restoreFocus = preserveSvgFocus(svg);
     const state = options.getState();
-    const data = drag
-      ? {
-          ...state.data,
-          entities: state.data.entities.map((entity) =>
-            entity.id === drag?.entityId ? { ...entity, x: drag.x + drag.dx, y: drag.y + drag.dy } : entity
-          )
-        }
-      : state.data;
+    const data = drag?.operation
+      ? applyErdOperations(state.data, [drag.operation(drag.dx, drag.dy)]).data
+      : drag
+        ? {
+            ...state.data,
+            entities: state.data.entities.map((entity) =>
+              entity.id === drag?.entityId ? { ...entity, x: drag.x + drag.dx, y: drag.y + drag.dy } : entity
+            )
+          }
+        : state.data;
     const geometry = diagramGeometry(data);
     const scene = renderErdScene(data, state.theme);
     if (!view)
@@ -272,6 +276,24 @@ export function mountErdEditor(
         'data-agentcanvas-interactive': 'true'
       });
       node.append(header);
+      if (selection?.kind === 'entity' && selection.entityId === entity.id) {
+        svg.append(
+          svgElement('rect', {
+            x: box.x + box.width - 8,
+            y: box.y + box.height - 8,
+            width: 16,
+            height: 16,
+            fill: state.theme.colors.accent,
+            stroke: state.theme.colors.surface,
+            tabindex: 0,
+            role: 'button',
+            'aria-label': `Resize ${entity.name}; arrow keys resize`,
+            'data-resize-entity': entity.id,
+            'data-agentcanvas-interactive': 'true',
+            style: 'cursor:nwse-resize'
+          })
+        );
+      }
       if (connecting) {
         for (const end of [
           { y: box.y + box.headerHeight / 2, attributeId: undefined },
@@ -314,8 +336,49 @@ export function mountErdEditor(
             'pointer-events': 'stroke'
           })
         );
+      if (
+        route &&
+        !state.readOnly &&
+        !pending &&
+        selection?.kind === 'relationship' &&
+        selection.relationshipId === relationship.id
+      ) {
+        const bends = relationship.bends?.length ? relationship.bends : route.points.slice(1, -1);
+        for (const [index, point] of bends.entries())
+          svg.append(
+            svgElement('circle', {
+              cx: point.x,
+              cy: point.y,
+              r: 7,
+              fill: state.theme.colors.accent,
+              stroke: state.theme.colors.surface,
+              tabindex: 0,
+              role: 'button',
+              'aria-label': `Move bend ${index + 1}; arrow keys move`,
+              'data-bend-relationship': relationship.id,
+              'data-bend-index': index,
+              'data-agentcanvas-interactive': 'true'
+            })
+          );
+        if (relationship.label)
+          svg.append(
+            svgElement('circle', {
+              cx: route.label.x,
+              cy: route.label.y,
+              r: 8,
+              fill: 'transparent',
+              stroke: state.theme.colors.accent,
+              tabindex: 0,
+              role: 'button',
+              'aria-label': 'Move relationship label; arrow keys move',
+              'data-label-relationship': relationship.id,
+              'data-agentcanvas-interactive': 'true'
+            })
+          );
+      }
     }
     updateControls();
+    restoreFocus();
   }
   function targetElement(event: Event): Element | undefined {
     return event.target instanceof Element ? event.target : undefined;
@@ -363,6 +426,44 @@ export function mountErdEditor(
   function point(event: PointerEvent | WheelEvent, inverse: DOMMatrix) {
     return new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
   }
+  function visualOperation(target?: Element): ((dx: number, dy: number) => ErdOperation) | undefined {
+    const handle = target?.closest<SVGElement>(
+      '[data-resize-entity],[data-bend-relationship],[data-label-relationship]'
+    );
+    if (!handle) return;
+    const data = structuredClone(options.getState().data);
+    const geometry = diagramGeometry(data);
+    if (handle.dataset.resizeEntity) {
+      const entity = data.entities.find((item) => item.id === handle.dataset.resizeEntity)!;
+      const box = geometry.entities.find((item) => item.id === entity.id)!;
+      return (dx, dy) => ({
+        op: 'present-entity',
+        entityId: entity.id,
+        presentation: {
+          width: Math.max(200, Math.min(4096, box.width + dx)),
+          height: Math.max(64, Math.min(8192, box.height + dy)),
+          ...(entity.appearance ? { appearance: entity.appearance } : {})
+        }
+      });
+    }
+    const id = handle.dataset.bendRelationship ?? handle.dataset.labelRelationship;
+    const relationship = data.relationships.find((item) => item.id === id)!;
+    const route = geometry.relationships.find((item) => item.id === id)!;
+    return (dx, dy) => {
+      const presentation = {
+        ...(relationship.appearance ? { appearance: relationship.appearance } : {}),
+        ...(relationship.bends ? { bends: relationship.bends } : {}),
+        ...(relationship.labelPosition ? { labelPosition: relationship.labelPosition } : {})
+      };
+      if (handle.dataset.bendRelationship) {
+        const bends = structuredClone(relationship.bends?.length ? relationship.bends : route.points.slice(1, -1));
+        const index = Number(handle.dataset.bendIndex);
+        bends[index] = { x: bends[index].x + dx, y: bends[index].y + dy };
+        presentation.bends = bends;
+      } else presentation.labelPosition = { x: route.label.x + dx, y: route.label.y + dy };
+      return { op: 'present-relationship', relationshipId: relationship.id, presentation };
+    };
+  }
   svg.addEventListener(
     'pointerdown',
     (event) => {
@@ -374,7 +475,21 @@ export function mountErdEditor(
       const state = options.getState();
       const inverse = svg.getScreenCTM()?.inverse();
       if (!inverse) return;
-      if (entityId && !state.readOnly) {
+      const operation = visualOperation(target);
+      if (operation && !state.readOnly) {
+        drag = {
+          entityId: '',
+          pointerId: event.pointerId,
+          revision: state.revision,
+          x: 0,
+          y: 0,
+          start: point(event, inverse),
+          inverse,
+          dx: 0,
+          dy: 0,
+          operation
+        };
+      } else if (entityId && !state.readOnly) {
         const entity = state.data.entities.find((item) => item.id === entityId);
         if (!entity) return;
         selectItem({ kind: 'entity', entityId });
@@ -430,15 +545,17 @@ export function mountErdEditor(
     if (svg.hasPointerCapture(pointerId)) svg.releasePointerCapture(pointerId);
     if (current && !cancel && (Math.abs(current.dx) > 0.1 || Math.abs(current.dy) > 0.1))
       run(
-        'Move entity',
-        [
-          {
-            op: 'move-entity',
-            entityId: current.entityId,
-            x: Math.round((current.x + current.dx) * 100) / 100,
-            y: Math.round((current.y + current.dy) * 100) / 100
-          }
-        ],
+        current.operation ? 'Change diagram presentation' : 'Move entity',
+        current.operation
+          ? [current.operation(current.dx, current.dy)]
+          : [
+              {
+                op: 'move-entity',
+                entityId: current.entityId,
+                x: Math.round((current.x + current.dx) * 100) / 100,
+                y: Math.round((current.y + current.dy) * 100) / 100
+              }
+            ],
         current.revision
       );
     if (current && (cancel || current.dx !== 0 || current.dy !== 0)) draw();
@@ -484,6 +601,21 @@ export function mountErdEditor(
         return;
       }
       const target = targetElement(event);
+      const operation = visualOperation(target);
+      if (operation && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!options.getState().readOnly && !pending) {
+          const distance = event.shiftKey ? 10 : 1;
+          run('Change diagram presentation', [
+            operation(
+              event.key === 'ArrowLeft' ? -distance : event.key === 'ArrowRight' ? distance : 0,
+              event.key === 'ArrowUp' ? -distance : event.key === 'ArrowDown' ? distance : 0
+            )
+          ]);
+        }
+        return;
+      }
       // Text controls own Delete/Backspace and Enter; the host must never delete the outer diagram here.
       if (target?.closest('input,textarea,select,form')) {
         event.stopPropagation();

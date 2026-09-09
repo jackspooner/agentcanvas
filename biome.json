@@ -43,7 +43,7 @@
   },
   "overrides": [
     {
-      "includes": ["plugin-packages/diagrams/src/erd/schema-validators.ts"],
+      "includes": ["plugin-packages/diagrams/src/schema-validators.ts"],
       "formatter": { "enabled": false },
       "linter": { "enabled": false }
     }

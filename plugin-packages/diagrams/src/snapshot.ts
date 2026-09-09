@@ -4,7 +4,7 @@ import type {
   SnapshotContribution,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/extension-sdk';
-import type { ErdData } from './contracts.js';
+import type { ErdData, MermaidData } from './contracts.js';
 import { renderErdScene } from './erd/render.js';
 import { renderMermaidPng } from './mermaid/headless.js';
 
@@ -39,7 +39,8 @@ export async function renderMermaidSnapshot(
     theme,
     element.width ?? 720,
     element.height ?? 480,
-    signal
+    signal,
+    (element.data as unknown as MermaidData).presentation
   );
   signal.throwIfAborted();
   const resource = resources.register({

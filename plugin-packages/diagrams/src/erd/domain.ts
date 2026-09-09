@@ -53,6 +53,24 @@ export function applyErdOperations(
       case 'move-entity':
         Object.assign(entity(op.entityId), { x: op.x, y: op.y });
         break;
+      case 'present-entity': {
+        const item = entity(op.entityId);
+        delete item.width;
+        delete item.height;
+        delete item.appearance;
+        Object.assign(item, op.presentation);
+        break;
+      }
+      case 'present-relationship': {
+        const item = result.relationships.find((item) => item.id === op.relationshipId);
+        if (!item) fail(`Unknown relationship: ${op.relationshipId}`);
+        delete item.bends;
+        delete item.labelPosition;
+        delete item.appearance;
+        Object.assign(item, op.presentation);
+        affected.add(item.id);
+        break;
+      }
       case 'delete-entity':
         entity(op.entityId);
         result.entities = result.entities.filter((item) => item.id !== op.entityId);
@@ -117,6 +135,7 @@ export function applyErdOperations(
         removeRelationships((item) => item.id === op.relationshipId);
         break;
       case 'auto-layout':
+        for (const item of result.relationships) if (item.bends || item.labelPosition) affected.add(item.id);
         result = layoutErd(result, op.direction);
         for (const item of result.entities) affected.add(item.id);
         break;

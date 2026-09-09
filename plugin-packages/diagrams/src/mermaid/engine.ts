@@ -1,9 +1,12 @@
 import { type CanvasThemeV1, DEFAULT_CANVAS_THEME } from '@agentcanvas/extension-sdk';
 import mermaid from 'mermaid';
+import type { MermaidLayout, MermaidPresentation } from '../contracts.js';
+import { presentGraph } from './presentation.js';
+import { presentSequence } from './sequence-presentation.js';
 
 export { MermaidSourceError, validateMermaidSource } from './policy.js';
 
-import { MermaidSourceError, validateMermaidSource } from './policy.js';
+import { MermaidSourceError, validateMermaidSource, validateMermaidData } from './policy.js';
 
 let queue: Promise<unknown> = Promise.resolve();
 
@@ -69,9 +72,13 @@ export function parseMermaidSource(
 export function renderMermaid(
   source: string,
   theme: Readonly<CanvasThemeV1>,
-  signal?: AbortSignal
-): Promise<{ svg: string; diagramType: string; width: number; height: number }> {
+  signal?: AbortSignal,
+  presentation?: MermaidPresentation,
+  includeLayout = false
+): Promise<{ svg: string; diagramType: string; width: number; height: number; layout?: MermaidLayout }> {
   return withMermaid(source, theme, signal, async (api) => {
+    const issues = validateMermaidData({ title: '', source, ...(presentation ? { presentation } : {}) });
+    if (issues.length) throw new MermaidSourceError(issues);
     const scratch = document.createElement('div');
     scratch.style.cssText = 'position:fixed;left:-100000px;top:0;width:4096px;visibility:hidden';
     document.body.append(scratch);
@@ -93,7 +100,25 @@ export function renderMermaid(
       }
       const box = svg.viewBox.baseVal;
       if (!(box.width > 0 && box.height > 0)) throw new Error('Mermaid returned invalid SVG bounds.');
-      return { svg: svg.outerHTML, diagramType: result.diagramType, width: box.width, height: box.height };
+      let layout: MermaidLayout | undefined;
+      if (presentation || includeLayout) {
+        const diagram = await api.mermaidAPI.getDiagramFromText(source);
+        const db = diagram.db as unknown as { getData?: () => unknown };
+        if (result.diagramType === 'sequence') layout = presentSequence(svg, presentation);
+        else {
+          if (!db.getData) throw new Error('Mermaid graph data is unavailable.');
+          layout = presentGraph(svg, db.getData(), presentation);
+        }
+        const bounds = svg.getBBox();
+        svg.setAttribute('viewBox', `${bounds.x - 16} ${bounds.y - 16} ${bounds.width + 32} ${bounds.height + 32}`);
+      }
+      return {
+        svg: svg.outerHTML,
+        diagramType: result.diagramType,
+        width: svg.viewBox.baseVal.width,
+        height: svg.viewBox.baseVal.height,
+        ...(layout ? { layout } : {})
+      };
     } finally {
       scratch.remove();
     }

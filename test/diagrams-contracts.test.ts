@@ -79,7 +79,7 @@ function data(): JsonObject {
 const nativeElement = (payload = data()) => ({
   id: 'diagram',
   type: 'agentcanvas.diagrams/erd',
-  schemaVersion: 1,
+  schemaVersion: 2,
   x: 10,
   y: 20,
   width: 960,
@@ -137,6 +137,16 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
     const openapi = await (await app.request('/openapi.json')).json();
     const schemas = createRegistryElementSchemas(offline.registry);
     for (const type of ['erd', 'mermaid']) {
+      const descriptor = offline.registry.getElementType(`agentcanvas.diagrams/${type}`)!;
+      expect(descriptor.schemaVersion).toBe(2);
+      const migrate = descriptor.schemaMigrations?.[0];
+      expect(migrate).toMatchObject({ fromVersion: 1, toVersion: 2 });
+      const oldData = type === 'erd' ? data() : { title: 'Old source', source: 'flowchart LR\nA-->B' };
+      const oldStyle = { color: '#112233' };
+      const migrated = migrate!.migrate(oldData, oldStyle);
+      expect(migrated).toEqual({ data: oldData, style: oldStyle });
+      expect(migrated.data).not.toBe(oldData);
+      expect(migrated.style).not.toBe(oldStyle);
       const component = schemas.componentForType[`agentcanvas.diagrams/${type}`];
       expect(openapi.components.schemas[component]).toEqual(schemas.schemas[component]);
       expect(runtime.registry.getElementType(`agentcanvas.diagrams/${type}`)?.dataSchema).toEqual(
@@ -199,7 +209,7 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
         {
           key: 'erd',
           type: valid.type,
-          schemaVersion: 1,
+          schemaVersion: 2,
           x: 0,
           y: 0,
           width: 960,

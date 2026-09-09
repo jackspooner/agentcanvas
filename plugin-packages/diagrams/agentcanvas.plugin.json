@@ -1,6 +1,6 @@
 {
   "id": "agentcanvas.diagrams",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Diagrams",
   "description": "Editable entity relationship diagrams and Mermaid diagrams.",
   "license": "MIT",
@@ -24,13 +24,13 @@
     "elements": [
       {
         "name": "erd",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "browser": true,
         "snapshot": "supported"
       },
       {
         "name": "mermaid",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "browser": true,
         "snapshot": "supported"
       }
@@ -39,6 +39,7 @@
       "create-erd",
       "create-mermaid",
       "edit",
+      "edit-visuals",
       "export-mermaid",
       "convert-mermaid-erd",
       "apply-erd",

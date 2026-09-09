@@ -2,7 +2,7 @@ import { CanvasError } from '@agentcanvas/core/errors';
 import type { ValidateFunction } from 'ajv';
 import type { DiagramIssue, ErdData, ErdOperation } from '../contracts.js';
 import { ERD_LIMITS } from '../erd-schemas.js';
-import { validShape as validateShape, validOperation as validateOperation } from './schema-validators.js';
+import { validShape as validateShape, validOperation as validateOperation } from '../schema-validators.js';
 
 const validShape = validateShape as ValidateFunction<ErdData>;
 const validOperation = validateOperation as ValidateFunction<ErdOperation>;
@@ -33,6 +33,12 @@ export function validateErd(value: unknown): DiagramIssue[] {
   if (attributeCount > ERD_LIMITS.attributes)
     add('/entities', 'limit', `At most ${ERD_LIMITS.attributes} attributes are allowed in total`);
   seen.clear();
+  if (value.relationships.reduce((sum, edge) => sum + (edge.bends?.length ?? 0), 0) > 600)
+    add(
+      '/relationships',
+      'scene_limit',
+      'At most 600 manual connector bends are allowed per diagram to stay within snapshot limits.'
+    );
   value.relationships.forEach((relationship, index) => {
     if (seen.has(relationship.id))
       add(`/relationships/${index}/id`, 'duplicate_id', `Duplicate relationship ID: ${relationship.id}`);

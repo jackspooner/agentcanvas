@@ -1,5 +1,18 @@
 # Change history
 
+## Diagrams 0.2.0 — visual controls
+
+- Optional Diagrams adds individual box sizing, theme-inheriting appearance,
+  connector bends and label positions. Mermaid keeps source and a separate
+  presentation layer; browser controls and server PNGs share its renderer.
+- All five Mermaid families support visual controls. Sequence participants move
+  horizontally without reordering messages. Source changes explicitly reset saved
+  visual overrides. Native Auto layout resets bends/labels and preserves styling.
+- Existing tools expose native presentation operations and Mermaid layout
+  inspection. Both element schemas advance to 2 with offline 1→2 migrations;
+  existing source, entity positions and styles are preserved. Generic clients and
+  macro templates need schema 2. See the [upgrade instructions](../plugin-packages/diagrams/README.md#upgrading-from-diagrams-01).
+
 ## Unreleased — diagnostics configuration and geometry
 
 - Added installation-wide overlap modes Off, Limited and All in the canvas index

@@ -118,7 +118,7 @@ it('keeps Save disabled until the latest edited source has a valid preview', asy
   latest.resolve(rendered);
   await settle();
   expect(h.button.disabled).toBe(false);
-  expect(render).toHaveBeenLastCalledWith(h.source.value, DEFAULT_CANVAS_THEME, h.controller.signal);
+  expect(render).toHaveBeenLastCalledWith(h.source.value, DEFAULT_CANVAS_THEME, h.controller.signal, undefined);
 });
 
 it('refreshes a clean editor after history changes while preserving and flagging a stale draft', async () => {

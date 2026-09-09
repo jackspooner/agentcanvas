@@ -3,11 +3,12 @@ import type {
   ElementResolution,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/extension-sdk';
-import type { ErdData } from './contracts.js';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/extension-sdk';
+import type { ErdData, MermaidData } from './contracts.js';
 import { diagramGeometry } from './erd/geometry.js';
 import { validateErd } from './erd/validation.js';
-import { validateMermaid } from './mermaid/headless.js';
-import { validateMermaidSource } from './mermaid/policy.js';
+import { validateMermaid, validateMermaidRender } from './mermaid/headless.js';
+import { validateMermaidData } from './mermaid/policy.js';
 import { erdDataSchema, mermaidDataSchema } from './schemas.js';
 import { renderMermaidSnapshot, renderNativeSnapshot } from './snapshot.js';
 import { diagramIssues, registerDiagramTools } from './tools.js';
@@ -17,7 +18,17 @@ const extension: AgentCanvasServerPlugin = {
     const resources = host.consumeCapability<SnapshotResourcesCapabilityV1>('agentcanvas.snapshot-resources', '^1.0.0');
     host.registerElementType({
       name: 'erd',
-      schemaVersion: 1,
+      schemaVersion: 2,
+      schemaMigrations: [
+        {
+          fromVersion: 1,
+          toVersion: 2,
+          migrate: (data, style) => ({
+            data: structuredClone(data),
+            ...(style === null ? {} : { style: structuredClone(style) })
+          })
+        }
+      ],
       dataSchema: erdDataSchema,
       defaultFrame: { width: 960, height: 640 },
       browser: true,
@@ -56,21 +67,41 @@ const extension: AgentCanvasServerPlugin = {
     });
     host.registerElementType({
       name: 'mermaid',
-      schemaVersion: 1,
+      schemaVersion: 2,
+      schemaMigrations: [
+        {
+          fromVersion: 1,
+          toVersion: 2,
+          migrate: (data, style) => ({
+            data: structuredClone(data),
+            ...(style === null ? {} : { style: structuredClone(style) })
+          })
+        }
+      ],
       dataSchema: mermaidDataSchema,
       defaultFrame: { width: 720, height: 480 },
       browser: true,
       snapshot: 'supported',
       snapshotTimeoutMs: 25_000,
-      validate: (element) => validateMermaidSource(element.data.source as string),
+      validate: (element) => validateMermaidData(element.data),
       summarize: (element) => ({ title: String(element.data.title) || 'Mermaid diagram' }),
       async resolve(element, context): Promise<ElementResolution> {
+        let syntaxValid = false;
         try {
           const parsed = await validateMermaid(element.data.source as string, context.signal);
-          return { runtime: { syntaxValid: true, diagramType: parsed.diagramType } };
+          syntaxValid = true;
+          const presentation = (element.data as unknown as MermaidData).presentation;
+          if (presentation)
+            await validateMermaidRender(
+              element.data.source as string,
+              DEFAULT_CANVAS_THEME,
+              context.signal,
+              presentation
+            );
+          return { runtime: { syntaxValid: true, presentationValid: true, diagramType: parsed.diagramType } };
         } catch (error) {
           return {
-            runtime: { syntaxValid: false },
+            runtime: { syntaxValid, presentationValid: false },
             diagnostics: diagramIssues(error).map((issue) => ({
               ...issue,
               severity: 'error' as const,

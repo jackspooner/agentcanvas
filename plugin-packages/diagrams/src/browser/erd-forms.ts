@@ -1,4 +1,5 @@
 import type { Cardinality, ErdData, ErdEndpoint, ErdOperation, ErdRelationship } from '../contracts.js';
+import { appearanceFields } from './appearance-fields.js';
 
 export type ErdSelection =
   | { kind: 'entity'; entityId: string }
@@ -116,6 +117,14 @@ export function mountErdForm(
     control.checked = value;
     return field(label, control);
   }
+  function number(label: string, value?: number, minimum = -100000, maximum = 100000) {
+    const control = input(label, value === undefined ? '' : String(value));
+    control.type = 'number';
+    control.min = String(minimum);
+    control.max = String(maximum);
+    control.step = 'any';
+    return control;
+  }
 
   let operations: () => ErdOperation[];
   if (options.remove) {
@@ -146,6 +155,17 @@ export function mountErdForm(
     if (target.kind === 'entity' && !entity) throw new Error('Entity no longer exists.');
     const name = input('Entity name', entity?.name ?? '', true);
     const alias = input('Alias', entity?.alias ?? '');
+    const x = number('Box X', entity?.x ?? (target.kind === 'new-entity' ? target.x : 0));
+    const y = number('Box Y', entity?.y ?? (target.kind === 'new-entity' ? target.y : 0));
+    x.required = y.required = true;
+    const width = number('Box width (blank fits content)', entity?.width, 200, 4096);
+    const height = number('Box height (blank fits content)', entity?.height, 64, 8192);
+    const appearance = appearanceFields(fields, entity?.appearance);
+    const presentation = () => ({
+      ...(width.value ? { width: Number(width.value) } : {}),
+      ...(height.value ? { height: Number(height.value) } : {}),
+      ...(appearance() ? { appearance: appearance() } : {})
+    });
     if (entity) {
       const list = document.createElement('div');
       list.className = 'erd-attribute-list';
@@ -166,7 +186,9 @@ export function mountErdForm(
             entityId: entity.id,
             name: name.value,
             ...(alias.value ? { alias: alias.value } : {})
-          }
+          },
+          { op: 'move-entity', entityId: entity.id, x: Number(x.value), y: Number(y.value) },
+          { op: 'present-entity', entityId: entity.id, presentation: presentation() }
         ];
       if (target.kind !== 'new-entity') throw new Error('Entity no longer exists.');
       return [
@@ -176,8 +198,9 @@ export function mountErdForm(
             id: `entity_${crypto.randomUUID()}`,
             name: name.value,
             ...(alias.value ? { alias: alias.value } : {}),
-            x: target.x,
-            y: target.y,
+            x: Number(x.value),
+            y: Number(y.value),
+            ...presentation(),
             attributes: []
           }
         }
@@ -238,6 +261,14 @@ export function mountErdForm(
     if (!data.entities.length) throw new Error('Add an entity before creating a relationship.');
     const label = input('Relationship label', relationship?.label ?? '');
     const identifying = checkbox('Identifying relationship', relationship?.identifying ?? false);
+    const labelX = number('Label X (blank uses automatic position)', relationship?.labelPosition?.x);
+    const labelY = number('Label Y (blank uses automatic position)', relationship?.labelPosition?.y);
+    const bends = field(
+      'Connector bends (one x,y pair per line; blank routes automatically)',
+      document.createElement('textarea')
+    );
+    bends.value = relationship?.bends?.map((point) => `${point.x},${point.y}`).join('\n') ?? '';
+    const appearance = appearanceFields(fields, relationship?.appearance, false);
     function endpoint(side: 'Source' | 'Target', initial?: ErdEndpoint): () => ErdEndpoint {
       const entity = select(
         `${side} entity`,
@@ -286,8 +317,27 @@ export function mountErdForm(
         label: label.value,
         identifying: identifying.checked,
         source: source(),
-        target: end()
+        target: end(),
+        ...(appearance() ? { appearance: appearance() } : {}),
+        ...(labelX.value !== '' || labelY.value !== ''
+          ? { labelPosition: { x: Number(labelX.value), y: Number(labelY.value) } }
+          : {}),
+        ...(bends.value.trim()
+          ? {
+              bends: bends.value
+                .trim()
+                .split('\n')
+                .map((line) => {
+                  const pair = line.split(',');
+                  if (pair.length !== 2 || pair.some((value) => !value.trim() || !Number.isFinite(Number(value))))
+                    throw new Error('Each bend must be an x,y pair.');
+                  return { x: Number(pair[0]), y: Number(pair[1]) };
+                })
+            }
+          : {})
       };
+      if ((labelX.value === '') !== (labelY.value === ''))
+        throw new Error('Enter both label coordinates, or leave both blank.');
       return [{ op: relationship ? 'update-relationship' : 'add-relationship', relationship: draft }];
     };
   }

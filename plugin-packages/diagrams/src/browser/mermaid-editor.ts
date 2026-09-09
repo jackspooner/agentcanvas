@@ -1,5 +1,5 @@
 import type { CanvasThemeV1 } from '@agentcanvas/extension-sdk';
-import type { MermaidData } from '../contracts.js';
+import type { MermaidData, MermaidPresentation } from '../contracts.js';
 import { renderMermaid } from '../mermaid/engine.js';
 
 export function errorText(error: unknown): string {
@@ -25,12 +25,16 @@ export function mermaidPreview(root: HTMLElement, signal: AbortSignal) {
     },
     { once: true }
   );
-  return async (source: string, theme: Readonly<CanvasThemeV1>): Promise<boolean> => {
+  return async (
+    source: string,
+    theme: Readonly<CanvasThemeV1>,
+    presentation?: MermaidPresentation
+  ): Promise<boolean> => {
     const current = ++request;
     clear();
     root.textContent = 'Rendering diagram…';
     try {
-      const rendered = await renderMermaid(source, theme, signal);
+      const rendered = await renderMermaid(source, theme, signal, presentation);
       if (signal.aborted || current !== request) return false;
       clear();
       url = URL.createObjectURL(new Blob([rendered.svg], { type: 'image/svg+xml' }));
@@ -90,16 +94,22 @@ export function mountMermaidEditor(
   status.setAttribute('role', 'status');
   status.style.whiteSpace = 'pre-wrap';
   const save = document.createElement('button');
+  const resetLabel = document.createElement('label');
+  const reset = document.createElement('input');
+  reset.type = 'checkbox';
+  resetLabel.append(reset, 'Reset visual overrides (required when changing source)');
+  resetLabel.hidden = !saved.presentation;
   save.type = 'button';
   save.textContent = 'Save';
   root.dataset.agentcanvasInteractive = '';
-  root.append(titleLabel, columns, save, status);
+  root.append(titleLabel, columns, resetLabel, save, status);
   const render = mermaidPreview(preview, options.signal);
-  const hasUnsavedChanges = () => pending || title.value !== saved.title || source.value !== saved.source;
+  const hasUnsavedChanges = () =>
+    pending || reset.checked || title.value !== saved.title || source.value !== saved.source;
   const updateControls = () => {
     const state = options.getState();
     save.disabled = state.readOnly || pending || validSource !== source.value;
-    title.disabled = source.disabled = state.readOnly;
+    title.disabled = source.disabled = reset.disabled = state.readOnly || pending;
   };
   let timer: ReturnType<typeof setTimeout> | undefined;
   const updatePreview = async () => {
@@ -107,7 +117,7 @@ export function mountMermaidEditor(
       text = source.value;
     validSource = null;
     updateControls();
-    const okay = await render(text, options.getState().theme);
+    const okay = await render(text, options.getState().theme, reset.checked ? undefined : saved.presentation);
     if (own === generation && !options.signal.aborted) {
       validSource = okay ? text : null;
       updateControls();
@@ -120,18 +130,25 @@ export function mountMermaidEditor(
     clearTimeout(timer);
     timer = setTimeout(() => void updatePreview(), 300);
   };
+  reset.onchange = () => void updatePreview();
   save.onclick = async () => {
-    const data = { title: title.value, source: source.value };
+    const data: MermaidData = {
+      title: title.value,
+      source: source.value,
+      ...(!reset.checked && saved.presentation ? { presentation: saved.presentation } : {})
+    };
     pending = true;
     updateControls();
     status.textContent = 'Saving…';
     try {
-      await renderMermaid(data.source, options.getState().theme, options.signal);
+      await renderMermaid(data.source, options.getState().theme, options.signal, data.presentation);
       options.signal.throwIfAborted();
       await options.save(data, revision);
       confirmed = options.getState();
       saved = structuredClone(confirmed.data);
       revision = confirmed.revision;
+      reset.checked = false;
+      resetLabel.hidden = !saved.presentation;
       status.textContent = 'Saved.';
     } catch (error) {
       status.textContent = errorText(error);
@@ -161,6 +178,8 @@ export function mountMermaidEditor(
       revision = next.revision;
       title.value = saved.title;
       source.value = saved.source;
+      reset.checked = false;
+      resetLabel.hidden = !saved.presentation;
       status.textContent = '';
       void updatePreview();
     } else if (next.revision !== revision && !pending)

@@ -1,4 +1,29 @@
 export type Cardinality = 'zero-or-one' | 'one' | 'zero-or-many' | 'one-or-many';
+/** Omitted values inherit the canvas theme. Colors are hexadecimal; fonts are local family names. */
+export interface DiagramAppearance {
+  fill?: string;
+  headerFill?: string;
+  textColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderStyle?: 'solid' | 'dashed' | 'dotted';
+  fontFamily?: string;
+  fontSize?: number;
+}
+export interface DiagramPoint {
+  x: number;
+  y: number;
+}
+export interface BoxPresentation {
+  width?: number;
+  height?: number;
+  appearance?: DiagramAppearance;
+}
+export interface ConnectorPresentation {
+  bends?: DiagramPoint[];
+  labelPosition?: DiagramPoint;
+  appearance?: DiagramAppearance;
+}
 export interface ErdAttribute {
   id: string;
   name: string;
@@ -7,7 +32,7 @@ export interface ErdAttribute {
   nullable: boolean | null;
   comment?: string;
 }
-export interface ErdEntity {
+export interface ErdEntity extends BoxPresentation {
   id: string;
   name: string;
   alias?: string;
@@ -20,7 +45,7 @@ export interface ErdEndpoint {
   attributeId?: string;
   cardinality: Cardinality;
 }
-export interface ErdRelationship {
+export interface ErdRelationship extends ConnectorPresentation {
   id: string;
   source: ErdEndpoint;
   target: ErdEndpoint;
@@ -35,6 +60,24 @@ export interface ErdData {
 export interface MermaidData {
   title: string;
   source: string;
+  presentation?: MermaidPresentation;
+}
+/** Presentation keys belong to this exact source; source edits must explicitly reset the layer. */
+export interface MermaidPresentation {
+  source: string;
+  nodes: Array<BoxPresentation & { id: string; x?: number; y?: number }>;
+  edges: Array<ConnectorPresentation & { id: string }>;
+}
+export interface MermaidLayout {
+  nodes: Array<{ id: string; label: string; x: number; y: number; width: number; height: number }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label: string;
+    points: DiagramPoint[];
+    labelPosition: DiagramPoint;
+  }>;
 }
 export interface DiagramIssue {
   path: string;
@@ -46,6 +89,8 @@ export type ErdOperation =
   | { op: 'add-entity'; entity: ErdEntity }
   | { op: 'update-entity'; entityId: string; name: string; alias?: string }
   | { op: 'move-entity'; entityId: string; x: number; y: number }
+  | { op: 'present-entity'; entityId: string; presentation: BoxPresentation }
+  | { op: 'present-relationship'; relationshipId: string; presentation: ConnectorPresentation }
   | { op: 'delete-entity'; entityId: string }
   | { op: 'add-attribute'; entityId: string; attribute: ErdAttribute; index: number }
   | { op: 'update-attribute'; entityId: string; attribute: ErdAttribute }

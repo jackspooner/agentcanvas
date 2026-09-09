@@ -94,6 +94,17 @@ export function exportErdMermaid(data: ErdData): { source: string; warnings: Dia
     warnings.push(
       issue('mermaid.erd.layout', 'Native positions and stable IDs are not represented in Mermaid.', '/entities')
     );
+  if (
+    data.entities.some((entity) => entity.width !== undefined || entity.height !== undefined || entity.appearance) ||
+    data.relationships.some((edge) => edge.appearance || edge.bends || edge.labelPosition)
+  )
+    warnings.push(
+      issue(
+        'mermaid.erd.presentation',
+        'Box sizes, appearance overrides, manual connector bends and label positions are not represented in exported Mermaid source.',
+        '/entities'
+      )
+    );
   if (errors.length) throw new MermaidSourceError(errors);
   return { source: lines.join('\n'), warnings };
 }

@@ -12,7 +12,7 @@ export const diagramTools = [
 export default defineExtension({
   manifest: {
     id: 'agentcanvas.diagrams',
-    version: '0.1.0',
+    version: '0.2.0',
     displayName: 'Diagrams',
     description: 'Editable entity relationship diagrams and Mermaid diagrams.',
     license: 'MIT',
@@ -24,7 +24,7 @@ export default defineExtension({
   contributes: {
     elements: ['erd', 'mermaid'].map((name) => ({
       name,
-      schemaVersion: 1,
+      schemaVersion: 2,
       browser: true,
       snapshot: 'supported' as const
     })),
@@ -35,6 +35,7 @@ export default defineExtension({
       { name: 'create-erd', title: 'New entity relationship diagram' },
       { name: 'create-mermaid', title: 'New Mermaid diagram' },
       { name: 'edit', title: 'Edit diagram' },
+      { name: 'edit-visuals', title: 'Edit Mermaid appearance' },
       { name: 'export-mermaid', title: 'Export ERD as Mermaid' },
       { name: 'convert-mermaid-erd', title: 'Convert to editable ERD' },
       { name: 'apply-erd', title: 'Apply ERD edit' },

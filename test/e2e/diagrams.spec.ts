@@ -1,7 +1,7 @@
 import type { CanvasOperation, CanvasRecord } from '@agentcanvas/core';
 import type { CanvasElement } from '@agentcanvas/plugin-sdk';
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test';
-import type { ErdData } from '../../plugin-packages/diagrams/src/contracts.js';
+import type { ErdData, MermaidData } from '../../plugin-packages/diagrams/src/contracts.js';
 
 const erd: ErdData = {
   title: 'Library',
@@ -120,7 +120,7 @@ for (const frame of [
       {
         id: 'erd',
         type: 'agentcanvas.diagrams/erd',
-        schemaVersion: 1,
+        schemaVersion: 2,
         x: 0,
         y: 0,
         width: frame.width,
@@ -168,7 +168,7 @@ test('native forms, connection handles, cascade confirmation and transient expan
   const id = await seed(request, {
     id: 'erd',
     type: 'agentcanvas.diagrams/erd',
-    schemaVersion: 1,
+    schemaVersion: 2,
     x: 0,
     y: 0,
     width: 960,
@@ -242,7 +242,7 @@ test('Mermaid preview rejects invalid drafts, retains source on close and conver
   const id = await seed(request, {
     id: 'mermaid',
     type: 'agentcanvas.diagrams/mermaid',
-    schemaVersion: 1,
+    schemaVersion: 2,
     x: 0,
     y: 0,
     width: 720,
@@ -290,7 +290,7 @@ test('locked and shared diagrams retain Fit and expanded viewing while editing i
   const id = await seed(request, {
     id: 'erd',
     type: 'agentcanvas.diagrams/erd',
-    schemaVersion: 1,
+    schemaVersion: 2,
     x: 0,
     y: 0,
     width: 960,
@@ -313,4 +313,154 @@ test('locked and shared diagrams retain Fit and expanded viewing while editing i
   await expect(page.getByRole('button', { name: 'Fit', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Expand', exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Add relationship', exact: true })).toBeDisabled();
+});
+
+test('native box resize, appearance, connector bends and labels persist and undo', async ({ page, request }) => {
+  const value: ErdData = structuredClone(erd);
+  value.relationships.push({
+    id: 'writes',
+    source: { entityId: 'authors', cardinality: 'one' },
+    target: { entityId: 'books', cardinality: 'zero-or-many' },
+    label: 'writes',
+    identifying: false
+  });
+  const id = await seed(request, {
+    id: 'erd',
+    type: 'agentcanvas.diagrams/erd',
+    schemaVersion: 2,
+    x: 0,
+    y: 0,
+    width: 960,
+    height: 640,
+    data: value
+  });
+  await page.goto(`/canvases/${id}`);
+  const box = page.locator('[data-drag-entity="authors"]');
+  await box.click();
+  const resize = page.locator('[data-resize-entity="authors"]');
+  await expect(resize).toBeVisible();
+  const before = await read(request, id);
+  await dragEntity(page, resize, 45, 35);
+  await expect.poll(async () => (await currentErd(request, id)).entities[0].width).toBeCloseTo(325, 0);
+  expect((await read(request, id)).revision).toBe(before.revision + 1);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect.poll(async () => (await currentErd(request, id)).entities[0].width).toBeUndefined();
+  await box.dblclick();
+  await page.getByLabel('Box color', { exact: true }).fill('#334455');
+  await page.getByLabel('Font size', { exact: true }).fill('18');
+  await page.getByRole('combobox', { name: 'Border style', exact: true }).selectOption('dashed');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect.poll(async () => (await currentErd(request, id)).entities[0].appearance?.fill).toBe('#334455');
+  await page.getByRole('button', { name: 'Relationship writes', exact: true }).click();
+  const label = page.getByRole('button', { name: 'Move relationship label; arrow keys move', exact: true });
+  await label.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect.poll(async () => (await currentErd(request, id)).relationships[0].labelPosition?.y).toBeDefined();
+  const bend = page.getByRole('button', { name: 'Move bend 1; arrow keys move', exact: true });
+  await bend.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await currentErd(request, id)).relationships[0].bends?.length).toBeGreaterThan(0);
+  const saved = await currentErd(request, id);
+  await page.reload();
+  expect(await currentErd(request, id)).toEqual(saved);
+});
+
+test('Mermaid boxes resize and move, styles and routing save, undo and source reset remain explicit', async ({
+  page,
+  request
+}) => {
+  const source = 'flowchart LR\nA[First] -->|connects| B[Second]';
+  const id = await seed(request, {
+    id: 'mermaid',
+    type: 'agentcanvas.diagrams/mermaid',
+    schemaVersion: 2,
+    x: 0,
+    y: 0,
+    width: 960,
+    height: 640,
+    data: { title: 'Visual Mermaid', source }
+  });
+  const current = async () => (await read(request, id)).elements[0].data as unknown as MermaidData;
+  await page.goto(`/canvases/${id}`);
+  const box = page.locator('[data-visual-node="A"]');
+  await expect(box).toBeVisible();
+  const before = await read(request, id);
+  await dragEntity(page, box, 40, 20);
+  await expect.poll(async () => (await current()).presentation?.nodes[0].x).toBeCloseTo(48, 0);
+  expect((await read(request, id)).revision).toBe(before.revision + 1);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect.poll(async () => (await current()).presentation).toBeUndefined();
+  await box.click();
+  await expect(page.locator('[data-visual-resize="A"]')).toBeVisible();
+  await dragEntity(page, page.locator('[data-visual-resize="A"]'), 30, 20);
+  await expect.poll(async () => (await current()).presentation?.nodes[0].width).toBeGreaterThan(30);
+  await page.getByRole('button', { name: 'Edit selected', exact: true }).click();
+  await page.getByLabel('Box color', { exact: true }).fill('#aa3344');
+  await page.getByLabel('Font family', { exact: true }).fill('monospace');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect.poll(async () => (await current()).presentation?.nodes[0].appearance?.fill).toBe('#aa3344');
+  await page.getByRole('button', { name: 'Connector connects', exact: true }).click();
+  await page.getByRole('button', { name: 'Move connector label', exact: true }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect.poll(async () => (await current()).presentation?.edges[0]?.labelPosition).toBeDefined();
+  await page.getByRole('button', { name: 'Move bend 1', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await current()).presentation?.edges[0]?.bends?.length).toBeGreaterThan(0);
+  const saved = await current();
+  await page.reload();
+  await expect(box).toBeVisible();
+  expect(await current()).toEqual(saved);
+  await page.getByRole('button', { name: 'Expand', exact: true }).click();
+  const visual = page.getByRole('dialog', { name: 'Edit Visual Mermaid', exact: true });
+  await expect(visual.locator('[data-visual-node="A"]')).toBeVisible();
+  await visual.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit source', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit Visual Mermaid', exact: true });
+  await dialog.getByLabel('Mermaid source', { exact: true }).fill(`${source}\nB-->C`);
+  await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  await dialog.getByLabel('Reset visual overrides (required when changing source)', { exact: true }).check();
+  await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect.poll(async () => (await current()).source).toBe(`${source}\nB-->C`);
+  expect((await current()).presentation).toBeUndefined();
+});
+
+test('Mermaid drag retains its starting revision when a remote save arrives before movement', async ({
+  page,
+  request
+}) => {
+  const source = 'flowchart LR\nA[First] --> B[Second]';
+  const id = await seed(request, {
+    id: 'mermaid',
+    type: 'agentcanvas.diagrams/mermaid',
+    schemaVersion: 2,
+    x: 0,
+    y: 0,
+    width: 960,
+    height: 640,
+    data: { title: 'Original', source }
+  });
+  await page.goto(`/canvases/${id}`);
+  const box = page.locator('[data-visual-node="A"]');
+  await expect(box).toBeVisible();
+  const rect = await box.boundingBox();
+  if (!rect) throw new Error('Missing box');
+  await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  await page.mouse.down();
+  await batch(request, id, [
+    { op: 'replaceElementData', elementId: 'mermaid', data: { title: 'Remote edit', source } }
+  ]);
+  await expect(
+    page.getByText('The diagram changed. Your visual draft is preserved; discard it to load the current diagram.', {
+      exact: true
+    })
+  ).toBeVisible();
+  await page.mouse.move(rect.x + rect.width / 2 + 30, rect.y + rect.height / 2 + 20);
+  await page.mouse.up();
+  await expect(page.getByRole('button', { name: 'Discard visual draft', exact: true })).toBeEnabled();
+  await expect(page.locator('.erd-status')).toContainText(/revision|changed|conflict/i);
+  const saved = await read(request, id);
+  expect(saved.elements[0].data).toEqual({ title: 'Remote edit', source });
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
+  expect((await read(request, id)).revision).toBe(saved.revision);
 });

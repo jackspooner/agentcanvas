@@ -26,6 +26,10 @@ export function layoutErd(data: ErdData, direction: 'LR' | 'TB' = 'LR'): ErdData
     entity.x = node.x - node.width / 2;
     entity.y = node.y - node.height / 2;
   }
+  for (const relationship of result.relationships) {
+    delete relationship.bends;
+    delete relationship.labelPosition;
+  }
   assertErd(result);
   return result;
 }

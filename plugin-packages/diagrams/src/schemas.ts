@@ -1,5 +1,6 @@
 import type { JsonSchema } from '@agentcanvas/extension-sdk';
 import { erdDataSchema, erdOperationSchema } from './erd-schemas.js';
+import { mermaidPresentationSchema, pointSchema } from './presentation-schemas.js';
 export { erdDataSchema, erdOperationSchema };
 const id = { type: 'string', minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' };
 const title = { type: 'string', maxLength: 200 };
@@ -16,7 +17,11 @@ export const mermaidDataSchema: JsonSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['title', 'source'],
-  properties: { title, source: { type: 'string', minLength: 1, maxLength: 20_000 } }
+  properties: {
+    title,
+    source: { type: 'string', minLength: 1, maxLength: 20_000 },
+    presentation: mermaidPresentationSchema
+  }
 };
 const object = (properties: Record<string, unknown>, required: string[]): JsonSchema =>
   ({ type: 'object', additionalProperties: false, required, properties }) as JsonSchema;
@@ -50,7 +55,12 @@ export const toolInputs: Record<string, JsonSchema> = {
     'data'
   ]),
   'validate-mermaid': object(
-    { source: { type: 'string', maxLength: 20_000 }, purpose: { enum: ['render', 'convert-to-erd'] } },
+    {
+      source: { type: 'string', maxLength: 20_000 },
+      purpose: { enum: ['render', 'convert-to-erd', 'layout'] },
+      canvasId: id,
+      presentation: mermaidPresentationSchema
+    },
     ['source']
   ),
   'export-mermaid': object({ canvasId: id, elementId: id }, ['canvasId', 'elementId']),
@@ -76,7 +86,46 @@ export const mutationOutputSchema = object(
   ['ok', 'canvasId', 'elementId', 'revision', 'affectedIds', 'removedRelationshipIds', 'diagnostics']
 );
 export const validationOutputSchema = object(
-  { ok: { type: 'boolean' }, diagramType: { type: ['string', 'null'] }, issues, warnings: issues, data: erdDataSchema },
+  {
+    ok: { type: 'boolean' },
+    diagramType: { type: ['string', 'null'] },
+    issues,
+    warnings: issues,
+    data: erdDataSchema,
+    layout: object(
+      {
+        nodes: {
+          type: 'array',
+          items: object(
+            {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              x: { type: 'number' },
+              y: { type: 'number' },
+              width: { type: 'number' },
+              height: { type: 'number' }
+            },
+            ['id', 'label', 'x', 'y', 'width', 'height']
+          )
+        },
+        edges: {
+          type: 'array',
+          items: object(
+            {
+              id: { type: 'string' },
+              source: { type: 'string' },
+              target: { type: 'string' },
+              label: { type: 'string' },
+              points: { type: 'array', items: pointSchema },
+              labelPosition: pointSchema
+            },
+            ['id', 'source', 'target', 'label', 'points', 'labelPosition']
+          )
+        }
+      },
+      ['nodes', 'edges']
+    )
+  },
   ['ok', 'diagramType', 'issues', 'warnings']
 );
 export const exportOutputSchema = object({ ok: { const: true }, source: { type: 'string' }, warnings: issues }, [

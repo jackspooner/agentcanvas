@@ -30,24 +30,35 @@ export interface RelationshipGeometry {
 export function textWidth(value: string, fontSize = 12): number {
   return Math.ceil(value.length * fontSize * 0.7);
 }
+export function labelWidth(value: string, fontSize = 12): number {
+  return Math.min((320 * fontSize) / 12, textWidth(value, fontSize));
+}
 
 export function entityGeometry(entity: ErdEntity): EntityGeometry {
-  const headerHeight = entity.alias ? 56 : 36;
-  const rowHeight = 28;
-  const attributeNameWidth = Math.max(1, ...entity.attributes.map((attribute) => textWidth(attribute.name)));
-  const attributeTypeWidth = Math.max(1, ...entity.attributes.map((attribute) => textWidth(attribute.dataType)));
-  const width = Math.min(
-    640,
-    Math.max(
-      280,
-      24 +
-        Math.max(
-          textWidth(entity.name, 14),
-          textWidth(entity.alias ?? ''),
-          attributeNameWidth + attributeTypeWidth + 156
-        )
-    )
+  const fontSize = entity.appearance?.fontSize ?? 12;
+  const headerHeight = (entity.alias ? 56 : 36) * Math.max(1, fontSize / 12);
+  const minimumRowHeight = Math.max(28, fontSize + 16);
+  const height = Math.max(entity.height ?? 0, headerHeight + Math.max(1, entity.attributes.length) * minimumRowHeight);
+  const rowHeight = (height - headerHeight) / Math.max(1, entity.attributes.length);
+  const attributeNameWidth = Math.max(1, ...entity.attributes.map((attribute) => textWidth(attribute.name, fontSize)));
+  const attributeTypeWidth = Math.max(
+    1,
+    ...entity.attributes.map((attribute) => textWidth(attribute.dataType, fontSize))
   );
+  const width =
+    entity.width ??
+    Math.min(
+      640,
+      Math.max(
+        280,
+        24 +
+          Math.max(
+            textWidth(entity.name, 14),
+            textWidth(entity.alias ?? ''),
+            attributeNameWidth + attributeTypeWidth + 156
+          )
+      )
+    );
   const nameWidth = ((width - 156) * attributeNameWidth) / (attributeNameWidth + attributeTypeWidth);
   return {
     id: entity.id,
@@ -56,7 +67,7 @@ export function entityGeometry(entity: ErdEntity): EntityGeometry {
     width,
     nameWidth,
     typeWidth: width - 156 - nameWidth,
-    height: headerHeight + Math.max(1, entity.attributes.length) * rowHeight,
+    height,
     headerHeight,
     rowHeight,
     rows: entity.attributes.map((attribute, index) => ({
@@ -136,13 +147,14 @@ export function diagramGeometry(data: ErdData): {
         { x: target.x + target.width, y: ty }
       ];
     }
+    if (relationship.bends?.length) points = [points[0], ...relationship.bends, points[points.length - 1]];
     points = points.filter(
       (point, index) => index === 0 || point.x !== points[index - 1].x || point.y !== points[index - 1].y
     );
     return {
       id: relationship.id,
       points,
-      label: midpoint(points),
+      label: relationship.labelPosition ?? midpoint(points),
       sourceMarkers: cardinalityMarkers(points[0], points[1], relationship.source.cardinality),
       targetMarkers: cardinalityMarkers(
         points[points.length - 1],
@@ -157,10 +169,10 @@ export function diagramGeometry(data: ErdData): {
     const label = data.relationships[index].label;
     if (label)
       extents.push({
-        x: relationship.label.x - Math.min(320, label.length * 7) / 2 - 6,
-        y: relationship.label.y - 12,
-        width: Math.min(320, label.length * 7) + 12,
-        height: 24
+        x: relationship.label.x - labelWidth(label, data.relationships[index].appearance?.fontSize ?? 12) / 2 - 6,
+        y: relationship.label.y - (data.relationships[index].appearance?.fontSize ?? 12),
+        width: labelWidth(label, data.relationships[index].appearance?.fontSize ?? 12) + 12,
+        height: (data.relationships[index].appearance?.fontSize ?? 12) * 2
       });
   }
   if (!extents.length) return { entities, relationships, bounds: { x: 0, y: 0, width: 320, height: 96 } };
@@ -199,7 +211,9 @@ function midpoint(points: Point[]): Point {
 }
 
 function cardinalityMarkers(at: Point, toward: Point, cardinality: Cardinality): SnapshotNode[] {
+  if (!toward) return [];
   const length = Math.hypot(toward.x - at.x, toward.y - at.y);
+  if (!length) return [];
   const dx = (toward.x - at.x) / length;
   const dy = (toward.y - at.y) / length;
   const point = (along: number, across: number): Point => ({

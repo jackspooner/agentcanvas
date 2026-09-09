@@ -2,6 +2,21 @@ import type { SnapshotNode } from '@agentcanvas/extension-sdk';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
+/** Replacing SVG children must not eject keyboard users from the editor. */
+export function preserveSvgFocus(svg: SVGSVGElement): () => void {
+  const root = svg.getRootNode();
+  const focused = root instanceof ShadowRoot ? root.activeElement : document.activeElement;
+  if (!(focused instanceof SVGElement) || !svg.contains(focused)) return () => {};
+  const attributes = [...focused.attributes].filter((attribute) => attribute.name.startsWith('data-'));
+  return () => {
+    const next = [...svg.querySelectorAll<SVGElement>('[tabindex]')].find(
+      (element) =>
+        attributes.length && attributes.every((attribute) => element.getAttribute(attribute.name) === attribute.value)
+    );
+    (next ?? svg).focus();
+  };
+}
+
 export function svgElement<K extends keyof SVGElementTagNameMap>(
   tag: K,
   attributes: Record<string, string | number> = {}

@@ -1,11 +1,13 @@
 import { CanvasError } from '@agentcanvas/core/errors';
 import type { CanvasElement, JsonObject, PluginInvocationContext, ServerPluginHost } from '@agentcanvas/extension-sdk';
+import { DEFAULT_CANVAS_THEME, type CanvasThemeV1 } from '@agentcanvas/extension-sdk';
 import type { DiagramIssue, ErdData, ErdOperation, MermaidData } from './contracts.js';
 import { applyErdOperations } from './erd/domain.js';
 import { layoutErd } from './erd/layout.js';
 import { assertErd } from './erd/validation.js';
 import { exportErdMermaid } from './mermaid/export.js';
-import { convertMermaidErd, validateMermaid } from './mermaid/headless.js';
+import { convertMermaidErd, validateMermaid, inspectMermaidLayout, validateMermaidRender } from './mermaid/headless.js';
+import { validateMermaidData } from './mermaid/policy.js';
 import { exportOutputSchema, mutationOutputSchema, toolInputs, validationOutputSchema } from './schemas.js';
 
 export function diagramIssues(error: unknown): DiagramIssue[] {
@@ -68,7 +70,7 @@ async function create(
   const element: CanvasElement = {
     id,
     type: `agentcanvas.diagrams/${type}`,
-    schemaVersion: 1,
+    schemaVersion: 2,
     x: input.x as number,
     y: input.y as number,
     width: (input.width as number | undefined) ?? (type === 'erd' ? 960 : 720),
@@ -105,6 +107,20 @@ async function validate(source: string, signal: AbortSignal): Promise<{ diagramT
     invalid(diagramIssues(error));
   }
 }
+async function validateData(data: MermaidData, canvas: JsonObject, signal: AbortSignal) {
+  const issues = validateMermaidData(data);
+  if (issues.length) invalid(issues);
+  try {
+    return await validateMermaidRender(
+      data.source,
+      (canvas.theme as unknown as CanvasThemeV1 | undefined) ?? DEFAULT_CANVAS_THEME,
+      signal,
+      data.presentation
+    );
+  } catch (error) {
+    invalid(diagramIssues(error));
+  }
+}
 
 export function registerDiagramTools(host: ServerPluginHost): void {
   const descriptions: Record<string, string> = {
@@ -117,7 +133,7 @@ export function registerDiagramTools(host: ServerPluginHost): void {
     'update-mermaid':
       'Validate exact replacement Mermaid source, then save at expectedRevision. Syntax errors preserve the existing element. Refresh canvas, resolution, and snapshots after success.',
     'validate-mermaid':
-      'Validate supported Mermaid syntax without changing any document. Optionally analyze ERD conversion, returning conversion warnings and mapped data.',
+      'Validate Mermaid without writes. Use purpose layout to inspect stable box and connector IDs and coordinates for this exact source; optional canvasId resolves its theme. Pass presentation to inspect overrides. Use returned IDs in update-mermaid data.presentation. Source changes require explicitly omitting/resetting presentation. Optionally analyze ERD conversion.',
     'export-mermaid':
       'Export a native ERD to validated Mermaid source and explicit losses. Does not change the diagram.',
     'convert-mermaid-erd':
@@ -144,6 +160,16 @@ export function registerDiagramTools(host: ServerPluginHost): void {
       async invoke(input, context) {
         if (name === 'validate-mermaid') {
           try {
+            if (input.purpose === 'layout') {
+              const canvas = input.canvasId ? await context.canvas.get(input.canvasId as string) : undefined;
+              const inspected = await inspectMermaidLayout(
+                input.source as string,
+                (canvas?.theme as unknown as CanvasThemeV1 | undefined) ?? DEFAULT_CANVAS_THEME,
+                context.signal,
+                input.presentation as unknown as MermaidData['presentation']
+              );
+              return json({ ok: true, ...inspected, issues: [], warnings: [] });
+            }
             const parsed = await validateMermaid(input.source as string, context.signal);
             const converted =
               input.purpose === 'convert-to-erd'
@@ -172,7 +198,7 @@ export function registerDiagramTools(host: ServerPluginHost): void {
         }
         if (name === 'create-mermaid') {
           const data = input.data as unknown as MermaidData;
-          await validate(data.source, context.signal);
+          await validateData(data, await context.canvas.get(input.canvasId as string), context.signal);
           return create(input, context, 'mermaid', data);
         }
         const canvasId = input.canvasId as string;
@@ -201,6 +227,12 @@ export function registerDiagramTools(host: ServerPluginHost): void {
             invalid(diagramIssues(error));
           }
           const acknowledged = new Set(input.acknowledgeWarnings as string[] | undefined);
+          if (element.data.presentation)
+            converted.warnings.push({
+              path: '/presentation',
+              code: 'mermaid.erd.presentation',
+              message: 'Saved Mermaid appearance and manual geometry are omitted from the independent native copy.'
+            });
           const missing = converted.warnings.filter((issue) => !acknowledged.has(issue.code));
           if (missing.length)
             invalid(
@@ -217,7 +249,7 @@ export function registerDiagramTools(host: ServerPluginHost): void {
             ? applyErdOperations(element.data as unknown as ErdData, input.operations as unknown as ErdOperation[])
             : null;
         const data = changed?.data ?? (input.data as unknown as MermaidData);
-        if (name === 'update-mermaid') await validate((data as MermaidData).source, context.signal);
+        if (name === 'update-mermaid') await validateData(data as MermaidData, canvas, context.signal);
         context.signal.throwIfAborted();
         const result = await context.canvas.replaceElementData(
           canvasId,

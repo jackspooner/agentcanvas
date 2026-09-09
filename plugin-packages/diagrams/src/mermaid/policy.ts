@@ -1,10 +1,54 @@
-import type { DiagramIssue } from '../contracts.js';
+import type { DiagramIssue, MermaidData } from '../contracts.js';
+import { validMermaid } from '../schema-validators.js';
 
 export class MermaidSourceError extends Error {
   constructor(public readonly diagnostics: DiagramIssue[]) {
     super(diagnostics.map((issue) => issue.message).join('; '));
     this.name = 'MermaidSourceError';
   }
+}
+export function validateMermaidData(value: unknown): DiagramIssue[] {
+  if (!validMermaid(value))
+    return [
+      {
+        path: '/data',
+        code: 'mermaid.data.shape',
+        message:
+          'Invalid Mermaid data or presentation. Check bounded coordinates, sizes, colors, fonts and allowed fields.'
+      }
+    ];
+  const data = value as MermaidData;
+  const issues = validateMermaidSource(data.source);
+  if (data.presentation) {
+    if (data.presentation.source !== data.source)
+      issues.push({
+        path: '/presentation/source',
+        code: 'mermaid.presentation.source',
+        message: 'The Mermaid source changed. Explicitly reset visual overrides before saving new source.'
+      });
+    for (const collection of ['nodes', 'edges'] as const) {
+      const ids = data.presentation[collection].map((item) => item.id);
+      if (new Set(ids).size !== ids.length)
+        issues.push({
+          path: `/presentation/${collection}`,
+          code: 'mermaid.presentation.duplicate',
+          message: 'Presentation IDs must be unique.'
+        });
+      if (data.presentation[collection].some((item) => item.appearance?.headerFill !== undefined))
+        issues.push({
+          path: `/presentation/${collection}`,
+          code: 'mermaid.presentation.header',
+          message: 'Mermaid boxes use fill; headerFill is only supported by native ERDs.'
+        });
+    }
+    if (/^\s*sequenceDiagram\b/m.test(data.source) && data.presentation.nodes.some((node) => node.y !== undefined))
+      issues.push({
+        path: '/presentation/nodes',
+        code: 'mermaid.presentation.sequence-order',
+        message: 'Sequence participants move horizontally; omit Y overrides.'
+      });
+  }
+  return issues;
 }
 
 export function validateMermaidSource(source: string): DiagramIssue[] {

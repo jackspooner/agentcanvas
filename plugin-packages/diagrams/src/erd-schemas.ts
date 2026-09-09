@@ -1,4 +1,10 @@
 import type { JsonSchema } from '@agentcanvas/extension-sdk';
+import {
+  boxProperties,
+  connectorProperties,
+  boxPresentationSchema,
+  connectorPresentationSchema
+} from './presentation-schemas.js';
 
 export const ERD_LIMITS = Object.freeze({
   entities: 100,
@@ -34,6 +40,7 @@ const entity = object(
     alias: { type: 'string', maxLength: 200 },
     x: coordinate,
     y: coordinate,
+    ...boxProperties,
     attributes: { type: 'array', maxItems: ERD_LIMITS.attributesPerEntity, items: attribute }
   },
   ['id', 'name', 'x', 'y', 'attributes']
@@ -42,13 +49,17 @@ const endpoint = object(
   { entityId: id, attributeId: id, cardinality: { enum: ['zero-or-one', 'one', 'zero-or-many', 'one-or-many'] } },
   ['entityId', 'cardinality']
 );
-const relationship = object({
-  id,
-  source: endpoint,
-  target: endpoint,
-  label: { type: 'string', maxLength: 500 },
-  identifying: { type: 'boolean' }
-});
+const relationship = object(
+  {
+    id,
+    source: endpoint,
+    target: endpoint,
+    label: { type: 'string', maxLength: 500 },
+    identifying: { type: 'boolean' },
+    ...connectorProperties
+  },
+  ['id', 'source', 'target', 'label', 'identifying']
+);
 
 export const erdDataSchema: JsonSchema = object({
   title,
@@ -65,6 +76,8 @@ export const erdOperationSchema: JsonSchema = {
     operation('add-entity', { entity }),
     operation('update-entity', { entityId: id, name, alias: { type: 'string', maxLength: 200 } }, ['entityId', 'name']),
     operation('move-entity', { entityId: id, x: coordinate, y: coordinate }),
+    operation('present-entity', { entityId: id, presentation: boxPresentationSchema }),
+    operation('present-relationship', { relationshipId: id, presentation: connectorPresentationSchema }),
     operation('delete-entity', { entityId: id }),
     operation('add-attribute', {
       entityId: id,

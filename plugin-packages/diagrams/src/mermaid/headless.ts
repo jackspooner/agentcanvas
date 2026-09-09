@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { CanvasThemeV1 } from '@agentcanvas/extension-sdk';
 import { chromium } from 'playwright';
-import type { DiagramIssue, ErdData } from '../contracts.js';
+import type { DiagramIssue, ErdData, MermaidLayout, MermaidPresentation } from '../contracts.js';
 import { MermaidSourceError, validateMermaidSource } from './policy.js';
 
 export interface MermaidPng {
@@ -10,16 +10,26 @@ export interface MermaidPng {
   height: number;
   diagnostics: DiagramIssue[];
 }
-type Result = { diagramType: string } | { data: ErdData; warnings: DiagramIssue[] } | MermaidPng;
+type Result =
+  | { diagramType: string; layout?: MermaidLayout }
+  | { data: ErdData; warnings: DiagramIssue[] }
+  | MermaidPng;
 type Request =
   | { operation: 'parse'; source: string }
   | { operation: 'convert'; source: string }
+  | {
+      operation: 'layout' | 'validate-render';
+      source: string;
+      theme: Readonly<CanvasThemeV1>;
+      presentation?: MermaidPresentation;
+    }
   | {
       operation: 'png';
       source: string;
       theme: Readonly<CanvasThemeV1>;
       width: number;
       height: number;
+      presentation?: MermaidPresentation;
     };
 type Job = {
   key: string;
@@ -218,7 +228,17 @@ async function executeInChromium(input: Request, signal: AbortSignal, deadline: 
       try {
         if (request.operation === 'parse') return { value: await engine.parseMermaidSource(request.source) };
         if (request.operation === 'convert') return { value: await engine.extractErd(request.source) };
-        const rendered = await engine.renderMermaid(request.source, request.theme);
+        const rendered = await engine.renderMermaid(
+          request.source,
+          request.theme,
+          undefined,
+          request.presentation,
+          request.operation === 'layout'
+        );
+        if (request.operation !== 'png')
+          return {
+            value: { diagramType: rendered.diagramType, ...(rendered.layout ? { layout: rendered.layout } : {}) }
+          };
         const requestedScale = Math.min(request.width / rendered.width, request.height / rendered.height);
         const scale = Math.min(
           requestedScale,
@@ -295,9 +315,26 @@ export function renderMermaidPng(
   theme: Readonly<CanvasThemeV1>,
   width: number,
   height: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  presentation?: MermaidPresentation
 ): Promise<MermaidPng> {
   if (![width, height].every((value) => Number.isFinite(value) && value > 0))
     return Promise.reject(error('mermaid.render.dimensions', 'Snapshot dimensions must be positive finite numbers.'));
-  return request({ operation: 'png', source, theme, width, height }, signal);
+  return request({ operation: 'png', source, theme, width, height, ...(presentation ? { presentation } : {}) }, signal);
+}
+export function inspectMermaidLayout(
+  source: string,
+  theme: Readonly<CanvasThemeV1>,
+  signal?: AbortSignal,
+  presentation?: MermaidPresentation
+): Promise<{ diagramType: string; layout: MermaidLayout }> {
+  return request({ operation: 'layout', source, theme, ...(presentation ? { presentation } : {}) }, signal);
+}
+export function validateMermaidRender(
+  source: string,
+  theme: Readonly<CanvasThemeV1>,
+  signal?: AbortSignal,
+  presentation?: MermaidPresentation
+): Promise<{ diagramType: string }> {
+  return request({ operation: 'validate-render', source, theme, ...(presentation ? { presentation } : {}) }, signal);
 }
