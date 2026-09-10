@@ -11,10 +11,11 @@ export interface MigrationCliHooks {
   apply?(input: { databasePath: string; backupDir?: string; pluginsPath?: string }): unknown | Promise<unknown>;
   verify?(input: { databasePath: string; pluginsPath?: string }): unknown | Promise<unknown>;
   restore?(input: { databasePath: string; backupPath: string }): unknown | Promise<unknown>;
+  repairCreatedBy?(input: { databasePath: string; backupDir: string }): unknown | Promise<unknown>;
 }
 
 interface ParsedArguments {
-  command: 'inspect' | 'apply' | 'verify' | 'restore';
+  command: 'inspect' | 'apply' | 'verify' | 'restore' | 'repair-created-by';
   databasePath: string;
   pluginsPath?: string;
   backupDir?: string;
@@ -26,10 +27,14 @@ const USAGE = `Usage:
   agentcanvas migrate inspect --database <path> [--json]
   agentcanvas migrate apply --database <path> [--backup-dir <path>] [--plugins <path>]
   agentcanvas migrate verify --database <path> [--plugins <path>]
+  agentcanvas migrate repair-created-by --database <path> --backup-dir <path>
   agentcanvas migrate restore --database <path> --backup <path>`;
 
 function parseArguments(args: string[]): ParsedArguments {
-  if (args[0] !== 'migrate' || !['inspect', 'apply', 'verify', 'restore'].includes(args[1] ?? '')) {
+  if (
+    args[0] !== 'migrate' ||
+    !['inspect', 'apply', 'verify', 'restore', 'repair-created-by'].includes(args[1] ?? '')
+  ) {
     throw new Error(USAGE);
   }
   const command = args[1] as ParsedArguments['command'];
@@ -51,6 +56,8 @@ function parseArguments(args: string[]): ParsedArguments {
   const databasePath = values.get('--database');
   if (!databasePath) throw new Error(`--database is required\n${USAGE}`);
   if (command === 'restore' && !values.get('--backup')) throw new Error(`--backup is required for restore\n${USAGE}`);
+  if (command === 'repair-created-by' && !values.get('--backup-dir'))
+    throw new Error(`--backup-dir is required for repair-created-by\n${USAGE}`);
   return {
     command,
     databasePath,
@@ -103,9 +110,15 @@ export async function runMigrationCli(
         databasePath: parsed.databasePath,
         ...(parsed.pluginsPath ? { pluginsPath: parsed.pluginsPath } : {})
       });
-    } else {
+    } else if (parsed.command === 'restore') {
       if (!hooks.restore) throw new Error('migration restore integration is not available in this build');
       result = await hooks.restore({ databasePath: parsed.databasePath, backupPath: parsed.backupPath as string });
+    } else {
+      if (!hooks.repairCreatedBy) throw new Error('creator repair integration is not available in this build');
+      result = await hooks.repairCreatedBy({
+        databasePath: parsed.databasePath,
+        backupDir: parsed.backupDir as string
+      });
     }
     if (parsed.command === 'inspect' && !parsed.json) io.stdout(renderInspection(result as MigrationInspectionReport));
     else io.stdout(JSON.stringify(result, null, 2));

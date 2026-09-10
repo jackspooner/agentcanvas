@@ -92,7 +92,11 @@ describe('Media Gallery extension', () => {
         }
       } as unknown as PluginInvocationContext
     );
-    expect(result).toMatchObject({ ok: true, canvasId: 'canvas' });
+    expect(result).toMatchObject({
+      canvasId: 'canvas',
+      revision: 2,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
     const element = upsertElementReceipt.mock.calls[0][1] as CanvasElement;
     expect(element).toMatchObject({
       type: 'agentcanvas.gallery/gallery',

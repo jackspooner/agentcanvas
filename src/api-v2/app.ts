@@ -101,7 +101,12 @@ export function createV2App(runtime: V2Runtime): Hono {
         maxTtlSeconds: EMBED_SESSION_LIMITS.maxTtlSeconds,
         storage: 'process-memory'
       },
-      mcp: { endpoint: `${config.publicBaseUrl}/mcp`, transport: 'streamable-http' },
+      mcp: {
+        endpoint: `${config.publicBaseUrl}/mcp`,
+        fullEndpoint: `${config.publicBaseUrl}/mcp/full`,
+        defaultProfile: 'lean',
+        transport: 'streamable-http'
+      },
       host: config.host,
       port: config.port
     });

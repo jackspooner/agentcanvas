@@ -68,12 +68,10 @@ export const placeImageInputSchema = {
 export const mutationOutputSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['ok', 'canvasId', 'elementId', 'result'],
+  required: ['canvasId', 'elementId', 'revision', 'inspectionSummary'],
   properties: {
-    ok: { const: true },
-    canvasId: { type: 'string' },
     elementId: { type: 'string' },
-    result: CANVAS_MUTATION_RECEIPT_SCHEMA
+    ...(CANVAS_MUTATION_RECEIPT_SCHEMA.properties as JsonObject)
   }
 } as const;
 

@@ -5,7 +5,7 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
   schemaVersion: 1,
   workflow: [
     'Read this guidance, then call canvas_list_plugins before relying on optional element or media capabilities.',
-    'Inspect an existing target with canvas_get before editing it.',
+    'Inspect an existing target with canvas_list_elements and canvas_get_element. Use canvas_get only when the complete persisted document is genuinely needed.',
     'canvas_create returns a compact receipt and the direct browser URL. Give that URL to the user when appropriate; use canvas_get_url to recover it later. A direct URL does not create a public share link or bypass the host access controls.',
     'Plan element frames before composing. Mutation receipts contain only the resulting revision and diagnostic severity counts. Call canvas_inspect when any count is nonzero and repair unintended warnings immediately. Use canvas_get after a write only when the full persisted document is genuinely needed; finish with canvas_inspect and no later mutation.',
     'Use rendered browser evidence for appearance and remote-image claims when browser access exists.'
@@ -22,7 +22,7 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
   ],
   truth: [
     'A successful mutation proves persisted data only; it does not prove readability or that a remote image loaded.',
-    'canvas_list_plugins is authoritative for active runtime capabilities. Repository rules are guidance, not runtime observations.',
+    'canvas_list_plugins is authoritative for active runtime capabilities. Use canvas_get_extension_tool and its indicated dispatcher when a tool is not directly published. Repository rules are guidance, not runtime observations.',
     'Do not claim every fact was runtime-verified when some claims came from documentation or source files.',
     'Treat words such as Verified, Confirmed, and Runtime checked as evidence claims. During an audit, keep them only when the current session can reproduce the evidence; otherwise relabel or remove them. Text already written on a canvas is not evidence for itself.',
     'When elaborating a brief, visibly label each wholly generated section in its heading or caption as Proposed or Assumption, especially tasks, budget allocations, timelines, and recommendations; do not present them as supplied facts.',
@@ -32,4 +32,4 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
 });
 
 export const AGENTCANVAS_MCP_INSTRUCTIONS =
-  'Before creating or evaluating a canvas, use canvas_get_guidance. canvas_create returns a compact receipt and direct browser URL; canvas_get_url recovers the URL later, and neither creates a share link. Discover active capabilities with canvas_list_plugins, set explicit non-overlapping frames, inspect when mutation counts are nonzero, and finish with canvas_inspect. Use canvas_get only when the full persisted document is needed. Never treat persisted state as proof of rendered appearance or remote-image loading.';
+  'Before creating or evaluating a canvas, use canvas_get_guidance. canvas_create returns a compact receipt and direct browser URL; canvas_get_url recovers the URL later, and neither creates a share link. Discover active capabilities with canvas_list_plugins and canvas_get_extension_tool, inspect existing state with bounded element reads, set explicit non-overlapping frames, inspect when mutation counts are nonzero, and finish with canvas_inspect. Use canvas_get only when the full persisted document is needed. Never treat persisted state as proof of rendered appearance or remote-image loading.';

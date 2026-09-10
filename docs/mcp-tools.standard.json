@@ -194,62 +194,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -257,99 +240,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -641,62 +531,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -704,99 +577,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -1088,62 +868,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -1151,99 +914,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -1460,62 +1130,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -1523,99 +1176,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -1823,62 +1383,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -1886,99 +1429,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -2196,62 +1646,45 @@
           "additionalProperties": false,
           "properties": {
             "canvasId": {
+              "minLength": 1,
               "type": "string"
             },
             "elementId": {
               "type": "string"
             },
-            "ok": {
-              "const": true
-            },
-            "result": {
+            "inspectionSummary": {
               "additionalProperties": false,
               "properties": {
-                "canvasId": {
-                  "minLength": 1,
-                  "type": "string"
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "inspectionSummary": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "errorCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "infoCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "warningCount": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "errorCount",
-                    "warningCount",
-                    "infoCount"
-                  ],
-                  "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "revision": {
-                  "minimum": 1,
+                "warningCount": {
+                  "minimum": 0,
                   "type": "integer"
                 }
               },
               "required": [
-                "canvasId",
-                "revision",
-                "inspectionSummary"
+                "errorCount",
+                "warningCount",
+                "infoCount"
               ],
               "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
             }
           },
           "required": [
-            "ok",
             "canvasId",
             "elementId",
-            "result"
+            "revision",
+            "inspectionSummary"
           ],
           "type": "object"
         },
@@ -2259,99 +1692,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -2448,99 +1788,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -2637,99 +1884,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -2970,99 +2124,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -3164,99 +2225,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -3722,99 +2690,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -3827,6 +2702,234 @@
       "type": "object"
     },
     "title": "Get canvas"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Get one complete persisted element plus its canvas ID and revision.",
+    "errorCodes": [
+      "database_version_invalid",
+      "internal_error",
+      "not_found",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "canvasId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "elementId": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "canvasId",
+        "elementId"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_get_element",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "element": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "data": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "height": {
+                  "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "locked": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "metadata": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "opacity": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rotation": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "schemaVersion": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "style": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": {
+                  "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                  "type": "string"
+                },
+                "width": {
+                  "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "x": {
+                  "description": "Left edge in canvas world coordinates.",
+                  "type": "number"
+                },
+                "y": {
+                  "description": "Top edge in canvas world coordinates.",
+                  "type": "number"
+                },
+                "zIndex": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "schemaVersion",
+                "x",
+                "y",
+                "data"
+              ],
+              "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "canvasId",
+            "revision",
+            "element"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Get canvas element"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Get the exact registry-owned descriptor, schemas, annotations, errors, and dispatcher for one active extension tool.",
+    "errorCodes": [
+      "database_version_invalid",
+      "internal_error",
+      "not_found",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "pluginId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "toolName": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "pluginId",
+        "toolName"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_get_extension_tool",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "not": {
+            "properties": {
+              "problem": {}
+            },
+            "required": [
+              "problem"
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Get extension tool descriptor"
   },
   {
     "annotations": {
@@ -3916,99 +3019,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -4262,99 +3272,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -4422,99 +3339,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -4549,6 +3373,38 @@
         "canvasId": {
           "minLength": 1,
           "type": "string"
+        },
+        "code": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "cursor": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "severity": {
+          "items": {
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "maxItems": 3,
+          "type": "array",
+          "uniqueItems": true
         }
       },
       "required": [
@@ -4603,7 +3459,13 @@
                 ],
                 "type": "object"
               },
+              "maxItems": 100,
               "type": "array"
+            },
+            "nextCursor": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
             },
             "revision": {
               "minimum": 1,
@@ -4645,99 +3507,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -4788,186 +3557,16 @@
               "items": {
                 "additionalProperties": false,
                 "properties": {
-                  "background": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": true,
-                        "type": "object"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "bounds": {
-                    "oneOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "mode": {
-                            "const": "unlimited"
-                          }
-                        },
-                        "required": [
-                          "mode"
-                        ],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "height": {
-                            "exclusiveMinimum": 0,
-                            "type": "number"
-                          },
-                          "mode": {
-                            "const": "fixed"
-                          },
-                          "width": {
-                            "exclusiveMinimum": 0,
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "mode",
-                          "width",
-                          "height"
-                        ],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "conversationId": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "createdAt": {
-                    "type": "string"
-                  },
-                  "createdBy": {
-                    "enum": [
-                      "agent",
-                      "user",
-                      "system"
-                    ],
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
                   "documentVersion": {
                     "const": 2
                   },
-                  "elements": {
-                    "items": {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "additionalProperties": false,
-                      "properties": {
-                        "data": {
-                          "additionalProperties": true,
-                          "type": "object"
-                        },
-                        "height": {
-                          "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
-                          "type": [
-                            "number",
-                            "null"
-                          ]
-                        },
-                        "id": {
-                          "minLength": 1,
-                          "type": "string"
-                        },
-                        "locked": {
-                          "type": [
-                            "boolean",
-                            "null"
-                          ]
-                        },
-                        "metadata": {
-                          "additionalProperties": true,
-                          "type": "object"
-                        },
-                        "opacity": {
-                          "type": [
-                            "number",
-                            "null"
-                          ]
-                        },
-                        "rotation": {
-                          "type": [
-                            "number",
-                            "null"
-                          ]
-                        },
-                        "schemaVersion": {
-                          "minimum": 1,
-                          "type": "integer"
-                        },
-                        "style": {
-                          "oneOf": [
-                            {
-                              "additionalProperties": true,
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "type": {
-                          "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
-                          "type": "string"
-                        },
-                        "width": {
-                          "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
-                          "type": [
-                            "number",
-                            "null"
-                          ]
-                        },
-                        "x": {
-                          "description": "Left edge in canvas world coordinates.",
-                          "type": "number"
-                        },
-                        "y": {
-                          "description": "Top edge in canvas world coordinates.",
-                          "type": "number"
-                        },
-                        "zIndex": {
-                          "type": [
-                            "number",
-                            "null"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "type",
-                        "schemaVersion",
-                        "x",
-                        "y",
-                        "data"
-                      ],
-                      "type": "object"
-                    },
-                    "type": "array"
-                  },
-                  "height": {
-                    "type": "number"
+                  "elementCount": {
+                    "minimum": 0,
+                    "type": "integer"
                   },
                   "id": {
                     "minLength": 1,
                     "type": "string"
-                  },
-                  "metadata": {
-                    "additionalProperties": true,
-                    "type": "object"
                   },
                   "project": {
                     "type": [
@@ -4979,162 +3578,21 @@
                     "minimum": 1,
                     "type": "integer"
                   },
-                  "theme": {
-                    "oneOf": [
-                      {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "additionalProperties": false,
-                        "properties": {
-                          "colors": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "accent": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "accentText": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "border": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "canvas": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "highlight": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "highlightText": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "surface": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "surfaceMuted": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "text": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              },
-                              "textMuted": {
-                                "pattern": "^#[0-9a-fA-F]{6}$",
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "canvas",
-                              "surface",
-                              "surfaceMuted",
-                              "text",
-                              "textMuted",
-                              "border",
-                              "accent",
-                              "accentText",
-                              "highlight",
-                              "highlightText"
-                            ],
-                            "type": "object"
-                          },
-                          "name": {
-                            "maxLength": 100,
-                            "minLength": 1,
-                            "type": "string"
-                          },
-                          "schemaVersion": {
-                            "const": 1
-                          },
-                          "shape": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "borderWidth": {
-                                "maximum": 8,
-                                "minimum": 0,
-                                "type": "number"
-                              },
-                              "radius": {
-                                "maximum": 32,
-                                "minimum": 0,
-                                "type": "number"
-                              }
-                            },
-                            "required": [
-                              "borderWidth",
-                              "radius"
-                            ],
-                            "type": "object"
-                          },
-                          "typography": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "bodyFont": {
-                                "maxLength": 200,
-                                "minLength": 1,
-                                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
-                                "type": "string"
-                              },
-                              "headingFont": {
-                                "maxLength": 200,
-                                "minLength": 1,
-                                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
-                                "type": "string"
-                              },
-                              "monoFont": {
-                                "maxLength": 200,
-                                "minLength": 1,
-                                "pattern": "^[A-Za-z0-9 \"'.,-]+$",
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "bodyFont",
-                              "headingFont",
-                              "monoFont"
-                            ],
-                            "type": "object"
-                          }
-                        },
-                        "required": [
-                          "schemaVersion",
-                          "name",
-                          "colors",
-                          "typography",
-                          "shape"
-                        ],
-                        "type": "object"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
                   "title": {
                     "type": "string"
                   },
                   "updatedAt": {
                     "type": "string"
-                  },
-                  "width": {
-                    "type": "number"
                   }
                 },
                 "required": [
                   "id",
                   "title",
-                  "createdBy",
-                  "createdAt",
+                  "project",
                   "updatedAt",
-                  "bounds",
-                  "elements",
                   "revision",
-                  "documentVersion"
+                  "documentVersion",
+                  "elementCount"
                 ],
                 "type": "object"
               },
@@ -5150,99 +3608,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -5255,6 +3620,174 @@
       "type": "object"
     },
     "title": "List canvases"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List bounded element identities, frames, and plugin-owned summaries. Continue only with the returned revision-bound cursor.",
+    "errorCodes": [
+      "database_version_invalid",
+      "internal_error",
+      "not_found",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "canvasId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "cursor": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "default": 100,
+          "maximum": 200,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "canvasId"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_list_elements",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "frame": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "height": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "rotation": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "width": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "zIndex": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "type": "object"
+                  },
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "schemaVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "summary": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "detail": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "title": {
+                        "maxLength": 200,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "title"
+                    ],
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "schemaVersion",
+                  "frame",
+                  "summary"
+                ],
+                "type": "object"
+              },
+              "maxItems": 200,
+              "type": "array"
+            },
+            "nextCursor": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "canvasId",
+            "revision",
+            "items"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "List canvas elements"
   },
   {
     "annotations": {
@@ -5282,227 +3815,116 @@
         {
           "additionalProperties": false,
           "properties": {
-            "diagnostics": {
-              "items": {
-                "additionalProperties": false,
-                "properties": {
-                  "code": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "elementId": {
-                    "type": "string"
-                  },
-                  "message": {
-                    "type": "string"
-                  },
-                  "pluginId": {
-                    "type": "string"
-                  },
-                  "retryable": {
-                    "type": "boolean"
-                  },
-                  "severity": {
-                    "enum": [
-                      "info",
-                      "warning",
-                      "error"
-                    ],
-                    "type": "string"
-                  }
+            "diagnosticCounts": {
+              "additionalProperties": false,
+              "properties": {
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
                 },
-                "required": [
-                  "code",
-                  "severity",
-                  "message",
-                  "retryable"
-                ],
-                "type": "object"
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "warningCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
               },
-              "type": "array"
+              "required": [
+                "errorCount",
+                "warningCount",
+                "infoCount"
+              ],
+              "type": "object"
             },
             "plugins": {
               "items": {
                 "additionalProperties": false,
                 "properties": {
-                  "browserEntryUrl": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "buildHash": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
                   "capabilities": {
                     "items": {
                       "additionalProperties": false,
                       "properties": {
+                        "code": {
+                          "type": "string"
+                        },
                         "name": {
                           "type": "string"
                         },
-                        "providerPluginId": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "range": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                        "ok": {
+                          "type": "boolean"
                         },
                         "relationship": {
                           "enum": [
                             "required",
                             "provided"
-                          ],
-                          "type": "string"
-                        },
-                        "status": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "code": {
-                              "type": "string"
-                            },
-                            "ok": {
-                              "type": "boolean"
-                            },
-                            "retryable": {
-                              "type": "boolean"
-                            }
-                          },
-                          "required": [
-                            "ok"
-                          ],
-                          "type": "object"
-                        },
-                        "version": {
-                          "type": [
-                            "string",
-                            "null"
                           ]
                         }
                       },
                       "required": [
                         "name",
                         "relationship",
-                        "version",
-                        "range",
-                        "providerPluginId",
-                        "status"
+                        "ok"
                       ],
                       "type": "object"
                     },
                     "type": "array"
                   },
-                  "contributions": {
+                  "diagnosticCounts": {
                     "additionalProperties": false,
                     "properties": {
-                      "commands": {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
+                      "errorCount": {
+                        "minimum": 0,
+                        "type": "integer"
                       },
-                      "elements": {
-                        "type": "array"
+                      "infoCount": {
+                        "minimum": 0,
+                        "type": "integer"
                       },
-                      "migrations": {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "procedures": {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "tools": {
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
+                      "warningCount": {
+                        "minimum": 0,
+                        "type": "integer"
                       }
                     },
                     "required": [
-                      "elements",
-                      "commands",
-                      "tools",
-                      "procedures",
-                      "migrations"
+                      "errorCount",
+                      "warningCount",
+                      "infoCount"
                     ],
                     "type": "object"
-                  },
-                  "dependencies": {
-                    "type": "object"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "diagnostics": {
-                    "items": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "code": {
-                          "minLength": 1,
-                          "type": "string"
-                        },
-                        "elementId": {
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "pluginId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "severity": {
-                          "enum": [
-                            "info",
-                            "warning",
-                            "error"
-                          ],
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "code",
-                        "severity",
-                        "message",
-                        "retryable"
-                      ],
-                      "type": "object"
-                    },
-                    "type": "array"
                   },
                   "displayName": {
                     "type": "string"
                   },
-                  "elements": {
+                  "elementTypes": {
+                    "items": {
+                      "type": "string"
+                    },
                     "type": "array"
-                  },
-                  "hostApi": {
-                    "type": "string"
                   },
                   "id": {
                     "type": "string"
                   },
-                  "license": {
-                    "type": "string"
-                  },
-                  "permissions": {
+                  "tools": {
                     "items": {
-                      "type": "string"
+                      "additionalProperties": false,
+                      "properties": {
+                        "directName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "directName"
+                      ],
+                      "type": "object"
                     },
                     "type": "array"
                   },
@@ -5514,17 +3936,10 @@
                   "id",
                   "version",
                   "displayName",
-                  "description",
-                  "license",
-                  "hostApi",
-                  "permissions",
-                  "buildHash",
-                  "browserEntryUrl",
-                  "elements",
-                  "contributions",
-                  "dependencies",
+                  "elementTypes",
+                  "tools",
                   "capabilities",
-                  "diagnostics"
+                  "diagnosticCounts"
                 ],
                 "type": "object"
               },
@@ -5533,7 +3948,7 @@
           },
           "required": [
             "plugins",
-            "diagnostics"
+            "diagnosticCounts"
           ],
           "type": "object"
         },
@@ -5541,99 +3956,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -5646,6 +3968,77 @@
       "type": "object"
     },
     "title": "List plugins"
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Invoke one active extension tool only when it is not marked read-only. Inspect the target canvas after writes when counts are nonzero.",
+    "errorCodes": [
+      "database_version_invalid",
+      "idempotency_conflict",
+      "internal_error",
+      "not_found",
+      "revision_conflict",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "pluginId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "toolName": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "pluginId",
+        "toolName",
+        "arguments"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_mutate_extension_tool",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "not": {
+            "properties": {
+              "problem": {}
+            },
+            "required": [
+              "problem"
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Run mutating extension tool"
   },
   {
     "annotations": {
@@ -5791,99 +4184,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -5896,6 +4196,75 @@
       "type": "object"
     },
     "title": "Patch only kernel-owned frame fields"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Invoke one active extension tool only when its registry descriptor marks it read-only.",
+    "errorCodes": [
+      "database_version_invalid",
+      "internal_error",
+      "not_found",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "pluginId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "toolName": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "pluginId",
+        "toolName",
+        "arguments"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_read_extension_tool",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "not": {
+            "properties": {
+              "problem": {}
+            },
+            "required": [
+              "problem"
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Run read-only extension tool"
   },
   {
     "annotations": {
@@ -5985,99 +4354,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -6195,99 +4471,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -6394,99 +4577,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -6784,99 +4874,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -7103,99 +5100,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -7386,99 +5290,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -7581,99 +5392,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -7985,99 +5703,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -8398,99 +6023,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -8831,99 +6363,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -9126,99 +6565,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },
@@ -9359,154 +6705,25 @@
     "outputSchema": {
       "oneOf": [
         {
-          "$defs": {
-            "CanvasElement": {
+          "additionalProperties": false,
+          "properties": {
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "canvasRevision": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "effectSummary": {
               "additionalProperties": false,
               "properties": {
-                "data": {
-                  "additionalProperties": {
-                    "$ref": "#/$defs/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "height": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "id": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "locked": {
-                  "type": [
-                    "boolean",
-                    "null"
-                  ]
-                },
-                "metadata": {
-                  "additionalProperties": {
-                    "$ref": "#/$defs/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "opacity": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "rotation": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "schemaVersion": {
-                  "minimum": 1,
+                "affectedElementCount": {
+                  "minimum": 0,
                   "type": "integer"
-                },
-                "style": {
-                  "oneOf": [
-                    {
-                      "additionalProperties": {
-                        "$ref": "#/$defs/JsonValue"
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "type": {
-                  "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*\\/[a-z][a-z0-9-]*$",
-                  "type": "string"
-                },
-                "width": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                },
-                "zIndex": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "id",
-                "type",
-                "schemaVersion",
-                "x",
-                "y",
-                "data"
-              ],
-              "type": "object"
-            },
-            "JsonValue": {
-              "oneOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "items": {
-                    "$ref": "#/$defs/JsonValue"
-                  },
-                  "type": "array"
-                },
-                {
-                  "additionalProperties": {
-                    "$ref": "#/$defs/JsonValue"
-                  },
-                  "type": "object"
-                }
-              ]
-            },
-            "MacroAnchor": {
-              "additionalProperties": false,
-              "properties": {
-                "x": {
-                  "type": "number"
-                },
-                "y": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "x",
-                "y"
-              ],
-              "type": "object"
-            },
-            "MacroEffectSummary": {
-              "additionalProperties": false,
-              "properties": {
-                "affectedElementIds": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "type": "array",
-                  "uniqueItems": true
                 },
                 "generatedElementCount": {
                   "minimum": 0,
@@ -9524,31 +6741,9 @@
                 "label",
                 "operationCount",
                 "generatedElementCount",
-                "affectedElementIds"
+                "affectedElementCount"
               ],
               "type": "object"
-            }
-          },
-          "$id": "https://agentcanvas.local/schemas/macros/v1/MacroPlanResponse.json",
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "additionalProperties": false,
-          "properties": {
-            "anchor": {
-              "$ref": "#/$defs/MacroAnchor"
-            },
-            "canvasId": {
-              "minLength": 1,
-              "type": "string"
-            },
-            "canvasRevision": {
-              "minimum": 1,
-              "type": "integer"
-            },
-            "createdAt": {
-              "type": "string"
-            },
-            "effectSummary": {
-              "$ref": "#/$defs/MacroEffectSummary"
             },
             "expiresAt": {
               "type": "string"
@@ -9558,31 +6753,12 @@
               "type": "string"
             },
             "macroId": {
-              "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,63}(?:/[A-Za-z][A-Za-z0-9_.:-]{0,63})?$",
+              "minLength": 1,
               "type": "string"
             },
             "macroVersion": {
               "minimum": 1,
               "type": "integer"
-            },
-            "operations": {
-              "items": {
-                "additionalProperties": false,
-                "properties": {
-                  "element": {
-                    "$ref": "#/$defs/CanvasElement"
-                  },
-                  "op": {
-                    "const": "upsertElement"
-                  }
-                },
-                "required": [
-                  "op",
-                  "element"
-                ],
-                "type": "object"
-              },
-              "type": "array"
             },
             "outputs": {
               "additionalProperties": {
@@ -9596,14 +6772,8 @@
               "type": "string"
             },
             "planId": {
-              "pattern": "^macro_plan_[A-Za-z0-9_-]{1,80}$",
+              "minLength": 1,
               "type": "string"
-            },
-            "previewElements": {
-              "items": {
-                "$ref": "#/$defs/CanvasElement"
-              },
-              "type": "array"
             }
           },
           "required": [
@@ -9612,13 +6782,10 @@
             "macroVersion",
             "canvasId",
             "canvasRevision",
-            "anchor",
             "inputDigest",
             "planDigest",
             "createdAt",
             "expiresAt",
-            "operations",
-            "previewElements",
             "outputs",
             "effectSummary"
           ],
@@ -9628,99 +6795,6 @@
           "additionalProperties": false,
           "properties": {
             "problem": {
-              "additionalProperties": false,
-              "properties": {
-                "category": {
-                  "enum": [
-                    "authentication",
-                    "authorization",
-                    "request",
-                    "validation",
-                    "not_found",
-                    "conflict",
-                    "rate_limit",
-                    "dependency",
-                    "internal"
-                  ],
-                  "type": "string"
-                },
-                "code": {
-                  "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
-                  "type": "string"
-                },
-                "detail": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "instance": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "issues": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "code": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "message": {
-                        "minLength": 1,
-                        "type": "string"
-                      },
-                      "path": {
-                        "minLength": 1,
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "path",
-                      "message"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "remediation": {
-                  "items": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "minItems": 1,
-                  "type": "array"
-                },
-                "requestId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "retryable": {
-                  "type": "boolean"
-                },
-                "status": {
-                  "maximum": 599,
-                  "minimum": 400,
-                  "type": "integer"
-                },
-                "title": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "type": {
-                  "minLength": 1,
-                  "type": "string"
-                }
-              },
-              "required": [
-                "type",
-                "title",
-                "status",
-                "detail",
-                "code",
-                "category",
-                "retryable",
-                "requestId"
-              ],
               "type": "object"
             }
           },

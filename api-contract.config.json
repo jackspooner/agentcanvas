@@ -33,6 +33,38 @@
         "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
         "owner": "AgentCanvas",
         "expires": "2026-12-31"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "macro_plan",
+        "reason": "Pre-1.0 MCP macro planning now returns a bounded plan receipt.",
+        "migration": "docs/upgrading.md#lean-mcp-catalog-and-bounded-reads",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "agentcanvas_markdown__add_document",
+        "reason": "The bundled Markdown mutation now returns a flat bounded canvas receipt.",
+        "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "agentcanvas_primitives__add_*",
+        "reason": "Bundled primitive mutations now return flat bounded canvas receipts.",
+        "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "agentcanvas_table__add_table",
+        "reason": "The bundled table mutation now returns a flat bounded canvas receipt.",
+        "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
       }
     ]
   },

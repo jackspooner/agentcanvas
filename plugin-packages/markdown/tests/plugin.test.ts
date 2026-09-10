@@ -71,14 +71,10 @@ describe('Markdown plugin', () => {
 
     const output = await addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, markdown }, context);
     expect(output).toEqual({
-      ok: true,
       canvasId: 'canvas_1',
       elementId: expect.any(String),
-      result: {
-        canvasId: 'canvas_1',
-        revision: 2,
-        inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
-      }
+      revision: 2,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
     expect(JSON.stringify(output)).not.toContain(markdown);
     expect(upsertElementReceipt.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ height: expect.any(Number) }));

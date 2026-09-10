@@ -3,6 +3,7 @@ export * from './backup';
 export * from './inspect';
 export * from './legacy';
 export * from './plugin-schema';
+export * from './repair-created-by';
 export * from './restore';
 export * from './schema4';
 export * from './theme-schema';

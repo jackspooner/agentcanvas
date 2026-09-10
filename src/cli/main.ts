@@ -9,6 +9,7 @@ import {
   applyPluginSchemaMigrations,
   inspectMigrationDatabase,
   LEGACY_TYPE_DEFINITIONS,
+  repairCreatedBy,
   restoreMigration,
   type LegacyElementImporter,
   verifyMigrationDatabase
@@ -19,7 +20,7 @@ import {
   type FrozenPluginRegistry
 } from '../plugin-runtime/index.js';
 import { runMigrationCli } from './migrate.js';
-import { runPluginCli } from './plugins.js';
+import { assertAgentCanvasStopped, runPluginCli } from './plugins.js';
 import { runExtensionCli } from './extensions.js';
 import { inspectDatabaseVersion, type DatabaseVersionState } from '../store/version.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
@@ -134,7 +135,11 @@ async function run(): Promise<number> {
         validateElement: (element) => validator.validatePersisted(element, { allowMissingPlugin: false })
       });
     },
-    restore: ({ databasePath, backupPath }) => restoreMigration({ databasePath, backupPath })
+    restore: ({ databasePath, backupPath }) => restoreMigration({ databasePath, backupPath }),
+    repairCreatedBy: async ({ databasePath, backupDir }) => {
+      await assertAgentCanvasStopped();
+      return repairCreatedBy({ databasePath, backupDir, toolVersion: AGENTCANVAS_VERSION });
+    }
   });
 }
 

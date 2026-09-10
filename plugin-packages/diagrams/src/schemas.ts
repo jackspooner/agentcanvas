@@ -1,5 +1,5 @@
-import { CANVAS_INSPECTION_SUMMARY_SCHEMA, type JsonSchema } from '@agentcanvas/extension-sdk';
-import { erdDataSchema, erdOperationSchema } from './erd-schemas.js';
+import { CANVAS_INSPECTION_SUMMARY_SCHEMA, type JsonObject, type JsonSchema } from '@agentcanvas/extension-sdk';
+import { erdDataSchema, erdOperationDefinitions, erdOperationSchema, erdOperationVariants } from './erd-schemas.js';
 import { mermaidPresentationSchema, pointSchema } from './presentation-schemas.js';
 export { erdDataSchema, erdOperationSchema };
 const id = { type: 'string', minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$' };
@@ -43,10 +43,13 @@ export const toolInputs: Record<string, JsonSchema> = {
     'data',
     'layout'
   ]),
-  'edit-erd': object(
-    { ...target, operations: { type: 'array', minItems: 1, maxItems: 200, items: erdOperationSchema } },
-    ['canvasId', 'elementId', 'expectedRevision', 'operations']
-  ),
+  'edit-erd': {
+    ...(object(
+      { ...target, operations: { type: 'array', minItems: 1, maxItems: 200, items: { oneOf: erdOperationVariants } } },
+      ['canvasId', 'elementId', 'expectedRevision', 'operations']
+    ) as JsonObject),
+    $defs: erdOperationDefinitions
+  },
   'create-mermaid': object({ ...placement, data: mermaidDataSchema }, ['canvasId', 'x', 'y', 'data']),
   'update-mermaid': object({ ...target, data: mermaidDataSchema }, [
     'canvasId',
@@ -75,22 +78,22 @@ export const toolInputs: Record<string, JsonSchema> = {
 };
 export const mutationOutputSchema = object(
   {
-    ok: { const: true },
     canvasId: id,
     elementId: id,
     revision,
     inspectionSummary: CANVAS_INSPECTION_SUMMARY_SCHEMA,
-    affectedIds: { type: 'array', items: id },
-    removedRelationshipIds: { type: 'array', items: id },
-    diagnostics: issues
+    affectedCount: { type: 'integer', minimum: 0 },
+    generatedIds: { type: 'array', maxItems: 200, items: id },
+    removedRelationshipIds: { type: 'array', maxItems: 200, items: id },
+    diagnostics: { type: 'array', maxItems: 200, items: issueSchema }
   },
   [
-    'ok',
     'canvasId',
     'elementId',
     'revision',
     'inspectionSummary',
-    'affectedIds',
+    'affectedCount',
+    'generatedIds',
     'removedRelationshipIds',
     'diagnostics'
   ]

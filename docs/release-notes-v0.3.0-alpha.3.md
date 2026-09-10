@@ -20,3 +20,10 @@ workflow; this change does not publish packages.
 Install Diagrams from the generated catalog and restart the service. Reload the
 MCP client catalog. Mermaid server rendering requires Chromium visible to the
 actual service account. Default deployment does not install a browser runtime.
+
+The default MCP endpoint is now a lean catalog; `/mcp/full` preserves every
+named active extension tool. Generic registry-backed dispatch keeps omitted
+named tools available, successful text receipts no longer duplicate structured
+results, and canvas/plugin/inspection/plan reads are bounded. HTTP contracts are
+unchanged. The offline `migrate repair-created-by` command repairs noncanonical
+creator values with a verified backup and preserved legacy metadata.

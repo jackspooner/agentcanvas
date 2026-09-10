@@ -93,15 +93,26 @@ export const assetDetailsInputSchema = {
   properties: { assetRef: assetReferenceSchema }
 } as const;
 
+export const assetDetailsToolInputSchema = {
+  ...assetDetailsInputSchema,
+  properties: {
+    ...assetDetailsInputSchema.properties,
+    include: {
+      type: 'array',
+      maxItems: 5,
+      uniqueItems: true,
+      items: { enum: ['prompt', 'jsonPrompt', 'contextImages', 'controls', 'providerRequest'] }
+    }
+  }
+} as const;
+
 export const mutationOutputSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['ok', 'canvasId', 'elementId', 'result'],
+  required: ['canvasId', 'elementId', 'revision', 'inspectionSummary'],
   properties: {
-    ok: { const: true },
-    canvasId: { type: 'string' },
     elementId: { type: 'string' },
-    result: CANVAS_MUTATION_RECEIPT_SCHEMA
+    ...(CANVAS_MUTATION_RECEIPT_SCHEMA.properties as JsonObject)
   }
 } as const;
 

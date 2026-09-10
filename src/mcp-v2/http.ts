@@ -1,18 +1,19 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { createMcpV2Server, type McpV2Runtime } from './server.js';
+import { createMcpV2Server, type McpCatalogProfile, type McpV2Runtime } from './server.js';
 
 export async function handleMcpV2Request(
   request: IncomingMessage,
   response: ServerResponse,
-  runtime: McpV2Runtime
+  runtime: McpV2Runtime,
+  profile: McpCatalogProfile = 'lean'
 ): Promise<void> {
   if (request.method !== 'POST') {
     response.writeHead(405, { 'content-type': 'application/json', allow: 'POST' });
     response.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed' }, id: null }));
     return;
   }
-  const { server } = createMcpV2Server(runtime);
+  const { server } = createMcpV2Server(runtime, profile);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   try {
     await server.connect(transport);

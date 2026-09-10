@@ -297,6 +297,16 @@ export function verifyMigrationConnection(
     );
     if (invalid > 0) errors.push(`${invalid} canvas(es) do not use document version 2`);
   }
+  if (tableColumns(db, 'canvases').includes('created_by')) {
+    const invalid = Number(
+      (
+        db
+          .prepare("SELECT COUNT(*) AS count FROM canvases WHERE created_by NOT IN ('agent', 'user', 'system')")
+          .get() as { count: number | bigint }
+      ).count
+    );
+    if (invalid > 0) errors.push(`${invalid} canvas(es) use a noncanonical created_by value`);
+  }
   if (tableColumns(db, 'canvas_events').includes('document_version')) {
     const invalid = Number(
       (

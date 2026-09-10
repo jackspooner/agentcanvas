@@ -215,7 +215,7 @@ export function mcpOutputSchema(successSchema: JsonSchema): JsonSchema {
         type: 'object',
         additionalProperties: false,
         required: ['problem'],
-        properties: { problem: PROBLEM_DETAILS_MCP_SCHEMA }
+        properties: { problem: { type: 'object' } }
       }
     ]
   } as JsonSchema;

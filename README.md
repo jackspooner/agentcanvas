@@ -276,6 +276,7 @@ AgentCanvas does not upgrade a live database during startup. Stop AgentCanvas an
 ```bash
 npm run migrate -- inspect --database <path> --json
 npm run migrate -- apply --database <path> --backup-dir <path> --plugins <plugins-path>
+npm run migrate -- repair-created-by --database <path> --backup-dir <path>
 npm run migrate -- verify --database <path> --plugins <plugins-path>
 npm run migrate -- restore --database <path> --backup <backup-path>
 ```
@@ -284,11 +285,13 @@ After `npm ci`, the equivalent local-bin form is `npm exec -- agentcanvas migrat
 
 `apply` uses the SQLite backup API, writes and verifies a SHA-256 sidecar manifest, transforms documents transactionally through plugin-owned importers, preserves historical events, and commits only after target validation, preservation fingerprints, integrity, and foreign-key checks. It upgrades v0.1 databases directly to physical/document version 4/2, upgrades physical/document 2/2 databases to 4/2 for first-class theme and macro storage, upgrades physical/document 3/2 databases to 4/2 for macro storage, and applies pending installed-extension element-schema migrations. Migration refuses databases containing the removed `group` type or unknown legacy fields/types. `restore` accepts the verified backup produced by any supported host migration.
 
+`repair-created-by` is a schema-neutral offline repair for noncanonical historical creator values. It preserves each original value in `metadata.legacyCreatedBy` and creates the same verified backup and manifest before changing records.
+
 See [Upgrading](docs/upgrading.md), [physical schema 4 migration](docs/physical-schema-4-migration.md), and [v0.1 to v0.2 migration](docs/v0.1-to-v0.2-migration.md).
 
 ## HTTP, OpenAPI, and MCP
 
-JSON document APIs are under `/api/v1`. Human canvas routes, `/health`, `/whoami`, `/openapi.json`, and `/mcp` remain unversioned.
+JSON document APIs are under `/api/v1`. Human canvas routes, `/health`, `/whoami`, `/openapi.json`, `/mcp`, and `/mcp/full` remain unversioned. `/mcp` is the lean default; `/mcp/full` publishes every active named extension tool.
 
 Important routes:
 

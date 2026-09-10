@@ -77,24 +77,74 @@ describe('external plugin host proof', () => {
       })
     ).json();
     const canvasId = created.canvas.id as string;
-    const { server } = createMcpV2Server({
+    const mcpRuntime = {
       publicBaseUrl: runtime.config.publicBaseUrl,
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
       diagnostics: () => []
-    });
+    };
+    const { server } = createMcpV2Server(mcpRuntime);
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: 'external-proof', version: '1.0.0' });
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const tools = await client.listTools();
-    expect(tools.tools.map((tool) => tool.name)).toContain('external_signal_card__add_signal_card');
-    await client.callTool({
-      name: 'external_signal_card__add_signal_card',
-      arguments: { canvasId, id: 'signal-1', label: 'Build', status: 'active' }
+    expect(tools.tools.map((tool) => tool.name)).not.toContain('external_signal_card__add_signal_card');
+    expect(tools.tools.map((tool) => tool.name)).toContain('canvas_mutate_extension_tool');
+    const plugins = await client.callTool({ name: 'canvas_list_plugins', arguments: {} });
+    const pluginRows = (plugins.structuredContent as { plugins: Array<Record<string, unknown>> }).plugins;
+    expect(pluginRows.find((plugin) => plugin.id === 'external.signal-card')).toMatchObject({
+      id: 'external.signal-card',
+      tools: [{ name: 'add-signal-card', directName: null }],
+      diagnosticCounts: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
+    expect(JSON.stringify(plugins.structuredContent)).not.toContain('description');
+    expect(JSON.stringify(plugins.structuredContent)).not.toContain('permissions');
+    const descriptor = await client.callTool({
+      name: 'canvas_get_extension_tool',
+      arguments: { pluginId: 'external.signal-card', toolName: 'add-signal-card' }
+    });
+    expect(descriptor.structuredContent).toMatchObject({
+      pluginId: 'external.signal-card',
+      toolName: 'add-signal-card',
+      dispatcher: 'canvas_mutate_extension_tool',
+      inputSchema: runtime.registry.getPlugin('external.signal-card')?.tools[0].inputSchema
+    });
+    const wrongDispatcher = await client.callTool({
+      name: 'canvas_read_extension_tool',
+      arguments: {
+        pluginId: 'external.signal-card',
+        toolName: 'add-signal-card',
+        arguments: { canvasId, id: 'signal-1', label: 'Build', status: 'active' }
+      }
+    });
+    expect(wrongDispatcher.structuredContent).toMatchObject({ problem: { code: 'validation_error' } });
+    const generic = await client.callTool({
+      name: 'canvas_mutate_extension_tool',
+      arguments: {
+        pluginId: 'external.signal-card',
+        toolName: 'add-signal-card',
+        arguments: { canvasId, id: 'signal-1', label: 'Build', status: 'active' }
+      }
+    });
+    expect(generic.structuredContent).toMatchObject({ receipt: { canvasId, revision: 2 } });
+    expect((generic.content as Array<{ text: string }>)[0].text).toBe('ok; result in structuredContent');
     await client.close();
     await server.close();
+
+    const full = createMcpV2Server(mcpRuntime, 'full');
+    const [fullClientTransport, fullServerTransport] = InMemoryTransport.createLinkedPair();
+    const fullClient = new Client({ name: 'external-full-proof', version: '1.0.0' });
+    await Promise.all([full.server.connect(fullServerTransport), fullClient.connect(fullClientTransport)]);
+    expect((await fullClient.listTools()).tools.map((tool) => tool.name)).toContain(
+      'external_signal_card__add_signal_card'
+    );
+    const named = await fullClient.callTool({
+      name: 'external_signal_card__add_signal_card',
+      arguments: { canvasId, id: 'signal-2', label: 'Ship', status: 'idle' }
+    });
+    expect(named.structuredContent).toMatchObject({ receipt: { canvasId, revision: 3 } });
+    await Promise.all([fullClient.close(), full.server.close()]);
 
     expect(
       await (

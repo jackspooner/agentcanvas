@@ -14,23 +14,26 @@ remote media loaded, or the user's requested result is complete.
 1. Read `canvas_get_guidance` when the server provides it, then discover the
    active runtime with `canvas_list_plugins` when the request
    depends on available element or media types. Do not infer optional
-   extensions from documentation or source folders.
-2. Inspect the target with `canvas_get` before editing it. For a new canvas,
-   choose a layout and approximate frames before adding elements.
+   extensions from documentation or source folders. When a tool is not directly
+   published, fetch its exact descriptor with `canvas_get_extension_tool` and
+   use the matching read-only or mutating extension dispatcher.
+2. Inspect only the state needed for the edit. Prefer `canvas_list_elements`
+   and `canvas_get_element`; use `canvas_get` when the complete persisted
+   document is genuinely required. For a new canvas, choose a layout and
+   approximate frames before adding elements.
 3. Create or edit with the most specific tool available. `canvas_create`
    returns a direct browser `url`; retain it so you can give it to the user.
    Use `canvas_get_url` to recover the URL for an existing canvas. This direct
    URL does not create a read-only share link or bypass access controls. Use
    plugin tools for their owned element types and core frame/data tools for
    later corrections.
-   After each core mutation, read the returned `diagnostics` and
-   `inspectionSummary`; repair unintended warnings before continuing.
-4. Call `canvas_get` after composing. Compare the returned elements with the
-   request, then call `canvas_inspect` when available and repair its
-   deterministic plugin-owned diagnostics. Re-run both checks after repairs.
-   Before reporting, the final canvas operations must be `canvas_get` followed
-   by `canvas_inspect`, with no mutation afterward.
-5. Treat the final `canvas_get` and `canvas_inspect` results as sufficient
+   After each mutation, read the returned `inspectionSummary`; when any count
+   is nonzero, page through `canvas_inspect` and repair unintended warnings.
+4. After composing, use `canvas_list_elements` and targeted `canvas_get_element`
+   calls to compare the persisted result with the request. Use `canvas_get`
+   only when the complete document, theme, or element data must be verified.
+   Finish with `canvas_inspect` and no mutation afterward.
+5. Treat the final persisted-state reads and `canvas_inspect` results as sufficient
    verification of persisted canvas content by default. Use browser rendering
    when the user explicitly requests a visual check, when the task depends on
    proving rendered appearance or remote-media loading, **or when an
@@ -55,9 +58,9 @@ MCP, not through selection authoring or an extension planner.
 3. Plan with `POST /api/v1/canvases/:canvasId/macros/:macroId:plan` or
    `macro_plan`, supplying `macroVersion`, explicit `{ x, y }` anchor, typed
    input, and optional `label` in the body. Do not duplicate `canvasId` or
-   `macroId` in that body. Planning is pure: inspect `previewElements`,
-   `effectSummary`, `outputs`, exact version, revision, and expiry without
-   expecting canvas persistence.
+   `macroId` in that body. Planning is pure. MCP returns plan identity,
+   revisions, digests, expiry, named outputs, and the effect summary; use the
+   HTTP plan only when operations or preview elements are explicitly needed.
 4. Execute with the canvas macro execution route or `canvas_run_macro`, always
    supplying the plan ID, `expectedRevision`, and a bounded `idempotencyKey`.
    Reuse the same key when retrying the same logical execution; allocate a new
@@ -65,9 +68,10 @@ MCP, not through selection authoring or an extension planner.
    internally before the same atomic, revision-aware commit; it does not bypass
    validation or preview semantics. Prefer plan mode when a browser preview or
    confirmation is required.
-5. After execution, call `canvas_get` and `canvas_inspect` to verify persisted
-   elements, revision, outputs, diagnostics, and layout. A macro run should be
-   one history/undo unit; do not claim that preview content persisted.
+5. After execution, verify outputs and affected elements with bounded element
+   reads, then call `canvas_inspect`. Use `canvas_get` only when the full
+   document is needed. A macro run should be one history/undo unit; do not
+   claim that preview content persisted.
 
 Macro provenance contains the macro ID, exact version, plan ID, and digests.
 Never put raw invocation inputs, secrets, or sensitive row content into
@@ -206,13 +210,13 @@ the theme was applied. A safe dark starting palette is:
 
 Before saying the canvas is complete:
 
-- confirm the expected element types and count with `canvas_get`;
+- confirm the expected element types and count with `canvas_list_elements`;
 - run `canvas_inspect` when available and resolve every unintended warning;
 - confirm titles and captions are stored exactly as intended;
 - check every non-connector frame for unintended intersection;
 - check title, Markdown, table, and image-card frames for likely clipping;
 - confirm connector endpoints resolve within the same canvas;
-- confirm the theme in the returned canvas instead of assuming a default;
+- confirm the theme with `canvas_get` when theme state is part of the task;
 - inspect the rendered canvas when explicitly requested, when required to
   prove appearance or remote-media loading, or when image presence/display
   correctness is part of the requested check; and

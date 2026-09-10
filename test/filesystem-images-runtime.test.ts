@@ -150,14 +150,10 @@ describe('filesystem image runtime without Assets-2', () => {
       }
     });
     expect(placed.structuredContent).toEqual({
-      ok: true,
       canvasId,
       elementId: 'agent-placement',
-      result: {
-        canvasId,
-        revision: 3,
-        inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
-      }
+      revision: 3,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
     expect(JSON.stringify(placed)).not.toContain('Local file');
     expect(JSON.stringify(placed)).not.toContain('New placement');

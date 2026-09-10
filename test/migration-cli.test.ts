@@ -71,6 +71,27 @@ describe('migration CLI dispatch', () => {
     db.close();
   });
 
+  it('requires a backup directory and dispatches creator repair', async () => {
+    const repairCreatedBy = vi.fn(() => ({ ok: true }));
+    const stderr = vi.fn();
+    expect(
+      await runMigrationCli(
+        ['migrate', 'repair-created-by', '--database', 'canvas.sqlite'],
+        { stdout: vi.fn(), stderr },
+        { inspect: vi.fn(), repairCreatedBy }
+      )
+    ).toBe(1);
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('--backup-dir is required'));
+    expect(
+      await runMigrationCli(
+        ['migrate', 'repair-created-by', '--database', 'canvas.sqlite', '--backup-dir', 'backups'],
+        { stdout: vi.fn(), stderr },
+        { inspect: vi.fn(), repairCreatedBy }
+      )
+    ).toBe(0);
+    expect(repairCreatedBy).toHaveBeenCalledWith({ databasePath: 'canvas.sqlite', backupDir: 'backups' });
+  });
+
   it('fails closed when a mutating integration hook is absent', async () => {
     const stderr = vi.fn();
     const code = await runMigrationCli(

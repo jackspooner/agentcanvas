@@ -148,7 +148,7 @@ function tool(
         element,
         input.expectedRevision as number | undefined
       );
-      return { ok: true, canvasId, elementId: element.id, result };
+      return { ...result, elementId: element.id };
     }
   };
 }

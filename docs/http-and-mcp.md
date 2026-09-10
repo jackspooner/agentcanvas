@@ -7,7 +7,8 @@ AgentCanvas exposes one registry-derived contract through HTTP, runtime OpenAPI,
 - `GET /openapi.json`: authoritative HTTP contract for the exact active plugin set.
 - `GET /api/v1/plugins`: sanitized active-plugin and capability status.
 - `GET /api/v1/plugins/{pluginId}`: one plugin's contributions and browser entry URL.
-- MCP `tools/list`: core tools plus active plugin tools using the same JSON Schemas.
+- MCP `/mcp` `tools/list`: core tools, common bundled tools, and generic extension dispatch.
+- MCP `/mcp/full` `tools/list`: every active named extension tool using the same registry-owned JSON Schemas.
 - `docs/openapi.standard.json`: generated three-default-extension reference, not a substitute for runtime discovery.
 - `docs/mcp-tools.standard.json`: normalized generated MCP catalog for the same distribution.
 - `docs/error-codes.json`: generated registry of stable application error codes.
@@ -257,6 +258,8 @@ The kernel registers:
 - `canvas_create`
 - `canvas_list`
 - `canvas_get`
+- `canvas_list_elements`
+- `canvas_get_element`
 - `canvas_get_url`
 - `canvas_inspect`
 - `canvas_rename`
@@ -270,6 +273,9 @@ The kernel registers:
 - `canvas_clear`
 - `canvas_list_plugins`
 - `canvas_get_plugin`
+- `canvas_get_extension_tool`
+- `canvas_read_extension_tool`
+- `canvas_mutate_extension_tool`
 
 Macro tools are generic and remain stable when definitions are saved or
 versioned:
@@ -282,9 +288,14 @@ versioned:
 - `macro_plan`
 - `canvas_run_macro`
 
-Plugin tools use `<normalized-plugin-id>__<normalized-local-name>`. For example, `agentcanvas.image-overlays` plus `add-bbox` becomes `agentcanvas_image_overlays__add_bbox`.
-
-Use `canvas_list_plugins` or HTTP plugin discovery before choosing a plugin tool. An optional tool is absent when its plugin folder is absent.
+`/mcp` directly publishes filesystem-image, primitive, Markdown, and table tools.
+Other active extension tools are discoverable with `canvas_list_plugins` and
+`canvas_get_extension_tool`, then invoked through the read-only or mutating
+dispatcher. Both dispatchers use the registry-owned descriptor, validation,
+permissions, invocation context, and errors. `/mcp/full` additionally publishes
+every named extension tool as `<normalized-plugin-id>__<normalized-local-name>`.
+The stdio bridge uses `/mcp` unless `AGENT_CANVAS_MCP_PROFILE=full` is set.
+`/whoami` reports both endpoints and the default profile.
 
 `canvas_create` returns the direct browser `url` for the new canvas. Use
 `canvas_get_url` to recover that URL from a canvas ID later. Both URLs are
@@ -300,9 +311,23 @@ nonzero, call `canvas_inspect` for the diagnostic details. `canvas_get` remains
 the explicit full persisted-document read. Browser-facing HTTP mutations continue
 returning their full response projections.
 
+Successful MCP results keep the complete value only in `structuredContent`.
+Their text content is a bounded one-line receipt containing identifiers,
+revisions, and collection counts; clients must not parse it as the full result.
+
+MCP `canvas_list` returns summaries with element counts while HTTP canvas lists
+remain full. Use revision-bound `canvas_list_elements` pagination for frames and
+bounded extension summaries, `canvas_get_element` for one complete element, and
+`canvas_get` only for an explicit full document. `canvas_inspect` supports
+severity/code filters and revision-bound pages while always returning whole-canvas
+diagnostic counts. `canvas_list_plugins` is compact; `canvas_get_plugin` returns
+one full extension status.
+
 Macro creation and version writes return `macroId`, `currentVersion`, and
 `archived`. `canvas_run_macro` returns the canvas receipt plus provenance, named
 outputs, and affected IDs; it omits the canvas document and operation history.
+`macro_plan` returns only plan identity, revisions, digests, expiry, named
+outputs, and its effect summary; HTTP planning retains operations and preview elements.
 
 Use `canvas_inspect` as the deliberate final whole-canvas audit after composing
 or resizing elements. It runs the same inspection owner used by mutation

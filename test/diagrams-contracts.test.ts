@@ -40,7 +40,10 @@ async function openRuntime(pluginsRoot = installDistributions(), databasePath = 
   const runtime = await createV2Runtime({ pluginsRoot, databasePath });
   cleanup.push(() => runtime.dispose());
   const app = createV2App(runtime);
-  const mcp = createMcpV2Server({ ...runtime, publicBaseUrl: runtime.config.publicBaseUrl, diagnostics: () => [] });
+  const mcp = createMcpV2Server(
+    { ...runtime, publicBaseUrl: runtime.config.publicBaseUrl, diagnostics: () => [] },
+    'full'
+  );
   const client = new Client({ name: 'diagrams-contracts', version: '1.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
@@ -128,6 +131,13 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
       extension.plugin.manifest.contributes.commands
     );
     const expected = createMcpToolCatalog(offline.registry).filter((tool) => tool.pluginId === 'agentcanvas.diagrams');
+    const editErdSchema = expected.find((tool) => tool.localName === 'edit-erd')?.inputSchema as JsonObject;
+    const referencedDefinitions = new Set(
+      JSON.stringify(editErdSchema)
+        .match(/#\/\$defs\/([^"/]+)/g)
+        ?.map((ref) => ref.split('/').at(-1))
+    );
+    expect([...referencedDefinitions].sort()).toEqual(Object.keys(editErdSchema.$defs as JsonObject).sort());
     const listed = (await client.listTools()).tools;
     for (const tool of expected) {
       const wire = listed.find((item) => item.name === tool.name);
@@ -257,7 +267,12 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
     };
     const created = await client.callTool({ name: name('create-erd'), arguments: create });
     expect(created.isError).not.toBe(true);
-    expect(created.structuredContent).toMatchObject({ ok: true, elementId: 'diagram', revision: canvas.revision + 1 });
+    expect(created.structuredContent).toMatchObject({
+      elementId: 'diagram',
+      revision: canvas.revision + 1,
+      affectedCount: expect.any(Number),
+      generatedIds: []
+    });
     const before = runtime.store.getCanvas(canvas.id);
     const duplicate = await client.callTool({
       name: name('create-erd'),
@@ -287,8 +302,8 @@ describe('installed Diagrams public contracts', { timeout: 20_000 }, () => {
       arguments: { ...target, operations: [{ op: 'delete-attribute', entityId: 'account', attributeId: 'id' }] }
     });
     expect(edited.structuredContent).toMatchObject({
-      ok: true,
       revision: before.revision + 1,
+      affectedCount: expect.any(Number),
       removedRelationshipIds: ['invoices']
     });
     const after = runtime.store.getCanvas(canvas.id);

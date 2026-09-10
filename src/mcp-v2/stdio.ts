@@ -14,9 +14,18 @@ import { AGENTCANVAS_VERSION } from '../version.js';
  */
 export function resolveResidentMcpUrl(
   config: Pick<AgentCanvasConfig, 'publicBaseUrl'>,
-  environment: Readonly<{ AGENT_CANVAS_BASE_URL?: string }> = process.env
+  environment: Readonly<{ AGENT_CANVAS_BASE_URL?: string; AGENT_CANVAS_MCP_PROFILE?: string }> = process.env
 ): URL {
-  return new URL('/mcp', environment.AGENT_CANVAS_BASE_URL ?? config.publicBaseUrl);
+  if (
+    environment.AGENT_CANVAS_MCP_PROFILE &&
+    environment.AGENT_CANVAS_MCP_PROFILE !== 'lean' &&
+    environment.AGENT_CANVAS_MCP_PROFILE !== 'full'
+  )
+    throw new Error('AGENT_CANVAS_MCP_PROFILE must be lean or full');
+  return new URL(
+    environment.AGENT_CANVAS_MCP_PROFILE === 'full' ? '/mcp/full' : '/mcp',
+    environment.AGENT_CANVAS_BASE_URL ?? config.publicBaseUrl
+  );
 }
 
 export async function runStdioMcpBridge(): Promise<void> {

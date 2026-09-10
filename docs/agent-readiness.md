@@ -49,8 +49,9 @@ recipes. An agent should discover the relevant tools and guidance itself.
 
 Evaluate each objective from both persisted and rendered evidence:
 
-- use `canvas_get` after the final mutation only when the objective requires
-  checking full persisted element types, IDs, frames, data, or theme;
+- use `canvas_list_elements` and `canvas_get_element` after the final mutation,
+  and use `canvas_get` only when the objective requires checking the complete
+  persisted document or theme;
 - use `canvas_inspect` to find deterministic plugin-owned fit warnings and
   intersecting frames, then rerun it after repairs; the final canvas checks
   must end with `canvas_inspect`, preceded by `canvas_get` only when full
@@ -81,6 +82,10 @@ hermes mcp add agentcanvas --url http://127.0.0.1:23003/mcp
 hermes mcp test agentcanvas
 hermes skills install https://raw.githubusercontent.com/jackspooner/agentcanvas/main/skills/agentcanvas/SKILL.md --category software-development --yes
 ```
+
+`/mcp` is the lean default. Use `/mcp/full` only when the client requires every
+active named extension tool; lean clients can discover and invoke omitted tools
+through the registry-backed extension dispatch tools.
 
 Start a new Hermes session after installing or updating the skill. Restart
 AgentCanvas and reconnect Hermes after changing the active extension set or

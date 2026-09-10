@@ -113,9 +113,13 @@ it.each([
     elements: [element, second],
     diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'plugin_unavailable' })])
   });
+  const text = (get.content as Array<{ text: string }>)[0].text;
+  expect(text).toBe('revision=2 elements=2 diagnostics=2');
+  expect(text.length).toBeLessThanOrEqual(512);
   const list = await client.callTool({ name: 'canvas_list', arguments: {} });
   expect(list.isError).not.toBe(true);
-  expect(list.structuredContent).toMatchObject({ canvases: [{ id: canvas.id, elements: [element, second] }] });
+  expect(list.structuredContent).toMatchObject({ canvases: [{ id: canvas.id, elementCount: 2 }] });
+  expect(list.structuredContent).not.toHaveProperty('canvases.0.elements');
   const created = await client.callTool({ name: 'canvas_create', arguments: { title: 'Still available' } });
   expect(created.isError).not.toBe(true);
   expect(created.structuredContent).toMatchObject({
@@ -189,6 +193,11 @@ it('validates list limits consistently before SQLite and preserves defaults and 
     const result = await client.callTool({ name: 'canvas_list', arguments: limit === undefined ? {} : { limit } });
     expect(result.isError).not.toBe(true);
     expect(result.structuredContent).toHaveProperty('canvases.length', expected);
+    if (limit === 200) {
+      expect(JSON.stringify(result.structuredContent).length).toBeLessThan(80_000);
+      expect(result.structuredContent).not.toHaveProperty('canvases.0.elements');
+      expect(result.structuredContent).toHaveProperty('canvases.0.elementCount', 0);
+    }
   }
   for (const raw of ['', ' ', 'abc', '1.5', 'NaN', 'Infinity', '-Infinity', '0', '-1', '201']) {
     const response = await app.request(`/api/v1/canvases?limit=${encodeURIComponent(raw)}`, {

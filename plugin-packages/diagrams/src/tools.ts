@@ -60,7 +60,8 @@ async function create(
   const canvasId = input.canvasId as string;
   const canvas = await context.canvas.get(canvasId);
   checkRevision(canvas, input.expectedRevision);
-  const id = typeof input.id === 'string' ? input.id : crypto.randomUUID();
+  const generated = typeof input.id !== 'string';
+  const id = generated ? crypto.randomUUID() : (input.id as string);
   if ((canvas.elements as unknown as CanvasElement[]).some((element) => element.id === id))
     throw new CanvasError(
       'validation_error',
@@ -91,14 +92,14 @@ async function create(
         ]
       : [id];
   return json({
-    ok: true,
     canvasId,
     elementId: id,
     revision: result.revision,
     inspectionSummary: result.inspectionSummary,
-    affectedIds,
+    affectedCount: affectedIds.length,
+    generatedIds: generated ? [id] : [],
     removedRelationshipIds: [],
-    diagnostics
+    diagnostics: diagnostics.slice(0, 200)
   });
 }
 async function validate(source: string, signal: AbortSignal): Promise<{ diagramType: string }> {
@@ -260,13 +261,13 @@ export function registerDiagramTools(host: ServerPluginHost): void {
           input.expectedRevision as number
         );
         return json({
-          ok: true,
           canvasId,
           elementId: element.id,
           revision: result.revision,
           inspectionSummary: result.inspectionSummary,
-          affectedIds: changed?.affectedIds ?? [element.id],
-          removedRelationshipIds: changed?.removedRelationshipIds ?? [],
+          affectedCount: changed?.affectedIds.length ?? 1,
+          generatedIds: [],
+          removedRelationshipIds: changed?.removedRelationshipIds.slice(0, 200) ?? [],
           diagnostics: []
         });
       }

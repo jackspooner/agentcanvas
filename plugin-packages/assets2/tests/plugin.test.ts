@@ -10,7 +10,7 @@ import type {
 import { validatePluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it, vi } from 'vitest';
 import { importLegacyAsset } from '../src/legacy.js';
-import plugin from '../src/server.mjs';
+import plugin, { compactDetails } from '../src/server.mjs';
 import { renderAssetSnapshot } from '../src/snapshot.js';
 
 const config = {
@@ -141,5 +141,29 @@ describe('Assets-2 plugin', () => {
         return snapshot.nodes.find((node) => node.kind === 'imageHandle')?.fit;
       })
     ).toEqual(['contain', 'cover', 'fill', 'none']);
+  });
+
+  it('omits content-heavy generation fields unless explicitly included', () => {
+    const details = {
+      asset: { assetId: 'asset-1' },
+      generation: {
+        model: 'example-model',
+        width: 1024,
+        height: 1024,
+        prompt: 'large prompt',
+        jsonPrompt: { subject: 'large structured prompt' },
+        contextImages: [{ assetId: 'context-1' }],
+        controls: { seed: 1 },
+        providerRequest: { internal: 'large request' }
+      }
+    };
+
+    expect(compactDetails(details, [])).toEqual({
+      asset: { assetId: 'asset-1' },
+      generation: { model: 'example-model', width: 1024, height: 1024 }
+    });
+    expect(compactDetails(details, ['prompt', 'controls'])).toMatchObject({
+      generation: { prompt: 'large prompt', controls: { seed: 1 } }
+    });
   });
 });

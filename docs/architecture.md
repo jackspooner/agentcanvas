@@ -96,7 +96,7 @@ Historical v0.1 event bodies are audit records and remain document version 1 aft
 
 ## Public surfaces
 
-- Unversioned: `/health`, `/whoami`, `/openapi.json`, `/mcp`, `/`, `/canvases`, `/canvases/:canvasId`, `/c/:shareToken`, `/embed/:token`.
+- Unversioned: `/health`, `/whoami`, `/openapi.json`, lean `/mcp`, full `/mcp/full`, `/`, `/canvases`, `/canvases/:canvasId`, `/c/:shareToken`, `/embed/:token`.
 - JSON API: `/api/v1/...`.
 - Browser plugin modules: build-hash-keyed same-origin `/api/v1/plugin-modules/...`.
 - Binary resources: opaque `/api/v1/resources/:handle/...`.

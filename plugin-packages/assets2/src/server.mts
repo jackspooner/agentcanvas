@@ -17,6 +17,7 @@ import { Assets2Capability, readAssetsPluginConfig } from './provider.js';
 import {
   assetDataSchema,
   assetDetailsInputSchema,
+  assetDetailsToolInputSchema,
   assetStyleSchema,
   asJsonSchema,
   detailsOutputSchema,
@@ -44,6 +45,29 @@ function detailsDescriptor(capability: AssetsCapabilityV1): Pick<
       return { ok: true, details: await capability.details(reference, signal) };
     }
   };
+}
+
+export function compactDetails(details: JsonObject, include: readonly string[]): JsonObject {
+  const generation = details.generation;
+  if (!generation || typeof generation !== 'object' || Array.isArray(generation)) return details;
+  const source = generation as JsonObject;
+  const compact: JsonObject = {};
+  for (const key of [
+    'service',
+    'tool',
+    'provider',
+    'model',
+    'quality',
+    'width',
+    'height',
+    'requestId',
+    'imageIndex',
+    'generatedAt',
+    ...include
+  ]) {
+    if (source[key] !== undefined) compact[key] = source[key];
+  }
+  return { ...details, generation: compact };
 }
 
 function placeTool(capability: AssetsCapabilityV1): PluginToolDescriptor {
@@ -84,7 +108,7 @@ function placeTool(capability: AssetsCapabilityV1): PluginToolDescriptor {
         element,
         input.expectedRevision as number | undefined
       );
-      return { ok: true, canvasId, elementId: element.id, result };
+      return { ...result, elementId: element.id };
     }
   };
 }
@@ -175,9 +199,16 @@ const plugin: AgentCanvasServerPlugin = {
       name: 'get-details',
       title: 'Get asset details',
       description: 'Read safe metadata, generation, dimension, and cost details for an Assets-2 asset.',
-      ...details,
+      inputSchema: asJsonSchema(assetDetailsToolInputSchema),
+      outputSchema: details.outputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      invoke: (input, context) => details.invoke(input, context.signal)
+      async invoke(input, context) {
+        const full = await details.invoke(input, context.signal);
+        return {
+          ok: true,
+          details: compactDetails(full.details as JsonObject, (input.include as string[] | undefined) ?? [])
+        };
+      }
     });
     host.registerProcedure({
       name: 'details',

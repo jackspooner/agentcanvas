@@ -55,15 +55,20 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
       response.end(JSON.stringify(problem));
       return;
     }
-    if (requestUrl.pathname === '/mcp') {
-      await handleMcpV2Request(request, response, {
-        publicBaseUrl: runtime.config.publicBaseUrl,
-        registry: runtime.registry,
-        store: runtime.store,
-        macros: runtime.macros,
-        browserCatalog: runtime.browserCatalog,
-        diagnostics: () => runtime.plugins.diagnostics.list()
-      });
+    if (requestUrl.pathname === '/mcp' || requestUrl.pathname === '/mcp/full') {
+      await handleMcpV2Request(
+        request,
+        response,
+        {
+          publicBaseUrl: runtime.config.publicBaseUrl,
+          registry: runtime.registry,
+          store: runtime.store,
+          macros: runtime.macros,
+          browserCatalog: runtime.browserCatalog,
+          diagnostics: () => runtime.plugins.diagnostics.list()
+        },
+        requestUrl.pathname === '/mcp/full' ? 'full' : 'lean'
+      );
       return;
     }
     await handler(request, response);

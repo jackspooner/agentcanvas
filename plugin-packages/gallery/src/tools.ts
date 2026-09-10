@@ -63,7 +63,8 @@ async function ownedGallery(
 }
 
 function output(canvasId: string, elementId: string, result: JsonObject): JsonObject {
-  return { ok: true, canvasId, elementId, result };
+  if (result.canvasId !== canvasId) throw new Error('canvas mutation receipt identity mismatch');
+  return { ...result, elementId };
 }
 
 async function replaceData(

@@ -94,8 +94,10 @@ it('preserves literal macro input through HTTP/MCP planning, execution and repla
     expect(httpPlan.previewElements[0].data).toEqual({ payload });
     expect(mcpPlan.structuredContent).toMatchObject({
       planId: httpPlan.planId,
-      previewElements: [{ data: { payload } }]
+      effectSummary: { generatedElementCount: 1, affectedElementCount: 1 }
     });
+    expect(mcpPlan.structuredContent).not.toHaveProperty('previewElements');
+    expect(mcpPlan.structuredContent).not.toHaveProperty('operations');
     expect(runtime.store.getCanvas(canvas.id).revision).toBe(1);
     const args = {
       mode: 'plan',

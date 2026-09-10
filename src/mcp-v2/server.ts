@@ -8,6 +8,7 @@ import {
   CANVAS_INSPECTION_SUMMARY_SCHEMA,
   CANVAS_MUTATION_RECEIPT_SCHEMA,
   CANVAS_THEME_V1_SCHEMA,
+  deriveToolName,
   type CanvasThemeV1,
   type CanvasMutationReceipt,
   type JsonObject,
@@ -28,7 +29,6 @@ import {
   getPluginStatus,
   JSON_OBJECT_SCHEMA,
   PLUGIN_DIAGNOSTIC_SCHEMA,
-  PLUGIN_STATUS_CATALOG_SCHEMA,
   PLUGIN_STATUS_SCHEMA,
   type AgentCanvasProblemCode,
   type CoreJsonSchemaTool,
@@ -44,7 +44,6 @@ import {
   MACRO_LIST_REQUEST_SCHEMA,
   MACRO_LIST_RESPONSE_SCHEMA,
   MACRO_PLAN_REQUEST_SCHEMA,
-  MACRO_PLAN_RESPONSE_SCHEMA,
   MACRO_PROVENANCE_SCHEMA,
   CANVAS_RUN_MACRO_REQUEST_SCHEMA
 } from '../macros/index.js';
@@ -68,6 +67,15 @@ export interface McpV2Runtime {
   macros?: MacroRuntime;
 }
 
+export type McpCatalogProfile = 'lean' | 'full';
+
+const DIRECT_LEAN_PLUGIN_IDS = new Set([
+  'agentcanvas.filesystem-images',
+  'agentcanvas.markdown',
+  'agentcanvas.primitives',
+  'agentcanvas.table'
+]);
+
 const CANVAS_ID = { type: 'string', minLength: 1 };
 const ELEMENT_ID = { type: 'string', minLength: 1 };
 const CANVAS_URL_SCHEMA: JsonSchema = {
@@ -77,6 +85,162 @@ const CANVAS_URL_SCHEMA: JsonSchema = {
 };
 
 const INSPECTION_SUMMARY_SCHEMA = CANVAS_INSPECTION_SUMMARY_SCHEMA;
+const CURSOR_SCHEMA: JsonSchema = { type: 'string', minLength: 1, maxLength: 512 };
+const PAGE_LIMIT_SCHEMA: JsonSchema = { type: 'integer', minimum: 1, maximum: 200, default: 100 };
+
+const CANVAS_SUMMARY_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'title', 'project', 'updatedAt', 'revision', 'documentVersion', 'elementCount'],
+  properties: {
+    id: CANVAS_ID,
+    title: { type: 'string' },
+    project: { type: ['string', 'null'] },
+    updatedAt: { type: 'string' },
+    revision: { type: 'integer', minimum: 1 },
+    documentVersion: { const: 2 },
+    elementCount: { type: 'integer', minimum: 0 }
+  }
+};
+
+const ELEMENT_PAGE_ITEM_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'type', 'schemaVersion', 'frame', 'summary'],
+  properties: {
+    id: ELEMENT_ID,
+    type: { type: 'string' },
+    schemaVersion: { type: 'integer', minimum: 1 },
+    frame: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['x', 'y'],
+      properties: {
+        x: { type: 'number' },
+        y: { type: 'number' },
+        width: { type: ['number', 'null'] },
+        height: { type: ['number', 'null'] },
+        zIndex: { type: ['number', 'null'] },
+        rotation: { type: ['number', 'null'] }
+      }
+    },
+    summary: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['title'],
+      properties: { title: { type: 'string', maxLength: 200 }, detail: { type: 'string', maxLength: 500 } }
+    }
+  }
+};
+
+const MACRO_PLAN_RECEIPT_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'planId',
+    'macroId',
+    'macroVersion',
+    'canvasId',
+    'canvasRevision',
+    'inputDigest',
+    'planDigest',
+    'createdAt',
+    'expiresAt',
+    'outputs',
+    'effectSummary'
+  ],
+  properties: {
+    planId: { type: 'string', minLength: 1 },
+    macroId: { type: 'string', minLength: 1 },
+    macroVersion: { type: 'integer', minimum: 1 },
+    canvasId: CANVAS_ID,
+    canvasRevision: { type: 'integer', minimum: 1 },
+    inputDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+    planDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+    createdAt: { type: 'string' },
+    expiresAt: { type: 'string' },
+    outputs: { type: 'object', additionalProperties: { type: 'string', minLength: 1 } },
+    effectSummary: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['label', 'operationCount', 'generatedElementCount', 'affectedElementCount'],
+      properties: {
+        label: { type: 'string' },
+        operationCount: { type: 'integer', minimum: 0 },
+        generatedElementCount: { type: 'integer', minimum: 0 },
+        affectedElementCount: { type: 'integer', minimum: 0 }
+      }
+    }
+  }
+};
+
+const PLUGIN_SUMMARY_CATALOG_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['plugins', 'diagnosticCounts'],
+  properties: {
+    plugins: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'version', 'displayName', 'elementTypes', 'tools', 'capabilities', 'diagnosticCounts'],
+        properties: {
+          id: { type: 'string' },
+          version: { type: 'string' },
+          displayName: { type: 'string' },
+          elementTypes: { type: 'array', items: { type: 'string' } },
+          tools: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'directName'],
+              properties: { name: { type: 'string' }, directName: { type: ['string', 'null'] } }
+            }
+          },
+          capabilities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'relationship', 'ok'],
+              properties: {
+                name: { type: 'string' },
+                relationship: { enum: ['required', 'provided'] },
+                ok: { type: 'boolean' },
+                code: { type: 'string' }
+              }
+            }
+          },
+          diagnosticCounts: INSPECTION_SUMMARY_SCHEMA
+        }
+      }
+    },
+    diagnosticCounts: INSPECTION_SUMMARY_SCHEMA
+  }
+};
+
+const EXTENSION_TOOL_SELECTOR_SCHEMA: JsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['pluginId', 'toolName'],
+  properties: {
+    pluginId: { type: 'string', minLength: 1 },
+    toolName: { type: 'string', minLength: 1 }
+  }
+};
+
+const EXTENSION_TOOL_ARGUMENTS_SCHEMA: JsonSchema = {
+  ...EXTENSION_TOOL_SELECTOR_SCHEMA,
+  required: ['pluginId', 'toolName', 'arguments'],
+  properties: { ...(EXTENSION_TOOL_SELECTOR_SCHEMA.properties as JsonObject), arguments: JSON_OBJECT_SCHEMA }
+};
+
+const GENERIC_OBJECT_OUTPUT_SCHEMA: JsonSchema = {
+  type: 'object',
+  not: { required: ['problem'], properties: { problem: {} } }
+};
 
 const CREATED_CANVAS_RECEIPT_SCHEMA: JsonSchema = {
   ...CANVAS_MUTATION_RECEIPT_SCHEMA,
@@ -165,7 +329,7 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
     type: 'object',
     additionalProperties: false,
     required: ['canvases'],
-    properties: { canvases: { type: 'array', items: canvas } }
+    properties: { canvases: { type: 'array', items: CANVAS_SUMMARY_SCHEMA } }
   };
   return [
     {
@@ -243,6 +407,52 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
       annotations: { readOnlyHint: true }
     },
     {
+      name: 'canvas_list_elements',
+      title: 'List canvas elements',
+      description:
+        'List bounded element identities, frames, and plugin-owned summaries. Continue only with the returned revision-bound cursor.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId'],
+        properties: { canvasId: CANVAS_ID, limit: PAGE_LIMIT_SCHEMA, cursor: CURSOR_SCHEMA }
+      },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'revision', 'items'],
+        properties: {
+          canvasId: CANVAS_ID,
+          revision: { type: 'integer', minimum: 1 },
+          items: { type: 'array', maxItems: 200, items: ELEMENT_PAGE_ITEM_SCHEMA },
+          nextCursor: CURSOR_SCHEMA
+        }
+      },
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_get_element',
+      title: 'Get canvas element',
+      description: 'Get one complete persisted element plus its canvas ID and revision.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'elementId'],
+        properties: { canvasId: CANVAS_ID, elementId: ELEMENT_ID }
+      },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'revision', 'element'],
+        properties: {
+          canvasId: CANVAS_ID,
+          revision: { type: 'integer', minimum: 1 },
+          element: CANVAS_ELEMENT_SCHEMA
+        }
+      },
+      annotations: { readOnlyHint: true }
+    },
+    {
       name: 'canvas_get_url',
       title: 'Get canvas browser URL',
       description:
@@ -270,7 +480,13 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
         type: 'object',
         additionalProperties: false,
         required: ['canvasId'],
-        properties: { canvasId: CANVAS_ID }
+        properties: {
+          canvasId: CANVAS_ID,
+          severity: { type: 'array', maxItems: 3, uniqueItems: true, items: { enum: ['info', 'warning', 'error'] } },
+          code: { type: 'array', maxItems: 50, uniqueItems: true, items: { type: 'string', minLength: 1 } },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 25 },
+          cursor: CURSOR_SCHEMA
+        }
       },
       outputSchema: {
         type: 'object',
@@ -279,8 +495,9 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
         properties: {
           canvasId: CANVAS_ID,
           revision: { type: 'integer', minimum: 1 },
-          diagnostics: { type: 'array', items: PLUGIN_DIAGNOSTIC_SCHEMA },
-          summary: INSPECTION_SUMMARY_SCHEMA
+          diagnostics: { type: 'array', maxItems: 100, items: PLUGIN_DIAGNOSTIC_SCHEMA },
+          summary: INSPECTION_SUMMARY_SCHEMA,
+          nextCursor: CURSOR_SCHEMA
         }
       },
       annotations: { readOnlyHint: true }
@@ -396,7 +613,7 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
       description:
         'List sanitized active plugin status. Treat this runtime result as authoritative for which element types and plugin tools are currently available.',
       inputSchema: { type: 'object', additionalProperties: false, properties: {} },
-      outputSchema: PLUGIN_STATUS_CATALOG_SCHEMA,
+      outputSchema: PLUGIN_SUMMARY_CATALOG_SCHEMA,
       annotations: { readOnlyHint: true }
     },
     {
@@ -411,6 +628,37 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
       },
       outputSchema: PLUGIN_STATUS_SCHEMA,
       annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_get_extension_tool',
+      title: 'Get extension tool descriptor',
+      description:
+        'Get the exact registry-owned descriptor, schemas, annotations, errors, and dispatcher for one active extension tool.',
+      inputSchema: EXTENSION_TOOL_SELECTOR_SCHEMA,
+      outputSchema: GENERIC_OBJECT_OUTPUT_SCHEMA,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_read_extension_tool',
+      title: 'Run read-only extension tool',
+      description: 'Invoke one active extension tool only when its registry descriptor marks it read-only.',
+      inputSchema: EXTENSION_TOOL_ARGUMENTS_SCHEMA,
+      outputSchema: GENERIC_OBJECT_OUTPUT_SCHEMA,
+      annotations: { readOnlyHint: true, idempotentHint: false, openWorldHint: false }
+    },
+    {
+      name: 'canvas_mutate_extension_tool',
+      title: 'Run mutating extension tool',
+      description:
+        'Invoke one active extension tool only when it is not marked read-only. Inspect the target canvas after writes when counts are nonzero.',
+      inputSchema: EXTENSION_TOOL_ARGUMENTS_SCHEMA,
+      outputSchema: GENERIC_OBJECT_OUTPUT_SCHEMA,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false
+      }
     }
   ];
 }
@@ -463,7 +711,7 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
       description:
         'Purely expand and validate an exact macro version for a canvas. Macro references are evaluated in saved template payloads. Values read from invocation input are inserted as literal JSON.',
       inputSchema: MACRO_PLAN_REQUEST_SCHEMA,
-      outputSchema: MACRO_PLAN_RESPONSE_SCHEMA,
+      outputSchema: MACRO_PLAN_RECEIPT_SCHEMA,
       annotations: { readOnlyHint: true }
     },
     {
@@ -496,6 +744,60 @@ function mutationTool(
 
 function json(value: unknown): JsonObject {
   return JSON.parse(JSON.stringify(value)) as JsonObject;
+}
+
+interface PageCursor {
+  revision: number;
+  offset: number;
+  filter?: string;
+}
+
+function encodeCursor(cursor: PageCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+}
+
+function decodeCursor(value: unknown): PageCursor | undefined {
+  if (value === undefined) return undefined;
+  try {
+    const parsed = JSON.parse(Buffer.from(String(value), 'base64url').toString('utf8')) as PageCursor;
+    if (
+      !Number.isSafeInteger(parsed.revision) ||
+      parsed.revision < 1 ||
+      !Number.isSafeInteger(parsed.offset) ||
+      parsed.offset < 0
+    )
+      throw new Error();
+    return parsed;
+  } catch {
+    throw new CanvasError('validation_error', 'cursor is invalid', 'validation', 400);
+  }
+}
+
+function checkedOffset(cursor: PageCursor | undefined, revision: number, filter?: string): number {
+  if (!cursor) return 0;
+  if (cursor.revision !== revision)
+    throw new CanvasError(
+      'revision_conflict',
+      `cursor revision ${cursor.revision} is stale; current revision is ${revision}`,
+      'revision',
+      409,
+      true
+    );
+  if (cursor.filter !== filter)
+    throw new CanvasError('validation_error', 'cursor filters do not match this request', 'validation', 400);
+  return cursor.offset;
+}
+
+function diagnosticCounts(diagnostics: readonly { severity: string }[]): CanvasMutationReceipt['inspectionSummary'] {
+  return {
+    errorCount: diagnostics.filter((item) => item.severity === 'error').length,
+    warningCount: diagnostics.filter((item) => item.severity === 'warning').length,
+    infoCount: diagnostics.filter((item) => item.severity === 'info').length
+  };
+}
+
+function boundedText(value: string | undefined, maximum: number): string | undefined {
+  return value === undefined ? undefined : value.slice(0, maximum);
 }
 
 function withInspection(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonObject {
@@ -531,13 +833,136 @@ function macroExecutionReceipt(result: MacroExecutionResult, runtime: McpV2Runti
   } as unknown as JsonObject;
 }
 
-async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Promise<JsonObject> {
+function macroPlanReceipt(plan: ReturnType<NonNullable<McpV2Runtime['macros']>['plan']>): JsonObject {
+  return {
+    planId: plan.planId,
+    macroId: plan.macroId,
+    macroVersion: plan.macroVersion,
+    canvasId: plan.canvasId,
+    canvasRevision: plan.canvasRevision,
+    inputDigest: plan.inputDigest,
+    planDigest: plan.planDigest,
+    createdAt: plan.createdAt,
+    expiresAt: plan.expiresAt,
+    outputs: plan.outputs,
+    effectSummary: {
+      label: plan.effectSummary.label,
+      operationCount: plan.effectSummary.operationCount,
+      generatedElementCount: plan.effectSummary.generatedElementCount,
+      affectedElementCount: plan.effectSummary.affectedElementIds.length
+    }
+  } as unknown as JsonObject;
+}
+
+function pluginTool(runtime: McpV2Runtime, pluginId: string, toolName: string): McpJsonSchemaTool {
+  const plugin = runtime.registry.getPlugin(pluginId);
+  if (!plugin) throw new CanvasError('plugin_unavailable', `plugin is not active: ${pluginId}`, 'not_found', 404);
+  const descriptor = plugin.tools.find((tool) => tool.name === toolName);
+  if (!descriptor)
+    throw new CanvasError('not_found', `extension tool is not active: ${pluginId}/${toolName}`, 'not_found', 404);
+  return {
+    name: `extension:${pluginId}/${toolName}`,
+    title: descriptor.title,
+    description: descriptor.description,
+    inputSchema: descriptor.inputSchema,
+    outputSchema: descriptor.outputSchema,
+    annotations: descriptor.annotations,
+    source: 'plugin',
+    pluginId,
+    localName: toolName,
+    descriptor
+  };
+}
+
+function extensionToolDescriptor(tool: McpJsonSchemaTool): JsonObject {
+  const readOnly = tool.annotations?.readOnlyHint === true;
+  return json({
+    pluginId: tool.pluginId,
+    toolName: tool.localName,
+    title: tool.title,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    outputSchema: tool.outputSchema,
+    annotations: tool.annotations ?? {},
+    errorCodes: mcpErrorCodesForTool(tool),
+    dispatcher: readOnly ? 'canvas_read_extension_tool' : 'canvas_mutate_extension_tool'
+  });
+}
+
+async function invokePluginTool(
+  tool: McpJsonSchemaTool,
+  input: JsonObject,
+  runtime: McpV2Runtime,
+  signal: AbortSignal,
+  ajv: Ajv2020
+): Promise<JsonObject> {
+  const pluginId = tool.pluginId as string;
+  const plugin = runtime.registry.getPlugin(pluginId);
+  if (!plugin) throw new CanvasError('plugin_unavailable', `plugin is not active: ${pluginId}`, 'not_found', 404);
+  const descriptor = tool.descriptor as NonNullable<McpJsonSchemaTool['descriptor']>;
+  if (!ajv.validate(descriptor.inputSchema, input))
+    throw new CanvasError(
+      'validation_error',
+      `tool input failed schema validation: ${pluginId}/${descriptor.name}`,
+      'validation',
+      400
+    );
+  const context: PluginInvocationContext = {
+    signal,
+    correlationId: `mcp_${nanoid(16)}`,
+    canvas: createPluginCanvasOperations(runtime.store, pluginId, plugin.plugin.manifest.permissions, runtime.registry)
+  };
+  const output = await descriptor.invoke(input, context);
+  if (!ajv.validate(descriptor.outputSchema, output))
+    throw new Error(`tool output failed schema validation: ${pluginId}/${descriptor.name}`);
+  return output;
+}
+
+function compactPluginCatalog(runtime: McpV2Runtime, profile: McpCatalogProfile): JsonObject {
+  const status = createPluginStatusCatalog(runtime.registry, {
+    browserEntries: runtime.browserCatalog.entries,
+    diagnostics: runtime.diagnostics()
+  });
+  return json({
+    plugins: status.plugins.map((plugin) => ({
+      id: plugin.id,
+      version: plugin.version,
+      displayName: plugin.displayName,
+      elementTypes: plugin.contributions.elements.map((element) => element.type),
+      tools: plugin.contributions.tools.map((name) => ({
+        name,
+        directName: profile === 'full' || DIRECT_LEAN_PLUGIN_IDS.has(plugin.id) ? deriveToolName(plugin.id, name) : null
+      })),
+      capabilities: plugin.capabilities.map((capability) => ({
+        name: capability.name,
+        relationship: capability.relationship,
+        ok: capability.status.ok,
+        ...(capability.status.code ? { code: capability.status.code } : {})
+      })),
+      diagnosticCounts: diagnosticCounts(plugin.diagnostics)
+    })),
+    diagnosticCounts: diagnosticCounts(status.diagnostics)
+  });
+}
+
+async function invokeCore(
+  name: string,
+  input: JsonObject,
+  runtime: McpV2Runtime,
+  profile: McpCatalogProfile,
+  signal: AbortSignal,
+  ajv: Ajv2020
+): Promise<JsonObject> {
   const store = runtime.store;
   const canvasId = input.canvasId as string;
   const expectedRevision = input.expectedRevision as number | undefined;
   if (name === 'canvas_get_guidance') {
     const coreToolCount = coreTools().length + macroTools().length;
-    const pluginToolCount = runtime.registry.plugins.reduce((count, plugin) => count + plugin.tools.length, 0);
+    const pluginToolCount = runtime.registry.plugins.reduce(
+      (count, plugin) =>
+        count + (profile === 'full' || DIRECT_LEAN_PLUGIN_IDS.has(plugin.plugin.manifest.id) ? plugin.tools.length : 0),
+      0
+    );
     return json({
       ...AGENTCANVAS_AGENT_GUIDANCE,
       mcpCatalog: { coreToolCount, pluginToolCount, totalToolCount: coreToolCount + pluginToolCount }
@@ -569,7 +994,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   }
   if (name === 'macro_plan') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
-    return runtime.macros.plan(input as never) as unknown as JsonObject;
+    return macroPlanReceipt(runtime.macros.plan(input as never));
   }
   if (name === 'canvas_run_macro') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
@@ -584,8 +1009,59 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     return { ...mutationReceipt(canvas, runtime), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
   }
   if (name === 'canvas_list')
-    return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
+    return {
+      canvases: store.listCanvases({ limit: input.limit as number | undefined }).map((canvas) => ({
+        id: canvas.id,
+        title: canvas.title,
+        project: canvas.project ?? null,
+        updatedAt: canvas.updatedAt,
+        revision: canvas.revision,
+        documentVersion: canvas.documentVersion,
+        elementCount: canvas.elements.length
+      }))
+    } as unknown as JsonObject;
   if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime);
+  if (name === 'canvas_list_elements') {
+    const canvas = store.getCanvas(canvasId);
+    const limit = (input.limit as number | undefined) ?? 100;
+    const offset = checkedOffset(decodeCursor(input.cursor), canvas.revision);
+    const items = canvas.elements.slice(offset, offset + limit).map((element) => {
+      const summary = runtime.registry.getElementType(element.type)?.summarize(element) ?? {
+        title: `Unavailable ${element.type}`
+      };
+      return {
+        id: element.id,
+        type: element.type,
+        schemaVersion: element.schemaVersion,
+        frame: {
+          x: element.x,
+          y: element.y,
+          width: element.width ?? null,
+          height: element.height ?? null,
+          zIndex: element.zIndex ?? null,
+          rotation: element.rotation ?? null
+        },
+        summary: {
+          title: boundedText(summary.title, 200),
+          ...(summary.detail ? { detail: boundedText(summary.detail, 500) } : {})
+        }
+      };
+    });
+    return json({
+      canvasId,
+      revision: canvas.revision,
+      items,
+      ...(offset + items.length < canvas.elements.length
+        ? { nextCursor: encodeCursor({ revision: canvas.revision, offset: offset + items.length }) }
+        : {})
+    });
+  }
+  if (name === 'canvas_get_element') {
+    const canvas = store.getCanvas(canvasId);
+    const element = canvas.elements.find((candidate) => candidate.id === input.elementId);
+    if (!element) throw new CanvasError('not_found', `element not found: ${String(input.elementId)}`, 'not_found', 404);
+    return json({ canvasId, revision: canvas.revision, element });
+  }
   if (name === 'canvas_get_url') {
     const canvas = store.getCanvas(canvasId);
     return { canvasId: canvas.id, url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
@@ -593,11 +1069,25 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   if (name === 'canvas_inspect') {
     const canvas = store.getCanvas(canvasId);
     const inspection = inspectCanvas(canvas, runtime.registry, store.getConfiguration().diagnostics);
+    const severities = (input.severity as string[] | undefined) ?? [];
+    const codes = (input.code as string[] | undefined) ?? [];
+    const filter = JSON.stringify({ severities: [...severities].sort(), codes: [...codes].sort() });
+    const offset = checkedOffset(decodeCursor(input.cursor), canvas.revision, filter);
+    const limit = (input.limit as number | undefined) ?? 25;
+    const filtered = inspection.diagnostics.filter(
+      (diagnostic) =>
+        (severities.length === 0 || severities.includes(diagnostic.severity)) &&
+        (codes.length === 0 || codes.includes(diagnostic.code))
+    );
+    const diagnostics = filtered.slice(offset, offset + limit);
     return json({
       canvasId,
       revision: canvas.revision,
-      diagnostics: inspection.diagnostics,
-      summary: inspection.summary
+      diagnostics,
+      summary: inspection.summary,
+      ...(offset + diagnostics.length < filtered.length
+        ? { nextCursor: encodeCursor({ revision: canvas.revision, offset: offset + diagnostics.length, filter }) }
+        : {})
     });
   }
   if (name === 'canvas_rename') {
@@ -679,15 +1169,29 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
       store.applyOperations(canvasId, { expectedRevision, operations: [{ op: 'clear' }] }),
       runtime
     );
-  const status = createPluginStatusCatalog(runtime.registry, {
-    browserEntries: runtime.browserCatalog.entries,
-    diagnostics: runtime.diagnostics()
-  });
-  if (name === 'canvas_list_plugins') return status as unknown as JsonObject;
+  if (name === 'canvas_list_plugins') return compactPluginCatalog(runtime, profile);
   if (name === 'canvas_get_plugin') {
+    const status = createPluginStatusCatalog(runtime.registry, {
+      browserEntries: runtime.browserCatalog.entries,
+      diagnostics: runtime.diagnostics()
+    });
     const plugin = getPluginStatus(status, input.pluginId as string);
     if (!plugin) throw new Error(`plugin is not active: ${String(input.pluginId)}`);
     return plugin as unknown as JsonObject;
+  }
+  if (name === 'canvas_get_extension_tool')
+    return extensionToolDescriptor(pluginTool(runtime, input.pluginId as string, input.toolName as string));
+  if (name === 'canvas_read_extension_tool' || name === 'canvas_mutate_extension_tool') {
+    const tool = pluginTool(runtime, input.pluginId as string, input.toolName as string);
+    const readOnly = tool.annotations?.readOnlyHint === true;
+    if ((name === 'canvas_read_extension_tool') !== readOnly)
+      throw new CanvasError(
+        'validation_error',
+        `${tool.pluginId}/${tool.localName} must use ${readOnly ? 'canvas_read_extension_tool' : 'canvas_mutate_extension_tool'}`,
+        'validation',
+        400
+      );
+    return invokePluginTool(tool, input.arguments as JsonObject, runtime, signal, ajv);
   }
   throw new Error(`unknown core MCP tool: ${name}`);
 }
@@ -698,10 +1202,15 @@ function schemaObject(schema: JsonSchema): Record<string, unknown> {
 }
 
 /** Creates the canonical tool catalog shared by MCP runtime exposure and generated contract artifacts. */
-export function createMcpV2ToolCatalog(registry: FrozenPluginRegistry): readonly McpJsonSchemaTool[] {
-  return createMcpToolCatalog(registry, [...coreTools(), ...macroTools()]).map((tool) =>
-    Object.freeze({ ...tool, outputSchema: mcpOutputSchema(tool.outputSchema) })
-  );
+export function createMcpV2ToolCatalog(
+  registry: FrozenPluginRegistry,
+  profile: McpCatalogProfile = 'lean'
+): readonly McpJsonSchemaTool[] {
+  return createMcpToolCatalog(registry, [...coreTools(), ...macroTools()])
+    .filter(
+      (tool) => tool.source === 'core' || profile === 'full' || DIRECT_LEAN_PLUGIN_IDS.has(tool.pluginId as string)
+    )
+    .map((tool) => Object.freeze({ ...tool, outputSchema: mcpOutputSchema(tool.outputSchema) }));
 }
 
 /** Declares the application failures a caller should handle for one normalized tool contract. */
@@ -728,11 +1237,43 @@ export function mcpErrorCodesForTool(tool: McpJsonSchemaTool): readonly AgentCan
   return [...codes].sort();
 }
 
-export function createMcpV2Server(runtime: McpV2Runtime): {
+function responseReceipt(output: JsonObject): string {
+  const scalarKeys = [
+    'canvasId',
+    'elementId',
+    'macroId',
+    'macroVersion',
+    'currentVersion',
+    'planId',
+    'revision',
+    'canvasRevision'
+  ];
+  const collectionKeys = [
+    'canvases',
+    'elements',
+    'items',
+    'diagnostics',
+    'plugins',
+    'warnings',
+    'generatedIds',
+    'removedRelationshipIds'
+  ];
+  const fields = scalarKeys.flatMap((key) => {
+    const value = output[key];
+    return ['string', 'number', 'boolean'].includes(typeof value) ? [`${key}=${String(value)}`] : [];
+  });
+  for (const key of collectionKeys) if (Array.isArray(output[key])) fields.push(`${key}=${output[key].length}`);
+  return (fields.length ? fields.join(' ') : 'ok; result in structuredContent').slice(0, 512);
+}
+
+export function createMcpV2Server(
+  runtime: McpV2Runtime,
+  profile: McpCatalogProfile = 'lean'
+): {
   server: Server;
   tools: readonly McpJsonSchemaTool[];
 } {
-  const tools = createMcpV2ToolCatalog(runtime.registry);
+  const tools = createMcpV2ToolCatalog(runtime.registry, profile);
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
   const validators = new Map<string, { input: ValidateFunction; output: ValidateFunction }>(
     tools.map((tool) => [tool.name, { input: ajv.compile(tool.inputSchema), output: ajv.compile(tool.outputSchema) }])
@@ -768,26 +1309,11 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
           400
         );
       let output: JsonObject;
-      if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime);
-      else {
-        const pluginId = tool.pluginId as string;
-        const plugin = runtime.registry.getPlugin(pluginId);
-        if (!plugin) throw new CanvasError('plugin_unavailable', `plugin is not active: ${pluginId}`, 'not_found', 404);
-        const context: PluginInvocationContext = {
-          signal: extra.signal,
-          correlationId: `mcp_${nanoid(16)}`,
-          canvas: createPluginCanvasOperations(
-            runtime.store,
-            pluginId,
-            plugin.plugin.manifest.permissions,
-            runtime.registry
-          )
-        };
-        output = await (tool.descriptor as NonNullable<McpJsonSchemaTool['descriptor']>).invoke(input, context);
-      }
+      if (tool.source === 'core') output = await invokeCore(tool.name, input, runtime, profile, extra.signal, ajv);
+      else output = await invokePluginTool(tool, input, runtime, extra.signal, ajv);
       if (!validation.output(output)) throw new Error(`tool output failed schema validation: ${tool.name}`);
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }],
+        content: [{ type: 'text' as const, text: responseReceipt(output) }],
         structuredContent: output
       };
     } catch (error) {

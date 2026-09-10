@@ -130,7 +130,7 @@ curl http://127.0.0.1:23003/whoami
 curl http://127.0.0.1:23003/api/v1/plugins
 ```
 
-`/health` reports core host readiness. `/whoami` safely reports host version, plugin API version, active IDs, and the MCP endpoint. When the optional Assets-2 extension is active, both routes include its provider status under `dependencies.assets`; provider failure is visible but does not make core unhealthy.
+`/health` reports core host readiness. `/whoami` safely reports host version, plugin API version, active IDs, the lean `/mcp` endpoint, the `/mcp/full` endpoint, and the default profile. When the optional Assets-2 extension is active, both routes include its provider status under `dependencies.assets`; provider failure is visible but does not make core unhealthy.
 
 ## Database operations
 
@@ -139,6 +139,7 @@ AgentCanvas never opportunistically changes an older production schema during st
 ```bash
 npm run migrate -- inspect --database <path> --json
 npm run migrate -- apply --database <path> --backup-dir <path> --plugins <plugins-path>
+npm run migrate -- repair-created-by --database <path> --backup-dir <path>
 npm run migrate -- verify --database <path> --plugins <plugins-path>
 npm run migrate -- restore --database <path> --backup <backup-path>
 ```

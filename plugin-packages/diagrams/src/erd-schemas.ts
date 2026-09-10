@@ -70,29 +70,38 @@ export const erdDataSchema: JsonSchema = object({
 const operation = (op: string, properties: Record<string, JsonSchema>, required = Object.keys(properties)) =>
   object({ op: { const: op }, ...properties }, ['op', ...required]);
 
+export const erdOperationDefinitions = {
+  ErdAttribute: attribute,
+  ErdEntity: entity,
+  ErdRelationship: relationship
+} satisfies Record<string, JsonSchema>;
+
+export const erdOperationVariants: JsonSchema[] = [
+  operation('set-title', { title }),
+  operation('add-entity', { entity: { $ref: '#/$defs/ErdEntity' } }),
+  operation('update-entity', { entityId: id, name, alias: { type: 'string', maxLength: 200 } }, ['entityId', 'name']),
+  operation('move-entity', { entityId: id, x: coordinate, y: coordinate }),
+  operation('present-entity', { entityId: id, presentation: boxPresentationSchema }),
+  operation('present-relationship', { relationshipId: id, presentation: connectorPresentationSchema }),
+  operation('delete-entity', { entityId: id }),
+  operation('add-attribute', {
+    entityId: id,
+    attribute: { $ref: '#/$defs/ErdAttribute' },
+    index: { type: 'integer', minimum: 0, maximum: ERD_LIMITS.attributesPerEntity }
+  }),
+  operation('update-attribute', { entityId: id, attribute: { $ref: '#/$defs/ErdAttribute' } }),
+  operation('reorder-attributes', {
+    entityId: id,
+    attributeIds: { type: 'array', maxItems: ERD_LIMITS.attributesPerEntity, uniqueItems: true, items: id }
+  }),
+  operation('delete-attribute', { entityId: id, attributeId: id }),
+  operation('add-relationship', { relationship: { $ref: '#/$defs/ErdRelationship' } }),
+  operation('update-relationship', { relationship: { $ref: '#/$defs/ErdRelationship' } }),
+  operation('delete-relationship', { relationshipId: id }),
+  operation('auto-layout', { direction: { enum: ['LR', 'TB'] } })
+];
+
 export const erdOperationSchema: JsonSchema = {
-  oneOf: [
-    operation('set-title', { title }),
-    operation('add-entity', { entity }),
-    operation('update-entity', { entityId: id, name, alias: { type: 'string', maxLength: 200 } }, ['entityId', 'name']),
-    operation('move-entity', { entityId: id, x: coordinate, y: coordinate }),
-    operation('present-entity', { entityId: id, presentation: boxPresentationSchema }),
-    operation('present-relationship', { relationshipId: id, presentation: connectorPresentationSchema }),
-    operation('delete-entity', { entityId: id }),
-    operation('add-attribute', {
-      entityId: id,
-      attribute,
-      index: { type: 'integer', minimum: 0, maximum: ERD_LIMITS.attributesPerEntity }
-    }),
-    operation('update-attribute', { entityId: id, attribute }),
-    operation('reorder-attributes', {
-      entityId: id,
-      attributeIds: { type: 'array', maxItems: ERD_LIMITS.attributesPerEntity, uniqueItems: true, items: id }
-    }),
-    operation('delete-attribute', { entityId: id, attributeId: id }),
-    operation('add-relationship', { relationship }),
-    operation('update-relationship', { relationship }),
-    operation('delete-relationship', { relationshipId: id }),
-    operation('auto-layout', { direction: { enum: ['LR', 'TB'] } })
-  ]
+  $defs: erdOperationDefinitions,
+  oneOf: erdOperationVariants
 };

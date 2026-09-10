@@ -27,6 +27,33 @@ Call `canvas_get` only when the full persisted document is needed. Browser-facin
 HTTP response shapes and existing SDK full-document canvas methods are unchanged.
 No database migration, new error code, dependency, or package release is involved.
 
+### Lean MCP catalog and bounded reads
+
+The default `/mcp` and stdio catalog is lean. It keeps core tools and the common
+filesystem-image, primitive, Markdown, and table tools. Use
+`canvas_get_extension_tool` plus `canvas_read_extension_tool` or
+`canvas_mutate_extension_tool` for other active extension tools. Clients that
+require every named tool can connect to `/mcp/full` or set
+`AGENT_CANVAS_MCP_PROFILE=full` for stdio. Refresh cached tool catalogs after
+switching profiles.
+
+MCP canvas lists, element lists, inspection, plugin lists, macro plans, and
+successful text receipts are now bounded. Use `canvas_get_element`, paginated
+`canvas_list_elements`, filtered/paginated `canvas_inspect`, or the explicit
+full `canvas_get` according to the data required. HTTP response contracts are unchanged.
+
+If verification reports noncanonical persisted `createdBy` values, stop
+AgentCanvas and run:
+
+```bash
+npm run migrate -- repair-created-by --database <path> --backup-dir <path>
+```
+
+The command creates and verifies a native SQLite backup and manifest, preserves
+the original value in `metadata.legacyCreatedBy`, maps the creator to `system`,
+and records the repair without changing schema versions. It aborts on conflicting
+legacy metadata; a completed second run is a no-op and creates no backup.
+
 ## 0.3.0-alpha.2
 
 Canvas list limits now enforce the documented integer range of 1 through 200.

@@ -158,6 +158,64 @@ describe('v0.2 assembled runtime', () => {
       ])
         expect((await patch(body)).status).toBe(400);
       expect(runtime.store.getConfiguration().diagnostics.overlapMode).toBe('all');
+      const firstElements = await client.callTool({
+        name: 'canvas_list_elements',
+        arguments: { canvasId: canvas.id, limit: 2 }
+      });
+      expect(firstElements.structuredContent).toMatchObject({
+        canvasId: canvas.id,
+        revision: canvas.revision,
+        items: [
+          { id: 'card_0', frame: { x: 0, y: 0, width: 100, height: 80 }, summary: { title: 'Card' } },
+          { id: 'card_1' }
+        ],
+        nextCursor: expect.any(String)
+      });
+      const firstElement = await client.callTool({
+        name: 'canvas_get_element',
+        arguments: { canvasId: canvas.id, elementId: 'card_0' }
+      });
+      expect(firstElement.structuredContent).toMatchObject({
+        canvasId: canvas.id,
+        revision: canvas.revision,
+        element: { id: 'card_0', data: { title: 'Card' } }
+      });
+      const firstInspection = await client.callTool({
+        name: 'canvas_inspect',
+        arguments: { canvasId: canvas.id, severity: ['warning'], code: ['element_frames_overlap'], limit: 1 }
+      });
+      expect(firstInspection.structuredContent).toMatchObject({
+        diagnostics: [expect.objectContaining({ code: 'element_frames_overlap' })],
+        summary: { warningCount: 3 },
+        nextCursor: expect.any(String)
+      });
+      runtime.store.applyOperations(canvas.id, {
+        expectedRevision: canvas.revision,
+        operations: [
+          {
+            op: 'upsertElement',
+            element: {
+              id: 'card_3',
+              type: 'fixture.cards/card',
+              schemaVersion: 1,
+              x: 300,
+              y: 0,
+              width: 100,
+              height: 80,
+              data: { title: 'Later' }
+            }
+          }
+        ]
+      });
+      const stale = await client.callTool({
+        name: 'canvas_list_elements',
+        arguments: {
+          canvasId: canvas.id,
+          limit: 2,
+          cursor: (firstElements.structuredContent as { nextCursor: string }).nextCursor
+        }
+      });
+      expect(stale.structuredContent).toMatchObject({ problem: { code: 'revision_conflict' } });
       expect((await patch({ defaultCanvasSize: { mode: 'unlimited' } })).status).toBe(200);
       expect(runtime.store.getConfiguration().diagnostics.overlapMode).toBe('all');
     } finally {
@@ -263,6 +321,11 @@ describe('v0.2 assembled runtime', () => {
     expect(await health.json()).toMatchObject({ ok: true, dependencies: {} });
     expect(await (await app.request('/whoami')).json()).toMatchObject({
       dependencies: {},
+      mcp: {
+        endpoint: 'http://127.0.0.1:23003/mcp',
+        fullEndpoint: 'http://127.0.0.1:23003/mcp/full',
+        defaultProfile: 'lean'
+      },
       macros: { version: 1, maxTemplates: 100, maxCanvasElements: 2000, maxPlans: 500, planTtlMs: 300000 }
     });
 
@@ -414,7 +477,7 @@ describe('v0.2 assembled runtime', () => {
       schemaVersion: 1,
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
-      mcpCatalog: { coreToolCount: 24, pluginToolCount: 0, totalToolCount: 24 }
+      mcpCatalog: { coreToolCount: 29, pluginToolCount: 0, totalToolCount: 29 }
     });
     const invalidMcp = await client.callTool({ name: 'canvas_get', arguments: {} });
     expect(invalidMcp.isError).toBe(true);
