@@ -130,7 +130,7 @@ const plugin: AgentCanvasServerPlugin = {
         if (input.style && typeof input.style === 'object' && !Array.isArray(input.style)) element.style = input.style;
         if (input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata))
           element.metadata = input.metadata;
-        const result = await context.canvas.upsertElement(
+        const result = await context.canvas.upsertElementReceipt(
           canvasId,
           element,
           input.expectedRevision as number | undefined

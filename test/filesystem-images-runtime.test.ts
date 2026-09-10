@@ -138,6 +138,30 @@ describe('filesystem image runtime without Assets-2', () => {
         instance: 'mcp://tool/agentcanvas_filesystem_images__place'
       }
     });
+    const placed = await client.callTool({
+      name: 'agentcanvas_filesystem_images__place',
+      arguments: {
+        canvasId,
+        id: 'agent-placement',
+        x: 200,
+        y: 20,
+        source: { rootId: 'images', path: 'sample.png' },
+        caption: 'New placement'
+      }
+    });
+    expect(placed.structuredContent).toEqual({
+      ok: true,
+      canvasId,
+      elementId: 'agent-placement',
+      result: {
+        canvasId,
+        revision: 3,
+        inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+      }
+    });
+    expect(JSON.stringify(placed)).not.toContain('Local file');
+    expect(JSON.stringify(placed)).not.toContain('New placement');
+    expect(JSON.stringify(placed)).not.toContain('elements');
     await Promise.all([client.close(), mcp.server.close()]);
 
     const snapshotResponse = await app.request(`/api/v1/canvases/${canvasId}/snapshot`, { method: 'POST' });

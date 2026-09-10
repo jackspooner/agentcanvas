@@ -60,7 +60,7 @@ function placeTool(sourceResolver: FileSystemImageSourceResolver): PluginToolDes
       if (input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)) {
         element.metadata = input.metadata;
       }
-      const result = await context.canvas.upsertElement(
+      const result = await context.canvas.upsertElementReceipt(
         canvasId,
         element,
         input.expectedRevision as number | undefined

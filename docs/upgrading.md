@@ -13,6 +13,20 @@ server rendering. Install it explicitly, restart AgentCanvas, and reload MCP
 clients. The three standard extensions and database schema remain unchanged.
 See [release notes](release-notes-v0.3.0-alpha.3.md).
 
+### Compact MCP mutation receipts
+
+Refresh cached MCP tool catalogs after restart. MCP canvas mutations no longer
+return the full canvas document. They return `canvasId`, `revision`, and
+`inspectionSummary`; `canvas_create` also returns `url`. Macro creation/version
+writes return `macroId`, `currentVersion`, and `archived`, while
+`canvas_run_macro` returns its canvas receipt, provenance, named outputs, and
+affected IDs without operation history.
+
+If any inspection count is nonzero, call `canvas_inspect` for the diagnostics.
+Call `canvas_get` only when the full persisted document is needed. Browser-facing
+HTTP response shapes and existing SDK full-document canvas methods are unchanged.
+No database migration, new error code, dependency, or package release is involved.
+
 ## 0.3.0-alpha.2
 
 Canvas list limits now enforce the documented integer range of 1 through 200.

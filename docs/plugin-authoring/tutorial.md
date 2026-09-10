@@ -134,7 +134,7 @@ host.registerTool({
   outputSchema: addCardOutputSchema,
   annotations: { idempotentHint: false, destructiveHint: false },
   async invoke(input, context) {
-    const canvas = await context.canvas.upsertElement(String(input.canvasId), {
+    const receipt = await context.canvas.upsertElementReceipt(String(input.canvasId), {
       id: String(input.id),
       type: 'acme.signal-card/card',
       schemaVersion: 1,
@@ -144,7 +144,7 @@ host.registerTool({
       height: 180,
       data: { title: String(input.title), status: String(input.status) }
     });
-    return { canvas };
+    return { receipt };
   }
 });
 ```

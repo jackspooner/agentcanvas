@@ -1,4 +1,4 @@
-import type { JsonObject, JsonSchema } from '@agentcanvas/plugin-sdk';
+import { CANVAS_MUTATION_RECEIPT_SCHEMA, type JsonObject, type JsonSchema } from '@agentcanvas/plugin-sdk';
 
 const assetReference: JsonObject = {
   type: 'object',
@@ -164,7 +164,7 @@ export const mutationOutputSchema: JsonSchema = {
     ok: { const: true },
     canvasId: { type: 'string' },
     elementId: { type: 'string' },
-    result: { type: 'object' }
+    result: CANVAS_MUTATION_RECEIPT_SCHEMA
   }
 };
 

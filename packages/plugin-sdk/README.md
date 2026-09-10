@@ -14,6 +14,11 @@ Export an object implementing `AgentCanvasServerPlugin` from the server entry de
 Registration is synchronous even when `activate` performs asynchronous setup; the host validates and freezes
 the complete registry before it starts serving requests.
 
+MCP-facing tools should use `upsertElementReceipt`,
+`replaceElementDataReceipt`, and `deleteElementReceipt`. These return a bounded
+`CanvasMutationReceipt`; the existing methods retain their full-document results
+for compatible in-process consumers.
+
 ## Browser entry
 
 Export an object implementing `AgentCanvasBrowserPlugin`. Browser renderers use a ShadowRoot supplied by the

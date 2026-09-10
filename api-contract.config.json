@@ -17,6 +17,22 @@
         "migration": "docs/upgrading.md#030-alpha2",
         "owner": "AgentCanvas",
         "expires": "2026-11-30"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "canvas_*",
+        "reason": "Pre-1.0 MCP canvas mutations now return bounded receipts instead of full documents.",
+        "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
+      },
+      {
+        "ruleId": "ARC755",
+        "location": "macro_create*",
+        "reason": "Pre-1.0 MCP macro writes now return bounded version receipts.",
+        "migration": "docs/upgrading.md#compact-mcp-mutation-receipts",
+        "owner": "AgentCanvas",
+        "expires": "2026-12-31"
       }
     ]
   },

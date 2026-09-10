@@ -49,11 +49,12 @@ recipes. An agent should discover the relevant tools and guidance itself.
 
 Evaluate each objective from both persisted and rendered evidence:
 
-- use `canvas_get` after the final mutation to check element types, IDs,
-  frames, data, theme, and revision;
+- use `canvas_get` after the final mutation only when the objective requires
+  checking full persisted element types, IDs, frames, data, or theme;
 - use `canvas_inspect` to find deterministic plugin-owned fit warnings and
   intersecting frames, then rerun it after repairs; the final canvas checks
-  must be `canvas_get` followed by `canvas_inspect`, with no later mutation;
+  must end with `canvas_inspect`, preceded by `canvas_get` only when full
+  persisted state is part of the evidence, with no later mutation;
 - inspect the browser canvas or a screenshot for first-load framing, overlap,
   clipping, contrast, connector routing, and remote media;
 - retain the agent's final wording to catch claims that exceed its evidence;

@@ -1,5 +1,16 @@
 # Change history
 
+## Unreleased — compact MCP mutation receipts
+
+- MCP canvas writes now return canvas ID, revision, and whole-canvas inspection
+  counts instead of repeating the full document. Canvas creation also returns its
+  direct URL; macro writes and execution return compact mutation-specific receipts.
+- Bundled extensions use the new SDK receipt operations. Existing extension code
+  may keep using the compatible full-document operations. HTTP write responses are
+  unchanged.
+- Macro schemas include only reachable definitions and generic core upsert publishes
+  the canonical element envelope, substantially reducing the MCP tool catalog.
+
 ## Unreleased — filesystem image stability
 
 - Unchanged filesystem images now reuse their live resource handle across canvas

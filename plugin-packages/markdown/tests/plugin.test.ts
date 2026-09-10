@@ -61,13 +61,28 @@ describe('Markdown plugin', () => {
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
     const addDocument = tools.find((tool) => tool.name === 'add-document') as PluginToolDescriptor;
-    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
-    const context = { canvas: { upsertElement } } as unknown as PluginInvocationContext;
+    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({
+      canvasId: 'canvas_1',
+      revision: 2,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    }));
+    const context = { canvas: { upsertElementReceipt } } as unknown as PluginInvocationContext;
     const markdown = ['# Heading', '- One', '- Two', '- Three', '- Four', '- Five', '- Six', '- Seven'].join('\n');
 
-    await addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, markdown }, context);
-    expect(upsertElement.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ height: expect.any(Number) }));
-    expect((upsertElement.mock.calls[0]?.[1] as { height: number }).height).toBeGreaterThan(220);
+    const output = await addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, markdown }, context);
+    expect(output).toEqual({
+      ok: true,
+      canvasId: 'canvas_1',
+      elementId: expect.any(String),
+      result: {
+        canvasId: 'canvas_1',
+        revision: 2,
+        inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+      }
+    });
+    expect(JSON.stringify(output)).not.toContain(markdown);
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ height: expect.any(Number) }));
+    expect((upsertElementReceipt.mock.calls[0]?.[1] as { height: number }).height).toBeGreaterThan(220);
 
     await expect(
       addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, height: 220, markdown }, context)
@@ -91,11 +106,11 @@ describe('Markdown plugin', () => {
       })
     ).toEqual([expect.objectContaining({ code: 'markdown_content_may_clip' })]);
 
-    upsertElement.mockClear();
+    upsertElementReceipt.mockClear();
     await addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, height: 220, markdown, allowScroll: true }, context);
-    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ data: { allowScroll: true } });
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ data: { allowScroll: true } });
 
-    upsertElement.mockClear();
+    upsertElementReceipt.mockClear();
     const taskTable = [
       '#### Proposed Tasks',
       '| Task | Owner |',
@@ -106,6 +121,6 @@ describe('Markdown plugin', () => {
       '| Test the workstation layout | Unassigned |'
     ].join('\n');
     await addDocument.invoke({ canvasId: 'canvas_1', x: 0, y: 0, width: 310, markdown: taskTable }, context);
-    expect((upsertElement.mock.calls[0]?.[1] as { height: number }).height).toBeGreaterThan(300);
+    expect((upsertElementReceipt.mock.calls[0]?.[1] as { height: number }).height).toBeGreaterThan(300);
   });
 });

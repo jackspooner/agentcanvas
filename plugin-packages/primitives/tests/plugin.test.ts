@@ -139,7 +139,7 @@ describe('primitives plugin', () => {
       })
     ).toEqual([expect.objectContaining({ code: 'literal_text_may_clip' })]);
 
-    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
+    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
     await addText.invoke(
       {
         canvasId: 'canvas_1',
@@ -151,9 +151,9 @@ describe('primitives plugin', () => {
         style: { fontSize: 36 },
         allowClipping: true
       },
-      { canvas: { upsertElement } } as unknown as PluginInvocationContext
+      { canvas: { upsertElementReceipt } } as unknown as PluginInvocationContext
     );
-    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ data: { allowClipping: true } });
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ data: { allowClipping: true } });
   });
 
   it('renders rectangle, ellipse, and diamond as distinct snapshot nodes', () => {

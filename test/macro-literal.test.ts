@@ -107,9 +107,13 @@ it('preserves literal macro input through HTTP/MCP planning, execution and repla
     const executed = await client.callTool({ name: 'canvas_run_macro', arguments: args });
     expect(executed.isError).not.toBe(true);
     expect(executed.structuredContent).toMatchObject({
-      canvas: { revision: 2, elements: [{ data: { payload } }] },
-      history: { affectedElementIds: [httpPlan.previewElements[0].id] }
+      canvasId: canvas.id,
+      revision: 2,
+      affectedElementIds: [httpPlan.previewElements[0].id],
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
+    expect(executed.structuredContent).not.toHaveProperty('canvas');
+    expect(executed.structuredContent).not.toHaveProperty('history');
     expect((await client.callTool({ name: 'canvas_run_macro', arguments: args })).structuredContent).toEqual(
       executed.structuredContent
     );

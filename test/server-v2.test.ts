@@ -127,15 +127,22 @@ describe('v0.2 assembled runtime', () => {
           expect(result.status).toBe(200);
           expect((await result.json()).diagnostics).toHaveLength(expected);
         }
-        for (const name of ['canvas_get', 'canvas_inspect', 'canvas_rename']) {
+        for (const name of ['canvas_get', 'canvas_inspect']) {
           const result = await client.callTool({
             name,
-            arguments: { canvasId: canvas.id, ...(name === 'canvas_rename' ? { title: canvas.title } : {}) }
+            arguments: { canvasId: canvas.id }
           });
           expect(result.isError).not.toBe(true);
           expect(result.structuredContent).toMatchObject({ diagnostics: expect.any(Array) });
           expect((result.structuredContent as { diagnostics: unknown[] }).diagnostics).toHaveLength(expected);
         }
+        const renamed = await client.callTool({
+          name: 'canvas_rename',
+          arguments: { canvasId: canvas.id, title: canvas.title }
+        });
+        expect(renamed.structuredContent).toMatchObject({ canvasId: canvas.id, revision: canvas.revision });
+        const summary = (renamed.structuredContent as { inspectionSummary: Record<string, number> }).inspectionSummary;
+        expect(summary.errorCount + summary.warningCount + summary.infoCount).toBe(expected);
         expect(runtime.store.getCanvas(canvas.id).revision).toBe(canvas.revision);
       }
       for (const body of [
@@ -399,6 +406,9 @@ describe('v0.2 assembled runtime', () => {
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_set_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_clear_theme');
     expect(listedTools.tools.map((tool) => tool.name)).toContain('canvas_upsert_element');
+    expect(JSON.stringify(listedTools.tools.find((tool) => tool.name === 'canvas_upsert_element')).length).toBeLessThan(
+      10_000
+    );
     const guidanceCall = await client.callTool({ name: 'canvas_get_guidance', arguments: {} });
     expect(guidanceCall.structuredContent).toMatchObject({
       schemaVersion: 1,
@@ -421,11 +431,13 @@ describe('v0.2 assembled runtime', () => {
     });
     const mcpCreated = await client.callTool({ name: 'canvas_create', arguments: { title: 'MCP created canvas' } });
     expect(mcpCreated.structuredContent).toMatchObject({
-      title: 'MCP created canvas',
+      canvasId: expect.stringMatching(/^canvas_/),
+      revision: 1,
       url: expect.stringMatching(/^http:\/\/127\.0\.0\.1:23003\/canvases\/canvas_/),
-      diagnostics: [],
       inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
+    expect(mcpCreated.structuredContent).not.toHaveProperty('elements');
+    expect(mcpCreated.structuredContent).not.toHaveProperty('title');
     const canvasUrl = await client.callTool({ name: 'canvas_get_url', arguments: { canvasId } });
     expect(canvasUrl.structuredContent).toEqual({
       canvasId,
@@ -442,42 +454,40 @@ describe('v0.2 assembled runtime', () => {
       name: 'canvas_clear_theme',
       arguments: { canvasId, expectedRevision: 3 }
     });
-    expect(clearThemeCall.structuredContent).toMatchObject({ id: canvasId, revision: 4, theme: null });
+    expect(clearThemeCall.structuredContent).toEqual({
+      canvasId,
+      revision: 4,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
     const setThemeCall = await client.callTool({
       name: 'canvas_set_theme',
       arguments: { canvasId, theme: TEST_CANVAS_THEME, expectedRevision: 4 }
     });
     expect(setThemeCall.structuredContent).toMatchObject({
-      id: canvasId,
+      canvasId,
       revision: 5,
-      theme: { name: 'Forest report' }
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
     const renameCall = await client.callTool({
       name: 'canvas_rename',
       arguments: { canvasId, title: 'Renamed by agent', expectedRevision: 5 }
     });
     expect(renameCall.structuredContent).toMatchObject({
-      id: canvasId,
-      title: 'Renamed by agent',
-      revision: 6
+      canvasId,
+      revision: 6,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
     });
     const clippingMutation = await client.callTool({
       name: 'canvas_patch_element_frame',
       arguments: { canvasId, elementId: 'card_1', frame: { height: 40 }, expectedRevision: 6 }
     });
     expect(clippingMutation.structuredContent).toMatchObject({
-      id: canvasId,
+      canvasId,
       revision: 7,
-      diagnostics: [
-        {
-          code: 'card_content_may_clip',
-          severity: 'warning',
-          elementId: 'card_1',
-          message: '/height: Increase height to at least 60.'
-        }
-      ],
       inspectionSummary: { errorCount: 0, warningCount: 1, infoCount: 0 }
     });
+    expect(clippingMutation.structuredContent).not.toHaveProperty('diagnostics');
+    expect(clippingMutation.structuredContent).not.toHaveProperty('elements');
     const clippingInspection = await client.callTool({ name: 'canvas_inspect', arguments: { canvasId } });
     expect(clippingInspection.structuredContent).toMatchObject({
       canvasId,
@@ -667,6 +677,25 @@ describe('v0.2 assembled runtime', () => {
     expect((await mcpClient.callTool({ name: 'macro_list', arguments: {} })).structuredContent).toMatchObject({
       items: [{ id: created.definition.id }]
     });
+    const createdByMcp = await mcpClient.callTool({
+      name: 'macro_create',
+      arguments: { ...authoring, title: 'Created through MCP' }
+    });
+    expect(createdByMcp.structuredContent).toEqual({
+      macroId: expect.stringMatching(/^macro_/),
+      currentVersion: 1,
+      archived: false
+    });
+    expect(createdByMcp.structuredContent).not.toHaveProperty('definition');
+    const versionedByMcp = await mcpClient.callTool({
+      name: 'macro_create_version',
+      arguments: { ...authoring, macroId: created.definition.id, expectedCurrentVersion: 2 }
+    });
+    expect(versionedByMcp.structuredContent).toEqual({
+      macroId: created.definition.id,
+      currentVersion: 3,
+      archived: false
+    });
     const secondCanvas = await (
       await app.request('/api/v1/canvases', {
         method: 'POST',
@@ -689,7 +718,15 @@ describe('v0.2 assembled runtime', () => {
         idempotencyKey: 'mcp-plan-mode'
       }
     });
-    expect(planMode.structuredContent).toMatchObject({ provenance: { planId: planned.planId } });
+    expect(planMode.structuredContent).toMatchObject({
+      canvasId: secondCanvas.canvas.id,
+      revision: 2,
+      provenance: { planId: planned.planId },
+      affectedElementIds: [expect.any(String)],
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
+    expect(planMode.structuredContent).not.toHaveProperty('canvas');
+    expect(planMode.structuredContent).not.toHaveProperty('history');
     const thirdCanvas = await (
       await app.request('/api/v1/canvases', {
         method: 'POST',
@@ -710,7 +747,14 @@ describe('v0.2 assembled runtime', () => {
         idempotencyKey: 'mcp-direct-mode'
       }
     });
-    expect(direct.structuredContent).toMatchObject({ provenance: { macroId: created.definition.id, macroVersion: 2 } });
+    expect(direct.structuredContent).toMatchObject({
+      canvasId: thirdCanvas.canvas.id,
+      revision: 2,
+      provenance: { macroId: created.definition.id, macroVersion: 2 },
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    });
+    expect(direct.structuredContent).not.toHaveProperty('canvas');
+    expect(direct.structuredContent).not.toHaveProperty('history');
     await Promise.all([mcpClient.close(), mcp.server.close()]);
     runtime.dispose();
   });

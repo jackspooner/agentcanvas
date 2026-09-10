@@ -55,6 +55,10 @@ Invocation context contains an abort signal, correlation ID, and scoped canvas o
 - replace one element's data/style;
 - delete an element.
 
+Each mutation has a receipt form for MCP-facing tools. Receipt methods return
+only canvas ID, revision, and whole-canvas diagnostic counts. The original
+methods remain compatible and return the full document projection.
+
 The SDK does not expose arbitrary HTTP route registration, middleware, raw authentication state, SQLite, or unrestricted filesystem helpers.
 
 HTTP procedures run through the host route, strict input/output Ajv validation, request security policy, and a 30-second abort deadline. MCP tools use the same descriptor schemas and validate both input and output.

@@ -118,7 +118,12 @@ it.each([
   expect(list.structuredContent).toMatchObject({ canvases: [{ id: canvas.id, elements: [element, second] }] });
   const created = await client.callTool({ name: 'canvas_create', arguments: { title: 'Still available' } });
   expect(created.isError).not.toBe(true);
-  expect(created.structuredContent).toMatchObject({ elements: [], revision: 1 });
+  expect(created.structuredContent).toMatchObject({
+    canvasId: expect.stringMatching(/^canvas_/),
+    revision: 1,
+    inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+  });
+  expect(created.structuredContent).not.toHaveProperty('elements');
 
   for (const [name, extra] of [
     ['canvas_patch_element_frame', { elementId: element.id, frame: { x: 42 } }],
@@ -132,7 +137,8 @@ it.each([
     });
     expect(result.isError).not.toBe(true);
     const persisted = store.getCanvas(canvas.id);
-    expect(result.structuredContent).toMatchObject(persisted);
+    expect(result.structuredContent).toMatchObject({ canvasId: canvas.id, revision: persisted.revision });
+    expect(result.structuredContent).not.toHaveProperty('elements');
     expect(persisted.revision).toBe(before.revision + 1);
     expect(persisted.elements[0].data).toEqual(element.data);
   }
@@ -152,7 +158,8 @@ it.each([
     arguments: { canvasId: canvas.id, elementId: element.id }
   });
   expect(deleted.isError).not.toBe(true);
-  expect(deleted.structuredContent).toMatchObject(store.getCanvas(canvas.id));
+  expect(deleted.structuredContent).toMatchObject({ canvasId: canvas.id, revision: beforeDelete.revision + 1 });
+  expect(deleted.structuredContent).not.toHaveProperty('elements');
   expect(store.getCanvas(canvas.id).revision).toBe(beforeDelete.revision + 1);
   expect(store.getCanvas(canvas.id).elements).toMatchObject([second]);
   const beforeClear = store.getCanvas(canvas.id);
@@ -161,8 +168,9 @@ it.each([
     arguments: { canvasId: canvas.id, expectedRevision: beforeClear.revision }
   });
   expect(cleared.isError).not.toBe(true);
-  expect(cleared.structuredContent).toMatchObject({ elements: [], revision: beforeClear.revision + 1 });
-  expect(cleared.structuredContent).toMatchObject(store.getCanvas(canvas.id));
+  expect(cleared.structuredContent).toMatchObject({ canvasId: canvas.id, revision: beforeClear.revision + 1 });
+  expect(cleared.structuredContent).not.toHaveProperty('elements');
+  expect(store.getCanvas(canvas.id).elements).toEqual([]);
 });
 
 it('validates list limits consistently before SQLite and preserves defaults and filters', async () => {

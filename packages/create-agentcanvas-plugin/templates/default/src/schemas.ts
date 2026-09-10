@@ -1,4 +1,4 @@
-import type { JsonSchema } from '@agentcanvas/extension-sdk';
+import { CANVAS_MUTATION_RECEIPT_SCHEMA, type JsonSchema } from '@agentcanvas/extension-sdk';
 
 export const helloCardDataSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -40,9 +40,9 @@ export const addHelloCardInputSchema: JsonSchema = {
 export const addHelloCardOutputSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
-  required: ['canvas'],
+  required: ['receipt'],
   additionalProperties: false,
-  properties: { canvas: { type: 'object' } }
+  properties: { receipt: CANVAS_MUTATION_RECEIPT_SCHEMA }
 };
 
 export const describeCardInputSchema: JsonSchema = {

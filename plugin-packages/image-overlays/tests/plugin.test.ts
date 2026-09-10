@@ -223,8 +223,11 @@ describe('image overlays plugin', () => {
             ]
           }),
           upsertElement: vi.fn(),
+          upsertElementReceipt: vi.fn(),
           replaceElementData: vi.fn(),
-          deleteElement: vi.fn()
+          replaceElementDataReceipt: vi.fn(),
+          deleteElement: vi.fn(),
+          deleteElementReceipt: vi.fn()
         }
       }
     );
@@ -287,8 +290,11 @@ describe('image overlays plugin', () => {
             ]
           }),
           upsertElement: vi.fn(),
+          upsertElementReceipt: vi.fn(),
           replaceElementData: vi.fn(),
-          deleteElement: vi.fn()
+          replaceElementDataReceipt: vi.fn(),
+          deleteElement: vi.fn(),
+          deleteElementReceipt: vi.fn()
         }
       }
     );
@@ -327,8 +333,11 @@ describe('image overlays plugin', () => {
             ]
           }),
           upsertElement: vi.fn(),
+          upsertElementReceipt: vi.fn(),
           replaceElementData: vi.fn(),
-          deleteElement: vi.fn()
+          replaceElementDataReceipt: vi.fn(),
+          deleteElement: vi.fn(),
+          deleteElementReceipt: vi.fn()
         }
       }
     );
@@ -362,8 +371,11 @@ describe('image overlays plugin', () => {
           canvas: {
             get: async () => ({ elements: [] }),
             upsertElement: vi.fn(),
+            upsertElementReceipt: vi.fn(),
             replaceElementData: vi.fn(),
-            deleteElement: vi.fn()
+            replaceElementDataReceipt: vi.fn(),
+            deleteElement: vi.fn(),
+            deleteElementReceipt: vi.fn()
           }
         }
       )

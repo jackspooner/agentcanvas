@@ -614,8 +614,37 @@ const sharedDefinitions: Record<string, JsonObject> = {
   MacroSummary: macroSummary
 };
 
+function localDefinitionNames(value: unknown, names = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const entry of value) localDefinitionNames(entry, names);
+  } else if (value && typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (key === '$ref' && typeof entry === 'string' && entry.startsWith('#/$defs/')) names.add(entry.slice(8));
+      else if (key !== '$defs') localDefinitionNames(entry, names);
+    }
+  }
+  return names;
+}
+
+function referencedDefinitions(shape: JsonObject): JsonObject | undefined {
+  const names = localDefinitionNames(shape);
+  for (const name of names) {
+    const definition = sharedDefinitions[name];
+    if (!definition) throw new Error(`Unknown macro schema definition: ${name}`);
+    localDefinitionNames(definition, names);
+  }
+  if (names.size === 0) return undefined;
+  return Object.fromEntries(Object.entries(sharedDefinitions).filter(([name]) => names.has(name)));
+}
+
 function root(id: string, shape: JsonObject): JsonSchema {
-  return { $id: `${COMPONENT_PREFIX}${id}.json`, $schema: DRAFT_2020_12, ...shape, $defs: sharedDefinitions };
+  const definitions = referencedDefinitions(shape);
+  return {
+    $id: `${COMPONENT_PREFIX}${id}.json`,
+    $schema: DRAFT_2020_12,
+    ...shape,
+    ...(definitions ? { $defs: definitions } : {})
+  };
 }
 
 const componentShapes: Record<string, JsonSchema> = {

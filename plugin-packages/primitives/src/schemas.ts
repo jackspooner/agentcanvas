@@ -1,4 +1,9 @@
-import type { JsonObject, JsonSchema, JsonValue } from '@agentcanvas/plugin-sdk';
+import {
+  CANVAS_MUTATION_RECEIPT_SCHEMA,
+  type JsonObject,
+  type JsonSchema,
+  type JsonValue
+} from '@agentcanvas/plugin-sdk';
 
 const nullableString: JsonObject = { type: ['string', 'null'] };
 const nullableNumber: JsonObject = { type: ['number', 'null'] };
@@ -189,6 +194,6 @@ export const mutationOutputSchema: JsonSchema = {
     ok: { const: true },
     canvasId: { type: 'string' },
     elementId: { type: 'string' },
-    result: { type: 'object' }
+    result: CANVAS_MUTATION_RECEIPT_SCHEMA
   }
 };

@@ -75,7 +75,7 @@ async function replaceData(
   const elementId = input.elementId as string;
   const element = await ownedGallery(context, canvasId, elementId);
   const next = transform(structuredClone(galleryData(element.data)));
-  const result = await context.canvas.replaceElementData(
+  const result = await context.canvas.replaceElementDataReceipt(
     canvasId,
     elementId,
     next as unknown as JsonObject,
@@ -136,7 +136,7 @@ export function galleryTools(imageSources: ImageSourcesCapabilityV1): readonly P
         return output(
           canvasId,
           elementId,
-          await context.canvas.upsertElement(canvasId, element, input.expectedRevision as number | undefined)
+          await context.canvas.upsertElementReceipt(canvasId, element, input.expectedRevision as number | undefined)
         );
       }
     },

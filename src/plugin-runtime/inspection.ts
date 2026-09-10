@@ -1,16 +1,10 @@
-import type { CanvasElement, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
+import type { CanvasElement, CanvasInspectionSummary, PluginDiagnostic } from '@agentcanvas/plugin-sdk';
 import type { FrozenPluginRegistry } from './registry.js';
 import { DEFAULT_DIAGNOSTICS_CONFIGURATION, type DiagnosticsConfiguration } from '../configuration.js';
 
 export interface InspectableCanvas {
   id: string;
   elements: readonly CanvasElement[];
-}
-
-export interface CanvasInspectionSummary {
-  errorCount: number;
-  warningCount: number;
-  infoCount: number;
 }
 
 export interface CanvasInspection {

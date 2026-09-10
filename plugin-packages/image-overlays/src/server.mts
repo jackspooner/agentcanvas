@@ -85,7 +85,7 @@ function addTool(
     async invoke(input, context) {
       const canvasId = input.canvasId as string;
       const element = completeElement(input, type, makeData(input));
-      const result = await context.canvas.upsertElement(
+      const result = await context.canvas.upsertElementReceipt(
         canvasId,
         element,
         input.expectedRevision as number | undefined

@@ -89,6 +89,18 @@ function validator(schemaName: keyof typeof MACRO_SCHEMA_CATALOG.schemas) {
   return ajv.compile(schema);
 }
 
+function localRefs(value: unknown, refs = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const item of value) localRefs(item, refs);
+  } else if (value && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      if (key === '$ref' && typeof item === 'string' && item.startsWith('#/$defs/')) refs.add(item.slice(8));
+      else if (key !== '$defs') localRefs(item, refs);
+    }
+  }
+  return refs;
+}
+
 describe('macro canonical schema catalog', () => {
   it('is deeply frozen, has stable ids, and compiles every schema in strict AJV 2020 mode', () => {
     for (const [name, schema] of Object.entries(MACRO_SCHEMA_CATALOG.schemas)) {
@@ -103,6 +115,15 @@ describe('macro canonical schema catalog', () => {
     expect(getMacroOpenApiComponentSchemas()).not.toBe(MACRO_SCHEMA_CATALOG.components);
     expect(getMacroOpenApiComponentSchemas().MacroDefinitionV1).not.toHaveProperty('$defs');
     expect(Object.isFrozen(getMacroOpenApiComponentSchemas())).toBe(true);
+  });
+
+  it('includes only transitively referenced local definitions', () => {
+    for (const schema of Object.values(MACRO_SCHEMA_CATALOG.schemas)) {
+      const definitions = ((schema as Record<string, unknown>).$defs ?? {}) as Record<string, unknown>;
+      const reachable = localRefs(schema);
+      for (const name of reachable) localRefs(definitions[name], reachable);
+      expect(Object.keys(definitions).sort()).toEqual([...reachable].sort());
+    }
   });
 
   it('validates representative definitions, requests, plans, results, and direct/plan MCP modes', () => {

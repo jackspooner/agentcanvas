@@ -1,4 +1,4 @@
-import type { JsonSchema } from '@agentcanvas/plugin-sdk';
+import { CANVAS_MUTATION_RECEIPT_SCHEMA, type JsonSchema } from '@agentcanvas/plugin-sdk';
 
 export const dataSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -24,9 +24,9 @@ export const toolInputSchema: JsonSchema = {
 };
 export const toolOutputSchema: JsonSchema = {
   type: 'object',
-  required: ['canvas'],
+  required: ['receipt'],
   additionalProperties: false,
-  properties: { canvas: { type: 'object' } }
+  properties: { receipt: CANVAS_MUTATION_RECEIPT_SCHEMA }
 };
 export const procedureInputSchema: JsonSchema = {
   type: 'object',

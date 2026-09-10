@@ -1,4 +1,4 @@
-import type { JsonSchema } from '@agentcanvas/extension-sdk';
+import { CANVAS_INSPECTION_SUMMARY_SCHEMA, type JsonSchema } from '@agentcanvas/extension-sdk';
 import { erdDataSchema, erdOperationSchema } from './erd-schemas.js';
 import { mermaidPresentationSchema, pointSchema } from './presentation-schemas.js';
 export { erdDataSchema, erdOperationSchema };
@@ -79,11 +79,21 @@ export const mutationOutputSchema = object(
     canvasId: id,
     elementId: id,
     revision,
+    inspectionSummary: CANVAS_INSPECTION_SUMMARY_SCHEMA,
     affectedIds: { type: 'array', items: id },
     removedRelationshipIds: { type: 'array', items: id },
     diagnostics: issues
   },
-  ['ok', 'canvasId', 'elementId', 'revision', 'affectedIds', 'removedRelationshipIds', 'diagnostics']
+  [
+    'ok',
+    'canvasId',
+    'elementId',
+    'revision',
+    'inspectionSummary',
+    'affectedIds',
+    'removedRelationshipIds',
+    'diagnostics'
+  ]
 );
 export const validationOutputSchema = object(
   {

@@ -112,9 +112,48 @@ export interface PluginInvocationContext {
   canvas: PluginCanvasOperations;
 }
 
+export interface CanvasInspectionSummary extends JsonObject {
+  errorCount: number;
+  warningCount: number;
+  infoCount: number;
+}
+
+export interface CanvasMutationReceipt extends JsonObject {
+  canvasId: string;
+  revision: number;
+  inspectionSummary: CanvasInspectionSummary;
+}
+
+export const CANVAS_INSPECTION_SUMMARY_SCHEMA: JsonObject = Object.freeze({
+  type: 'object',
+  additionalProperties: false,
+  required: ['errorCount', 'warningCount', 'infoCount'],
+  properties: {
+    errorCount: { type: 'integer', minimum: 0 },
+    warningCount: { type: 'integer', minimum: 0 },
+    infoCount: { type: 'integer', minimum: 0 }
+  }
+});
+
+export const CANVAS_MUTATION_RECEIPT_SCHEMA: JsonObject = Object.freeze({
+  type: 'object',
+  additionalProperties: false,
+  required: ['canvasId', 'revision', 'inspectionSummary'],
+  properties: {
+    canvasId: { type: 'string', minLength: 1 },
+    revision: { type: 'integer', minimum: 1 },
+    inspectionSummary: CANVAS_INSPECTION_SUMMARY_SCHEMA
+  }
+});
+
 export interface PluginCanvasOperations {
   get(canvasId: string): Promise<JsonObject>;
   upsertElement(canvasId: string, element: CanvasElement, expectedRevision?: number): Promise<JsonObject>;
+  upsertElementReceipt(
+    canvasId: string,
+    element: CanvasElement,
+    expectedRevision?: number
+  ): Promise<CanvasMutationReceipt>;
   replaceElementData(
     canvasId: string,
     elementId: string,
@@ -122,7 +161,15 @@ export interface PluginCanvasOperations {
     style?: JsonObject | null,
     expectedRevision?: number
   ): Promise<JsonObject>;
+  replaceElementDataReceipt(
+    canvasId: string,
+    elementId: string,
+    data: JsonObject,
+    style?: JsonObject | null,
+    expectedRevision?: number
+  ): Promise<CanvasMutationReceipt>;
   deleteElement(canvasId: string, elementId: string, expectedRevision?: number): Promise<JsonObject>;
+  deleteElementReceipt(canvasId: string, elementId: string, expectedRevision?: number): Promise<CanvasMutationReceipt>;
 }
 
 export interface PluginToolDescriptor {

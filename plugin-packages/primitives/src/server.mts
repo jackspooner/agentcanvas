@@ -143,7 +143,7 @@ function tool(
       const element = makeElement(input);
       assertReadableLabelFrame(input, element, input.text ?? input.label);
       const canvasId = input.canvasId as string;
-      const result = await context.canvas.upsertElement(
+      const result = await context.canvas.upsertElementReceipt(
         canvasId,
         element,
         input.expectedRevision as number | undefined

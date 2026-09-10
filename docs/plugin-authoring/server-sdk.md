@@ -24,7 +24,12 @@ const plugin: AgentCanvasServerPlugin = {
       inputSchema: toolInputSchema,
       outputSchema: toolOutputSchema,
       async invoke(input, context) {
-        return { canvas: await context.canvas.upsertElement(String(input.canvasId), /* complete envelope */ input.element) };
+        return {
+          receipt: await context.canvas.upsertElementReceipt(
+            String(input.canvasId),
+            /* complete envelope */ input.element
+          )
+        };
       }
     });
   }
@@ -36,6 +41,11 @@ export default plugin;
 Element descriptors own their current schema version, strict data/style schemas, cross-field validation, default frame, summary, optional runtime resolution, snapshot policy, contiguous forward-only migrations, and legacy importers. New writes must provide a complete current-version envelope. Plugins construct a full replacement rather than relying on shallow or deep merge semantics.
 
 Tools and procedures declare strict input and output schemas. Tools are projected into MCP with host-derived names; procedures are exposed through the host-owned versioned procedure endpoint. Both run through host validation, timeout, error projection, and request-origin policy. AgentCanvas has no user-account authentication layer. Return opaque resource handles for binary output.
+
+Use `upsertElementReceipt`, `replaceElementDataReceipt`, and
+`deleteElementReceipt` for MCP-facing writes. Their bounded result contains the
+canvas ID, revision, and inspection counts. The legacy methods remain available
+when a trusted in-process consumer genuinely needs the full document.
 
 Use `host.kv` for namespaced JSON storage and `host.diagnostics.emit` for safe structured diagnostics. Capability access is semantic-versioned and singleton. Treat consumed handles as runtime dependencies and report readiness failures; do not persist resolved URLs or provider responses into element data.
 

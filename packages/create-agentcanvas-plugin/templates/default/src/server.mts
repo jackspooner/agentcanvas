@@ -157,8 +157,8 @@ const plugin: AgentCanvasServerPlugin = {
           },
           style: { accentColor: configString(host.config, 'accentColor') }
         };
-        const canvas = await context.canvas.upsertElement(stringField(input.canvasId, 'canvasId'), element);
-        return { canvas };
+        const receipt = await context.canvas.upsertElementReceipt(stringField(input.canvasId, 'canvasId'), element);
+        return { receipt };
       }
     });
 

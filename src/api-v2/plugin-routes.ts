@@ -25,7 +25,7 @@ function invocationContext(
   return {
     signal,
     correlationId: `call_${nanoid(16)}`,
-    canvas: createPluginCanvasOperations(store, pluginId, plugin.plugin.manifest.permissions)
+    canvas: createPluginCanvasOperations(store, pluginId, plugin.plugin.manifest.permissions, registry)
   };
 }
 

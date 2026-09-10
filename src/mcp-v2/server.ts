@@ -5,8 +5,11 @@ import {
   CORE_REQUEST_SCHEMAS
 } from '../api-v2/schemas.js';
 import {
+  CANVAS_INSPECTION_SUMMARY_SCHEMA,
+  CANVAS_MUTATION_RECEIPT_SCHEMA,
   CANVAS_THEME_V1_SCHEMA,
   type CanvasThemeV1,
+  type CanvasMutationReceipt,
   type JsonObject,
   type JsonSchema,
   type PluginInvocationContext
@@ -22,7 +25,6 @@ import {
   problemFromCanvasError,
   problemFromMacroError,
   createPluginStatusCatalog,
-  createRegistryElementSchemas,
   getPluginStatus,
   JSON_OBJECT_SCHEMA,
   PLUGIN_DIAGNOSTIC_SCHEMA,
@@ -36,19 +38,18 @@ import {
   MACRO_ARCHIVE_REQUEST_SCHEMA,
   MACRO_ARCHIVE_RESPONSE_SCHEMA,
   MACRO_CREATE_REQUEST_SCHEMA,
-  MACRO_CREATE_RESPONSE_SCHEMA,
   MACRO_CREATE_VERSION_REQUEST_SCHEMA,
-  MACRO_CREATE_VERSION_RESPONSE_SCHEMA,
   MACRO_GET_REQUEST_SCHEMA,
   MACRO_GET_RESPONSE_SCHEMA,
   MACRO_LIST_REQUEST_SCHEMA,
   MACRO_LIST_RESPONSE_SCHEMA,
   MACRO_PLAN_REQUEST_SCHEMA,
   MACRO_PLAN_RESPONSE_SCHEMA,
-  CANVAS_RUN_MACRO_REQUEST_SCHEMA,
-  CANVAS_RUN_MACRO_RESPONSE_SCHEMA
+  MACRO_PROVENANCE_SCHEMA,
+  CANVAS_RUN_MACRO_REQUEST_SCHEMA
 } from '../macros/index.js';
 import type { MacroRuntime } from '../macros/runtime.js';
+import type { MacroDefinitionRecord, MacroExecutionResult } from '../macros/types.js';
 import { MacroError } from '../macros/errors.js';
 import type { BrowserPluginCatalog, FrozenPluginRegistry, InspectableCanvas } from '../plugin-runtime/index.js';
 import { createPluginCanvasOperations, inspectCanvas } from '../plugin-runtime/index.js';
@@ -75,14 +76,22 @@ const CANVAS_URL_SCHEMA: JsonSchema = {
   description: 'Direct browser URL for this canvas, based on AGENT_CANVAS_PUBLIC_BASE_URL.'
 };
 
-const INSPECTION_SUMMARY_SCHEMA: JsonSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['errorCount', 'warningCount', 'infoCount'],
+const INSPECTION_SUMMARY_SCHEMA = CANVAS_INSPECTION_SUMMARY_SCHEMA;
+
+const CREATED_CANVAS_RECEIPT_SCHEMA: JsonSchema = {
+  ...CANVAS_MUTATION_RECEIPT_SCHEMA,
+  required: [...(CANVAS_MUTATION_RECEIPT_SCHEMA.required as string[]), 'url'],
+  properties: { ...(CANVAS_MUTATION_RECEIPT_SCHEMA.properties as JsonObject), url: CANVAS_URL_SCHEMA }
+};
+
+const MACRO_EXECUTION_RECEIPT_SCHEMA: JsonSchema = {
+  ...CANVAS_MUTATION_RECEIPT_SCHEMA,
+  required: [...(CANVAS_MUTATION_RECEIPT_SCHEMA.required as string[]), 'provenance', 'outputs', 'affectedElementIds'],
   properties: {
-    errorCount: { type: 'integer', minimum: 0 },
-    warningCount: { type: 'integer', minimum: 0 },
-    infoCount: { type: 'integer', minimum: 0 }
+    ...(CANVAS_MUTATION_RECEIPT_SCHEMA.properties as JsonObject),
+    provenance: MACRO_PROVENANCE_SCHEMA,
+    outputs: { type: 'object', additionalProperties: { type: 'string', minLength: 1 } },
+    affectedElementIds: { type: 'array', maxItems: 100, uniqueItems: true, items: ELEMENT_ID }
   }
 };
 
@@ -148,14 +157,10 @@ function canvasSchema(elementSchema: JsonSchema, includeInspection = false, incl
   };
 }
 
-function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[] {
-  const elementCatalog = createRegistryElementSchemas(registry);
-  const writableSchemas = Object.values(elementCatalog.schemas);
-  const writableElementSchema: JsonSchema = writableSchemas.length ? { oneOf: writableSchemas } : false;
+function coreTools(): readonly CoreJsonSchemaTool[] {
   // Reads preserve canonical envelopes even when their owning extension is absent.
   const canvas = canvasSchema(CANVAS_ELEMENT_SCHEMA);
   const inspectedCanvas = canvasSchema(CANVAS_ELEMENT_SCHEMA, true);
-  const createdCanvas = canvasSchema(CANVAS_ELEMENT_SCHEMA, true, true);
   const canvasList: JsonSchema = {
     type: 'object',
     additionalProperties: false,
@@ -197,7 +202,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       name: 'canvas_create',
       title: 'Create canvas',
       description:
-        'Create an empty AgentCanvas v0.2 canvas and return its direct browser URL. This does not create elements or prove a finished layout is readable.',
+        'Create an empty AgentCanvas v0.2 canvas and return a compact receipt with its direct browser URL. This does not create elements or prove a finished layout is readable.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -209,7 +214,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
           theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
-      outputSchema: createdCanvas
+      outputSchema: CREATED_CANVAS_RECEIPT_SCHEMA
     },
     {
       name: 'canvas_list',
@@ -227,7 +232,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
       name: 'canvas_get',
       title: 'Get canvas',
       description:
-        'Get the persisted source of truth for one canvas. Use it after edits to verify element IDs, frames, data, revision, and diagnostics; persisted state alone does not prove rendered readability or remote-image loading.',
+        'Get the complete persisted source of truth for one canvas. Use it only when full element IDs, frames, and data are needed; mutation receipts already confirm the resulting revision and diagnostic counts. Persisted state alone does not prove rendered readability or remote-image loading.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -289,7 +294,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'title'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_set_theme',
@@ -300,7 +305,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'theme'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_clear_theme',
@@ -310,18 +315,22 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_upsert_element',
-      'Upsert a complete current-version element',
+      'Upsert a complete current-version element; prefer a plugin-specific tool when one exists for its detailed schema',
       {
         canvasId: CANVAS_ID,
-        element: writableElementSchema,
+        element: {
+          ...(CANVAS_ELEMENT_SCHEMA as JsonObject),
+          description:
+            'Generic canonical element envelope. Prefer a plugin-specific tool when available for its detailed element schema.'
+        },
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'element'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_patch_element_frame',
@@ -333,7 +342,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'frame'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_replace_element_data',
@@ -346,7 +355,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'data'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_replace_element_metadata',
@@ -358,7 +367,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId', 'metadata'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_delete_element',
@@ -369,7 +378,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'elementId'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
       'canvas_clear',
@@ -379,7 +388,7 @@ function coreTools(registry: FrozenPluginRegistry): readonly CoreJsonSchemaTool[
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId'],
-      inspectedCanvas
+      CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     {
       name: 'canvas_list_plugins',
@@ -429,7 +438,7 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
       title: 'Create macro',
       description: 'Create a macro; the host assigns its opaque ID and version one.',
       inputSchema: MACRO_CREATE_REQUEST_SCHEMA,
-      outputSchema: MACRO_CREATE_RESPONSE_SCHEMA,
+      outputSchema: MACRO_ARCHIVE_RESPONSE_SCHEMA,
       annotations: { readOnlyHint: false, idempotentHint: false }
     },
     {
@@ -437,7 +446,7 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
       title: 'Create macro version',
       description: 'Create the next immutable version without changing scope or canvas identity.',
       inputSchema: MACRO_CREATE_VERSION_REQUEST_SCHEMA,
-      outputSchema: MACRO_CREATE_VERSION_RESPONSE_SCHEMA,
+      outputSchema: MACRO_ARCHIVE_RESPONSE_SCHEMA,
       annotations: { readOnlyHint: false, idempotentHint: false }
     },
     {
@@ -462,7 +471,7 @@ function macroTools(): readonly CoreJsonSchemaTool[] {
       title: 'Run macro',
       description: 'Execute an existing plan or directly plan and execute one exact macro version.',
       inputSchema: CANVAS_RUN_MACRO_REQUEST_SCHEMA,
-      outputSchema: CANVAS_RUN_MACRO_RESPONSE_SCHEMA,
+      outputSchema: MACRO_EXECUTION_RECEIPT_SCHEMA,
       annotations: { readOnlyHint: false, idempotentHint: false }
     }
   ];
@@ -478,7 +487,7 @@ function mutationTool(
   return {
     name,
     title: description,
-    description: `${description}. The returned canvas includes post-mutation diagnostics and severity counts; repair unintended warnings before continuing.`,
+    description: `${description}. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.`,
     inputSchema: { type: 'object', additionalProperties: false, required, properties },
     outputSchema,
     annotations: { readOnlyHint: false, idempotentHint: false }
@@ -498,8 +507,28 @@ function withInspection(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonO
   });
 }
 
-function withInspectionAndUrl(canvas: InspectableCanvas, runtime: McpV2Runtime): JsonObject {
-  return { ...withInspection(canvas, runtime), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
+function mutationReceipt(
+  canvas: InspectableCanvas & { revision: number },
+  runtime: McpV2Runtime
+): CanvasMutationReceipt {
+  return {
+    canvasId: canvas.id,
+    revision: canvas.revision,
+    inspectionSummary: inspectCanvas(canvas, runtime.registry, runtime.store.getConfiguration().diagnostics).summary
+  };
+}
+
+function macroDefinitionReceipt(record: MacroDefinitionRecord): JsonObject {
+  return { macroId: record.definition.id, currentVersion: record.currentVersion, archived: record.archived };
+}
+
+function macroExecutionReceipt(result: MacroExecutionResult, runtime: McpV2Runtime): JsonObject {
+  return {
+    ...mutationReceipt(result.canvas, runtime),
+    provenance: result.provenance,
+    outputs: result.outputs,
+    affectedElementIds: result.history.affectedElementIds
+  } as unknown as JsonObject;
 }
 
 async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime): Promise<JsonObject> {
@@ -507,7 +536,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   const canvasId = input.canvasId as string;
   const expectedRevision = input.expectedRevision as number | undefined;
   if (name === 'canvas_get_guidance') {
-    const coreToolCount = coreTools(runtime.registry).length + macroTools().length;
+    const coreToolCount = coreTools().length + macroTools().length;
     const pluginToolCount = runtime.registry.plugins.reduce((count, plugin) => count + plugin.tools.length, 0);
     return json({
       ...AGENTCANVAS_AGENT_GUIDANCE,
@@ -528,11 +557,11 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   }
   if (name === 'macro_create') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
-    return runtime.macros.create(input as never) as unknown as JsonObject;
+    return macroDefinitionReceipt(runtime.macros.create(input as never));
   }
   if (name === 'macro_create_version') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
-    return runtime.macros.createVersion(input as never) as unknown as JsonObject;
+    return macroDefinitionReceipt(runtime.macros.createVersion(input as never));
   }
   if (name === 'macro_archive') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
@@ -544,10 +573,16 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
   }
   if (name === 'canvas_run_macro') {
     if (!runtime.macros) throw new Error('macro runtime is unavailable');
-    if (input.mode === 'plan') return (await runtime.macros.execute(input as never)) as unknown as JsonObject;
-    return (await runtime.macros.direct(input as never)) as unknown as JsonObject;
+    const result =
+      input.mode === 'plan'
+        ? await runtime.macros.execute(input as never)
+        : await runtime.macros.direct(input as never);
+    return macroExecutionReceipt(result, runtime);
   }
-  if (name === 'canvas_create') return withInspectionAndUrl(store.createCanvas(input as never), runtime);
+  if (name === 'canvas_create') {
+    const canvas = store.createCanvas(input as never);
+    return { ...mutationReceipt(canvas, runtime), url: canvasPageUrl(runtime.publicBaseUrl, canvas.id) };
+  }
   if (name === 'canvas_list')
     return { canvases: json(store.listCanvases({ limit: input.limit as number | undefined })) as never };
   if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime);
@@ -566,7 +601,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     });
   }
   if (name === 'canvas_rename') {
-    return withInspection(
+    return mutationReceipt(
       store.renameCanvas(canvasId, {
         title: input.title as string,
         expectedRevision
@@ -575,16 +610,16 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_set_theme') {
-    return withInspection(
+    return mutationReceipt(
       store.updateCanvasTheme(canvasId, { theme: input.theme as unknown as CanvasThemeV1, expectedRevision }),
       runtime
     );
   }
   if (name === 'canvas_clear_theme') {
-    return withInspection(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }), runtime);
+    return mutationReceipt(store.updateCanvasTheme(canvasId, { theme: null, expectedRevision }), runtime);
   }
   if (name === 'canvas_upsert_element') {
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [{ op: 'upsertElement', element: input.element as JsonObject }]
@@ -593,7 +628,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_patch_element_frame') {
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
@@ -604,7 +639,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_replace_element_data') {
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
@@ -620,7 +655,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_replace_element_metadata') {
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [
@@ -631,7 +666,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_delete_element') {
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, {
         expectedRevision,
         operations: [{ op: 'deleteElement', elementId: input.elementId as string }]
@@ -640,7 +675,7 @@ async function invokeCore(name: string, input: JsonObject, runtime: McpV2Runtime
     );
   }
   if (name === 'canvas_clear')
-    return withInspection(
+    return mutationReceipt(
       store.applyOperations(canvasId, { expectedRevision, operations: [{ op: 'clear' }] }),
       runtime
     );
@@ -664,7 +699,7 @@ function schemaObject(schema: JsonSchema): Record<string, unknown> {
 
 /** Creates the canonical tool catalog shared by MCP runtime exposure and generated contract artifacts. */
 export function createMcpV2ToolCatalog(registry: FrozenPluginRegistry): readonly McpJsonSchemaTool[] {
-  return createMcpToolCatalog(registry, [...coreTools(registry), ...macroTools()]).map((tool) =>
+  return createMcpToolCatalog(registry, [...coreTools(), ...macroTools()]).map((tool) =>
     Object.freeze({ ...tool, outputSchema: mcpOutputSchema(tool.outputSchema) })
   );
 }
@@ -741,7 +776,12 @@ export function createMcpV2Server(runtime: McpV2Runtime): {
         const context: PluginInvocationContext = {
           signal: extra.signal,
           correlationId: `mcp_${nanoid(16)}`,
-          canvas: createPluginCanvasOperations(runtime.store, pluginId, plugin.plugin.manifest.permissions)
+          canvas: createPluginCanvasOperations(
+            runtime.store,
+            pluginId,
+            plugin.plugin.manifest.permissions,
+            runtime.registry
+          )
         };
         output = await (tool.descriptor as NonNullable<McpJsonSchemaTool['descriptor']>).invoke(input, context);
       }

@@ -6,6 +6,7 @@ import type {
   ImageSourceReference,
   ImageSourcesCapabilityV1,
   JsonObject,
+  PluginInvocationContext,
   PluginToolDescriptor,
   ServerPluginHost
 } from '@agentcanvas/plugin-sdk';
@@ -69,7 +70,11 @@ describe('Media Gallery extension', () => {
 
   it('creates a provider-neutral gallery with safe defaults', async () => {
     const { tools } = await registrations();
-    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }) as JsonObject);
+    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({
+      canvasId: 'canvas',
+      revision: 2,
+      inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+    }));
     const create = tools.find((tool) => tool.name === 'create');
     const result = await create?.invoke(
       { canvasId: 'canvas', items: [{ source: first, caption: 'First' }, { source: second }], x: 10, y: 20 },
@@ -78,14 +83,17 @@ describe('Media Gallery extension', () => {
         correlationId: 'test',
         canvas: {
           get: vi.fn(),
-          upsertElement,
+          upsertElement: vi.fn(),
+          upsertElementReceipt,
           replaceElementData: vi.fn(),
-          deleteElement: vi.fn()
+          replaceElementDataReceipt: vi.fn(),
+          deleteElement: vi.fn(),
+          deleteElementReceipt: vi.fn()
         }
-      }
+      } as unknown as PluginInvocationContext
     );
     expect(result).toMatchObject({ ok: true, canvasId: 'canvas' });
-    const element = upsertElement.mock.calls[0][1] as CanvasElement;
+    const element = upsertElementReceipt.mock.calls[0][1] as CanvasElement;
     expect(element).toMatchObject({
       type: 'agentcanvas.gallery/gallery',
       width: 480,
@@ -166,9 +174,13 @@ describe('Media Gallery extension', () => {
         showIndicators: true
       }
     };
-    const replaceElementData = vi.fn(async (_canvasId: string, _elementId: string, data: JsonObject) => {
+    const replaceElementDataReceipt = vi.fn(async (_canvasId: string, _elementId: string, data: JsonObject) => {
       element.data = structuredClone(data);
-      return { revision: 2 };
+      return {
+        canvasId: 'canvas',
+        revision: 2,
+        inspectionSummary: { errorCount: 0, warningCount: 0, infoCount: 0 }
+      };
     });
     const context = {
       signal: new AbortController().signal,
@@ -176,10 +188,13 @@ describe('Media Gallery extension', () => {
       canvas: {
         get: async () => ({ elements: [element] }) as unknown as JsonObject,
         upsertElement: vi.fn(),
-        replaceElementData,
-        deleteElement: vi.fn()
+        upsertElementReceipt: vi.fn(),
+        replaceElementData: vi.fn(),
+        replaceElementDataReceipt,
+        deleteElement: vi.fn(),
+        deleteElementReceipt: vi.fn()
       }
-    };
+    } as unknown as PluginInvocationContext;
     const invoke = async (name: string, input: JsonObject) => {
       const tool = tools.find((candidate) => candidate.name === name);
       if (!tool) throw new Error(`missing tool ${name}`);
@@ -201,6 +216,6 @@ describe('Media Gallery extension', () => {
       showControls: false,
       intervalMs: 8000
     });
-    expect(replaceElementData).toHaveBeenCalledTimes(5);
+    expect(replaceElementDataReceipt).toHaveBeenCalledTimes(5);
   });
 });

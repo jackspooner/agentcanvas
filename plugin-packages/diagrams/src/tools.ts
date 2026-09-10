@@ -78,7 +78,7 @@ async function create(
     data: json(data)
   };
   context.signal.throwIfAborted();
-  const result = await context.canvas.upsertElement(canvasId, element, canvas.revision as number);
+  const result = await context.canvas.upsertElementReceipt(canvasId, element, canvas.revision as number);
   const affectedIds =
     type === 'erd'
       ? [
@@ -95,6 +95,7 @@ async function create(
     canvasId,
     elementId: id,
     revision: result.revision,
+    inspectionSummary: result.inspectionSummary,
     affectedIds,
     removedRelationshipIds: [],
     diagnostics
@@ -125,19 +126,19 @@ async function validateData(data: MermaidData, canvas: JsonObject, signal: Abort
 export function registerDiagramTools(host: ServerPluginHost): void {
   const descriptions: Record<string, string> = {
     'create-erd':
-      'Create a native entity relationship diagram. Choose preserve to retain positions, or LR/TB for automatic layout. Returns stable IDs; refresh the canvas after mutation.',
+      'Create a native entity relationship diagram. Choose preserve to retain positions, or LR/TB for automatic layout. Returns stable IDs and a compact mutation receipt.',
     'edit-erd':
-      'Apply an atomic batch to a native ERD at expectedRevision. Entity/attribute deletion cascades attached relationships, returned in removedRelationshipIds. Refresh canvas, element inspection, and snapshots after success.',
+      'Apply an atomic batch to a native ERD at expectedRevision. Entity/attribute deletion cascades attached relationships, returned in removedRelationshipIds. Inspect when receipt counts are nonzero.',
     'create-mermaid':
-      'Parse and render supported Mermaid source before creating a diagram. Returns stable element identity; refresh the canvas after success.',
+      'Parse and render supported Mermaid source before creating a diagram. Returns stable element identity and a compact mutation receipt.',
     'update-mermaid':
-      'Validate exact replacement Mermaid source, then save at expectedRevision. Syntax errors preserve the existing element. Refresh canvas, resolution, and snapshots after success.',
+      'Validate exact replacement Mermaid source, then save at expectedRevision. Syntax errors preserve the existing element. Inspect when receipt counts are nonzero.',
     'validate-mermaid':
       'Validate Mermaid without writes. Use purpose layout to inspect stable box and connector IDs and coordinates for this exact source; optional canvasId resolves its theme. Pass presentation to inspect overrides. Use returned IDs in update-mermaid data.presentation. Source changes require explicitly omitting/resetting presentation. Optionally analyze ERD conversion.',
     'export-mermaid':
       'Export a native ERD to validated Mermaid source and explicit losses. Does not change the diagram.',
     'convert-mermaid-erd':
-      'Create an independent native ERD from an existing Mermaid ERD at expectedRevision. Acknowledge each conversion warning code. Original source remains unchanged. Refresh canvas and snapshots after creation.'
+      'Create an independent native ERD from an existing Mermaid ERD at expectedRevision. Acknowledge each conversion warning code. Original source remains unchanged; the result includes a compact mutation receipt.'
   };
   for (const name of Object.keys(descriptions))
     host.registerTool({
@@ -251,7 +252,7 @@ export function registerDiagramTools(host: ServerPluginHost): void {
         const data = changed?.data ?? (input.data as unknown as MermaidData);
         if (name === 'update-mermaid') await validateData(data as MermaidData, canvas, context.signal);
         context.signal.throwIfAborted();
-        const result = await context.canvas.replaceElementData(
+        const result = await context.canvas.replaceElementDataReceipt(
           canvasId,
           element.id,
           json(data),
@@ -263,6 +264,7 @@ export function registerDiagramTools(host: ServerPluginHost): void {
           canvasId,
           elementId: element.id,
           revision: result.revision,
+          inspectionSummary: result.inspectionSummary,
           affectedIds: changed?.affectedIds ?? [element.id],
           removedRelationshipIds: changed?.removedRelationshipIds ?? [],
           diagnostics: []

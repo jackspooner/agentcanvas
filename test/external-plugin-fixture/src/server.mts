@@ -34,7 +34,7 @@ const plugin: AgentCanvasServerPlugin = { activate(host) {
     async invoke(input, context) {
       const element: CanvasElement = { id: string(input.id, 'id'), type, schemaVersion: 1, x: 0, y: 0, width: 240, height: 100,
         data: { label: string(input.label, 'label'), status: string(input.status, 'status') } };
-      return { canvas: await context.canvas.upsertElement(string(input.canvasId, 'canvasId'), element) };
+      return { receipt: await context.canvas.upsertElementReceipt(string(input.canvasId, 'canvasId'), element) };
     }
   });
   host.registerProcedure({

@@ -293,11 +293,16 @@ not share links, and do not make a locally bound service reachable from another
 machine. Use the existing share-link HTTP routes when a read-only token link is
 the intended access model.
 
-Every successful core MCP mutation returns the post-mutation canvas with
-`diagnostics` and `inspectionSummary`. Read those fields before making the next
-edit: they immediately expose plugin-owned checks such as likely content
-clipping, along with intersecting non-connector frames. `canvas_get` returns the
-same advisory inspection projection.
+Every successful canvas MCP mutation returns a compact receipt with `canvasId`,
+`revision`, and whole-canvas `inspectionSummary` counts. It does not repeat
+elements, captions, document text, or individual diagnostics. If a count is
+nonzero, call `canvas_inspect` for the diagnostic details. `canvas_get` remains
+the explicit full persisted-document read. Browser-facing HTTP mutations continue
+returning their full response projections.
+
+Macro creation and version writes return `macroId`, `currentVersion`, and
+`archived`. `canvas_run_macro` returns the canvas receipt plus provenance, named
+outputs, and affected IDs; it omits the canvas document and operation history.
 
 Use `canvas_inspect` as the deliberate final whole-canvas audit after composing
 or resizing elements. It runs the same inspection owner used by mutation
@@ -311,8 +316,8 @@ accidental one.
 
 - Supply `expectedRevision` for mutations when coordinating against a read.
 - Use an idempotency key for retried document batches.
-- Read the returned post-mutation diagnostics immediately, then refresh the
-  canvas projection before final verification.
+- Check receipt counts after each mutation and call `canvas_inspect` when any are
+  nonzero. Fetch `canvas_get` only when full persisted state is required.
 - Retry only failures marked retryable.
 - Do not retry validation, missing-plugin, unsupported-version, or revision-conflict failures without changing the request or refreshing state.
 

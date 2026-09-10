@@ -68,8 +68,8 @@ describe('table plugin', () => {
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
     const addTable = tools.find((tool) => tool.name === 'add-table') as PluginToolDescriptor;
-    const upsertElement = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
-    const context = { canvas: { upsertElement } } as unknown as PluginInvocationContext;
+    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
+    const context = { canvas: { upsertElementReceipt } } as unknown as PluginInvocationContext;
     const input = {
       canvasId: 'canvas_1',
       x: 0,
@@ -85,7 +85,7 @@ describe('table plugin', () => {
     };
 
     await addTable.invoke(input, context);
-    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ height: 204 });
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ height: 204 });
 
     await expect(addTable.invoke({ ...input, height: 160 }, context)).rejects.toThrow('is likely to hide rows');
 
@@ -107,8 +107,8 @@ describe('table plugin', () => {
       })
     ).toEqual([expect.objectContaining({ code: 'table_content_may_clip' })]);
 
-    upsertElement.mockClear();
+    upsertElementReceipt.mockClear();
     await addTable.invoke({ ...input, height: 160, allowScroll: true }, context);
-    expect(upsertElement.mock.calls[0]?.[1]).toMatchObject({ data: { allowScroll: true } });
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ data: { allowScroll: true } });
   });
 });

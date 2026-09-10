@@ -394,8 +394,8 @@ shows the effect summary and translucent ghost preview before a mutating
 confirmation, then refreshes the canvas and supports the resulting undo/redo
 history. Each successful browser run is one history unit and one canvas
 revision. Use
-`canvas_get` and `canvas_inspect` after the run when an agent needs persisted
-state and diagnostics rather than relying on the rendered preview.
+`canvas_get` when the full persisted document is needed, and `canvas_inspect`
+when receipt counts are nonzero or a final diagnostic audit is required.
 
 ### Agent guidance
 
