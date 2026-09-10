@@ -25,22 +25,30 @@ describe('filesystem image source', () => {
     expect(normalizeRelativeImagePath('products/mug.PNG')).toBe('products/mug.PNG');
   });
 
-  it('registers a linked resource and re-reads current bytes through the broker', async () => {
+  it('reuses unchanged resources and rotates the handle when file bytes change', async () => {
     const root = tempRoot();
     fs.mkdirSync(path.join(root, 'products'));
     const imagePath = path.join(root, 'products', 'mug.png');
     fs.writeFileSync(imagePath, Uint8Array.from([1, 2, 3]));
     let registration: ResourceRegistration | undefined;
+    let handleNumber = 0;
+    const liveHandles = new Map<string, { handle: string; url: string; mimeType: string }>();
     const resources: SnapshotResourcesCapabilityV1 = {
       register: vi.fn((value) => {
         registration = value;
-        return {
-          handle: 'res_abcdefghijklmnopqrstuvwxyzABCDEF',
-          url: '/api/v1/resources/res_abcdefghijklmnopqrstuvwxyzABCDEF/content',
+        const handle = `res_${String(++handleNumber).padStart(32, '0')}`;
+        const resource = {
+          handle,
+          url: `/api/v1/resources/${handle}/content`,
           mimeType: value.mimeType
         };
+        liveHandles.set(handle, resource);
+        return resource;
       }),
-      details: vi.fn(),
+      details: vi.fn((handle) => {
+        const resource = liveHandles.get(handle);
+        return resource ? { ...resource, createdAt: '2026-09-10T00:00:00.000Z' } : null;
+      }),
       load: vi.fn()
     };
     const resolver = await FileSystemImageSourceResolver.create(
@@ -52,8 +60,19 @@ describe('filesystem image source', () => {
       new AbortController().signal
     );
     expect(result).toMatchObject({ mimeType: 'image/png', byteLength: 3 });
+    expect(
+      await resolver.resource({ rootId: 'pictures', path: 'products/mug.png' }, new AbortController().signal)
+    ).toBe(result);
+    expect(resources.register).toHaveBeenCalledOnce();
     expect(resolver.listRoots()).toEqual([{ id: 'pictures' }]);
     fs.writeFileSync(imagePath, Uint8Array.from([4, 5, 6, 7]));
+    const changed = await resolver.resource(
+      { rootId: 'pictures', path: 'products/mug.png' },
+      new AbortController().signal
+    );
+    expect(changed.handle).not.toBe(result.handle);
+    expect(resources.register).toHaveBeenCalledTimes(2);
+    expect(registration?.mutable).toBe(true);
     expect(Array.from((await registration?.load(new AbortController().signal))?.bytes ?? [])).toEqual([4, 5, 6, 7]);
   });
 

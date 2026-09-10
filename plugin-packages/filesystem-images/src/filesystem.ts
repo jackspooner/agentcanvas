@@ -16,6 +16,7 @@ interface ResolvedImage {
   canonicalPath: string;
   mimeType: string;
   byteLength: number;
+  mtimeMs: number;
 }
 
 function containedBy(root: string, candidate: string): boolean {
@@ -72,6 +73,11 @@ export function readFileSystemImagesConfig(value: Readonly<JsonObject>): FileSys
 }
 
 export class FileSystemImageSourceResolver {
+  private readonly handles = new Map<
+    string,
+    { fingerprint: string; resource: OpaqueResourceHandle & { byteLength: number } }
+  >();
+
   private constructor(
     private readonly roots: ReadonlyMap<string, string>,
     private readonly contentMaxBytes: number,
@@ -113,8 +119,13 @@ export class FileSystemImageSourceResolver {
   async resource(sourceValue: unknown, signal: AbortSignal): Promise<OpaqueResourceHandle & { byteLength: number }> {
     const source = this.validateSource(sourceValue);
     const initial = await this.resolve(source, signal);
+    const key = `${source.rootId}\0${source.path}`;
+    const fingerprint = `${initial.canonicalPath}\0${initial.mimeType}\0${initial.byteLength}\0${initial.mtimeMs}`;
+    const cached = this.handles.get(key);
+    if (cached?.fingerprint === fingerprint && this.resources.details(cached.resource.handle)) return cached.resource;
     const handle = this.resources.register({
       mimeType: initial.mimeType,
+      mutable: true,
       ttlMs: this.resourceTtlMs,
       load: async (loadSignal) => {
         const current = await this.resolve(source, loadSignal);
@@ -124,7 +135,9 @@ export class FileSystemImageSourceResolver {
         return { bytes, mimeType: current.mimeType };
       }
     });
-    return { ...handle, byteLength: initial.byteLength };
+    const resource = { ...handle, byteLength: initial.byteLength };
+    this.handles.set(key, { fingerprint, resource });
+    return resource;
   }
 
   private async resolve(source: FileSystemImageSource, signal: AbortSignal): Promise<ResolvedImage> {
@@ -141,6 +154,6 @@ export class FileSystemImageSourceResolver {
     const mimeType = MIME_TYPES.get(path.extname(canonicalPath).toLowerCase());
     if (!mimeType) throw new Error('filesystem image type is not allowed');
     signal.throwIfAborted();
-    return { canonicalPath, mimeType, byteLength: stat.size };
+    return { canonicalPath, mimeType, byteLength: stat.size, mtimeMs: stat.mtimeMs };
   }
 }

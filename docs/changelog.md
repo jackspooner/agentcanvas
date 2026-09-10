@@ -1,5 +1,11 @@
 # Change history
 
+## Unreleased — filesystem image stability
+
+- Unchanged filesystem images now reuse their live resource handle across canvas
+  polls, preventing browser flashes and unnecessary resource registrations. A
+  changed file or expired handle still produces a fresh resource.
+
 ## Diagrams 0.2.0 — visual controls
 
 - Optional Diagrams adds individual box sizing, theme-inheriting appearance,
