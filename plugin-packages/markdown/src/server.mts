@@ -1,44 +1,25 @@
 import type { AgentCanvasServerPlugin, CanvasElement, JsonObject, ServerPluginHost } from '@agentcanvas/plugin-sdk';
 import { importLegacyMarkdown } from './legacy.js';
+import { type MarkdownLayoutStyle, requiredMarkdownHeight } from './markdown.js';
 import { addDocumentInputSchema, markdownDataSchema, markdownStyleSchema, mutationOutputSchema } from './schemas.js';
 import { renderMarkdownSnapshot } from './snapshot.js';
+
+const MAX_AUTO_HEIGHT = 1_200;
 
 function optionalNumber(input: JsonObject, key: string): number | null | undefined {
   const value = input[key];
   return typeof value === 'number' || value === null ? value : undefined;
 }
 
-function wrappedLineCount(text: string, charactersPerLine: number): number {
-  return Math.max(1, Math.ceil(Array.from(text).length / Math.max(1, charactersPerLine)));
-}
-
-function estimatedMarkdownHeight(markdown: string, width: number): number {
-  const usableWidth = Math.max(80, width - 28);
-  const charactersPerLine = Math.max(12, Math.floor(usableWidth / 7.5));
-  let height = 28;
-  for (const rawLine of markdown.split(/\r?\n/u)) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    if (/^\|?\s*:?-{3,}/u.test(line)) continue;
-    if (/!\[[^\]]*\]\([^)]*\)/u.test(line)) {
-      height += Math.min(360, Math.max(220, width * 0.6));
-      continue;
-    }
-    if (line.includes('|')) {
-      const cells = line
-        .replace(/^\||\|$/gu, '')
-        .split('|')
-        .map((cell) => cell.trim());
-      const charactersPerCell = Math.max(8, Math.floor(charactersPerLine / Math.max(1, cells.length)));
-      height +=
-        34 * Math.max(1, ...cells.map((cell) => wrappedLineCount(cell.replace(/[*_`]/gu, ''), charactersPerCell)));
-      continue;
-    }
-    const visible = line.replace(/^#{1,6}\s+|^[-*+]\s+|^\d+[.)]\s+/u, '').replace(/[*_`]/gu, '');
-    const wraps = wrappedLineCount(visible, charactersPerLine);
-    height += line.startsWith('#') ? 38 * wraps + 6 : 26 * wraps;
-  }
-  return Math.min(1_200, Math.max(80, Math.ceil(height)));
+function layoutStyle(value: unknown): MarkdownLayoutStyle {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const style = value as JsonObject;
+  return {
+    ...(typeof style.fontSize === 'number' ? { fontSize: style.fontSize } : {}),
+    ...(typeof style.padding === 'number' ? { padding: style.padding } : {}),
+    ...(typeof style.borderWidth === 'number' ? { borderWidth: style.borderWidth } : {}),
+    ...(typeof style.border === 'string' ? { border: style.border } : {})
+  };
 }
 
 const plugin: AgentCanvasServerPlugin = {
@@ -53,7 +34,11 @@ const plugin: AgentCanvasServerPlugin = {
       snapshot: 'supported',
       inspect(element) {
         if (element.data.allowScroll === true) return [];
-        const estimatedHeight = estimatedMarkdownHeight(String(element.data.markdown ?? ''), element.width ?? 360);
+        const estimatedHeight = requiredMarkdownHeight(
+          String(element.data.markdown ?? ''),
+          element.width ?? 360,
+          layoutStyle(element.style)
+        );
         const actualHeight = element.height ?? 240;
         return actualHeight < estimatedHeight
           ? [
@@ -77,7 +62,7 @@ const plugin: AgentCanvasServerPlugin = {
       name: 'add-document',
       title: 'Add Markdown document',
       description:
-        'Add sanitized Markdown in a fixed frame. Omit height to auto-size from content, width, table wrapping, and images (80-1200px); explicitly smaller frames require allowScroll=true. HTTP(S) and same-origin relative images are allowed by default, but a successful mutation does not prove a remote image loaded; verify rendered output before claiming it did.',
+        'Add sanitized Markdown in a fixed frame. Omit height to auto-size from content, width, style, table wrapping, and images (80-1200px); content needing more than 1200px returns a clipping warning unless allowScroll=true. Explicitly smaller frames require allowScroll=true. HTTP(S) and same-origin relative images are allowed by default, but a successful mutation does not prove a remote image loaded; verify rendered output before claiming it did.',
       inputSchema: addDocumentInputSchema,
       outputSchema: mutationOutputSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -85,7 +70,7 @@ const plugin: AgentCanvasServerPlugin = {
         const canvasId = input.canvasId as string;
         const markdown = input.markdown as string;
         const width = optionalNumber(input, 'width') ?? 360;
-        const estimatedHeight = estimatedMarkdownHeight(markdown, width);
+        const estimatedHeight = requiredMarkdownHeight(markdown, width, layoutStyle(input.style));
         const requestedHeight = optionalNumber(input, 'height');
         if (typeof requestedHeight === 'number' && requestedHeight < estimatedHeight && input.allowScroll !== true) {
           throw new Error(
@@ -99,7 +84,7 @@ const plugin: AgentCanvasServerPlugin = {
           x: input.x as number,
           y: input.y as number,
           width,
-          height: requestedHeight ?? estimatedHeight,
+          height: requestedHeight ?? Math.min(MAX_AUTO_HEIGHT, estimatedHeight),
           data: {
             markdown,
             ...(typeof input.allowImages === 'boolean' ? { allowImages: input.allowImages } : {}),

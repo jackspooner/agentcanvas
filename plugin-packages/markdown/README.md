@@ -12,4 +12,9 @@ use `agentcanvas.filesystem-images` for administrator-controlled local files.
 Remote image loads can disclose a viewer's network request to the image host,
 so disable them for untrusted Markdown when that matters.
 
+Omit `height` when adding a document to use conservative style-aware sizing.
+Automatic sizing is capped at 1200px; content that still needs more space
+returns a clipping warning so the caller can split or expand it. Set
+`allowScroll: true` only when an internal scrollbar is intentional.
+
 See the [AgentCanvas plugin guide](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugins.md) for installation and lifecycle details.

@@ -131,7 +131,7 @@ summary where the public response permits it.
 Useful starting layouts at approximately 1440x900:
 
 ```text
-Three cards: x=-610, -200, 210; y=-170; width=380; height=340
+Three Markdown cards: x=-610, -200, 210; y=-170; width=380; omit height
 Three columns: x=-620, -200, 220; width=380; gap=40
 Wide title: x=-620; y=-390; width=1220; height=80
 Vertical flow: x=-140; y=-330, -170, -10, 150; width=280; height=100
@@ -139,6 +139,10 @@ Vertical flow: x=-140; y=-330, -170, -10, 150; width=280; height=100
 
 These are starting points, not mandatory templates. Expand frames for the
 actual content and re-check the final bounds.
+
+For an equal-height Markdown row, create every card with omitted height, read
+the resulting frames, then resize the row to its tallest card. Do not choose a
+shared fixed height before auto-sizing the content.
 
 ## Element Guidance
 

@@ -1,5 +1,14 @@
 # Change history
 
+## Unreleased — Markdown frame sizing
+
+- Markdown rendering, snapshot projection, and frame estimation now share one
+  block parser. Auto-sizing accounts for font size, padding, borders, wrapping,
+  block spacing, tables, code, and images with a conservative safety buffer.
+- Content exceeding the 1200px automatic-height cap now produces an inspection
+  warning unless internal scrolling was explicitly allowed. Agent guidance no
+  longer suggests a fixed height for Markdown card rows.
+
 ## Unreleased — compact MCP mutation receipts
 
 - MCP canvas writes now return canvas ID, revision, and whole-canvas inspection

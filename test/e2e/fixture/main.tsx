@@ -2,6 +2,7 @@ import { isJsonObject, type CanvasElement, type JsonObject } from '@agentcanvas/
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderModelSnapshot } from '../../../plugin-packages/glb-viewer/src/snapshot';
+import { requiredMarkdownHeight } from '../../../plugin-packages/markdown/src/markdown';
 import type { CanvasOperation } from '../../../src/contracts';
 import { CanvasView } from '../../../src/web/components/CanvasView';
 import {
@@ -72,7 +73,41 @@ const defaultElements: CanvasElement[] = [
     label: 'anchored connector',
     stroke: '#2563eb',
     strokeWidth: 3
-  })
+  }),
+  ...[
+    {
+      id: 'markdown-layout-definitions',
+      x: -650,
+      fontSize: 17,
+      markdown:
+        '## 1. Agent definition\n\nA configured agent is its **saved model**, **standing prompt**, **permissions & skills**, and **primary/subagent mode**.\n\nA **session** is one run/conversation using that definition.\n\n**Astra:** standing instructions to plan, delegate implementation, review, and integrate.\n\n**DeepSeek v4.1 Flash:** a proposed worker model; exact availability is unverified.'
+    },
+    {
+      id: 'markdown-layout-context',
+      x: -150,
+      fontSize: 16,
+      markdown:
+        '## 2. Prompt & rule layers\n\n| Layer | Carries |\n|---|---|\n| Agent standing prompt | role & operating rules |\n| Per-task assignment | objective, scope & criteria |\n| Shared repo rules | local engineering constraints |\n\nThese layers apply **separately**. Astra’s system prompt is **not automatically inherited** by an implementation worker.'
+    },
+    {
+      id: 'markdown-layout-review',
+      x: 350,
+      fontSize: 16,
+      markdown:
+        '## 3. Reviewer brief\n\nGive the reviewer:\n\n- user objective & acceptance criteria\n- repository/worktree and base + implementation commits\n- decisions and constraints\n- test outcomes\n\nThen inspect the **diff**, surrounding code, callers, tests, and repository rules directly.'
+    }
+  ].map(({ id, x, fontSize, markdown }) => ({
+    ...element(
+      id,
+      'agentcanvas.markdown/document',
+      x,
+      420,
+      450,
+      requiredMarkdownHeight(markdown, 450, { fontSize, padding: 20, borderWidth: 2 }),
+      { markdown }
+    ),
+    style: { fontSize, padding: 20, border: '2px solid #C9D4E3' }
+  }))
 ];
 
 const optionalElements: CanvasElement[] = [

@@ -73,7 +73,7 @@ export const addDocumentInputSchema: JsonSchema = {
     height: {
       type: ['number', 'null'],
       description:
-        'Fixed visible height. Omit it to auto-size from content; explicit undersizing is rejected unless allowScroll is true.'
+        'Fixed visible height. Omit it to auto-size from content and style up to 1200px; larger content returns a clipping warning unless allowScroll is true. Explicit undersizing is rejected unless allowScroll is true.'
     },
     allowScroll: {
       type: 'boolean',

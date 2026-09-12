@@ -101,6 +101,18 @@ test('renders default and optional elements while isolating one failing browser 
   await expect(page.locator('[data-element-id="text-1"] .content')).toBeVisible();
 });
 
+test('style-aware Markdown auto heights do not create internal scrollbars', async ({ page }) => {
+  await openFixture(page);
+  for (const id of ['markdown-layout-definitions', 'markdown-layout-context', 'markdown-layout-review']) {
+    const dimensions = await page.locator(`[data-element-id="${id}"] .plugin-renderer-surface`).evaluate((surface) => {
+      const documentElement = surface.shadowRoot?.querySelector<HTMLElement>('.document');
+      if (!documentElement) throw new Error('Markdown renderer was not mounted');
+      return { clientHeight: documentElement.clientHeight, scrollHeight: documentElement.scrollHeight };
+    });
+    expect(dimensions.scrollHeight, id).toBeLessThanOrEqual(dimensions.clientHeight);
+  }
+});
+
 test('applies one canvas theme to the board and extension defaults', async ({ page }) => {
   await openFixture(page);
   await expect(page.locator('.agentcanvas-editor')).toHaveCSS('background-color', 'rgb(240, 253, 244)');
