@@ -1,3 +1,5 @@
+import { PluginValidationError } from '@agentcanvas/plugin-sdk';
+
 export type CanvasErrorStage =
   | 'validation'
   | 'permission'
@@ -28,6 +30,8 @@ export class CanvasError extends Error {
 
 export function toCanvasError(error: unknown): CanvasError {
   if (error instanceof CanvasError) return error;
+  if (error instanceof PluginValidationError)
+    return new CanvasError('validation_error', error.message, 'validation', 400, false);
   const message = error instanceof Error ? error.message : 'Unexpected AgentCanvas error';
   return new CanvasError('internal_error', message, 'storage', 500, false);
 }

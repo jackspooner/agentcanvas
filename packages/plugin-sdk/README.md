@@ -1,7 +1,7 @@
 # AgentCanvas Plugin SDK
 
 `@agentcanvas/plugin-sdk` is the public, framework-neutral contract for AgentCanvas plugins. It contains only
-types and deterministic identifier/JSON/geometry helpers. It does not import the AgentCanvas server, React, Hono,
+types and deterministic identifier/JSON/geometry/error helpers. It does not import the AgentCanvas server, React, Hono,
 SQLite, or provider-specific code.
 
 Plugins are trusted application dependencies. The permission declarations in a plugin manifest describe the
@@ -18,6 +18,14 @@ MCP-facing tools should use `upsertElementReceipt`,
 `replaceElementDataReceipt`, and `deleteElementReceipt`. These return a bounded
 `CanvasMutationReceipt`; the existing methods retain their full-document results
 for compatible in-process consumers.
+
+Host API `1.3.0` supports `PluginValidationError` (also exported by
+`@agentcanvas/extension-sdk`). Throw it for expected input rejection in tools or
+procedures. The host returns the existing non-retryable `validation_error` problem
+with status 400 through HTTP and MCP. Its message is caller-visible: include only
+safe corrective guidance, never secrets, stack traces, paths, or internal details.
+Unexpected exceptions remain sanitized internal failures. Extensions using this
+error must require `hostApi: "^1.3.0"`.
 
 ## Browser entry
 

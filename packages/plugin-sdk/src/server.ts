@@ -4,6 +4,14 @@ import type { JsonObject, JsonSchema, JsonValue } from './json.js';
 import type { SnapshotContribution } from './snapshot.js';
 import type { CanvasThemeV1 } from './theme.js';
 
+/** Expected input rejection. Its message is returned to callers; never include secrets or internal details. */
+export class PluginValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PluginValidationError';
+  }
+}
+
 export interface PluginValidationIssue {
   path: string;
   code: string;

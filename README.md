@@ -321,6 +321,11 @@ The installed frozen plugin registry generates runtime OpenAPI and both MCP tran
 
 HTTP application failures use RFC 9457 `application/problem+json` with stable machine-readable `code`, `category`, `retryable`, and `requestId` fields. This replaces the pre-alpha.2 `{ok:false, code, message, ...}` body without a legacy fallback. MCP protocol errors remain JSON-RPC-native; application failures from a known tool set `isError: true` and return the same object at `structuredContent.problem`.
 
+Text and shape add tools grow height to fit estimated content while preserving width
+and position. Use `allowClipping: true` for a deliberate hard height; read the saved
+frame and repair overlap warnings. Generic element writes and frame patches keep
+the dimensions supplied. See the [upgrade notes](docs/upgrading.md#030-alpha4).
+
 Resident MCP is `POST http://127.0.0.1:23003/mcp`. The stdio command is a transport bridge to that resident endpoint and does not rediscover plugins:
 
 ```bash

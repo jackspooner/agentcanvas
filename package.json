@@ -1,6 +1,6 @@
 {
   "name": "agent-canvas",
-  "version": "0.3.0-alpha.3",
+  "version": "0.3.0-alpha.4",
   "description": "Clone-and-run local web canvas and MCP server for agent-created boards.",
   "private": true,
   "bin": {
@@ -70,9 +70,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@agentcanvas/core": "0.2.0",
+    "@agentcanvas/core": "0.2.1",
     "@agentcanvas/editor": "0.3.0-alpha.2",
-    "@agentcanvas/plugin-sdk": "0.3.0-alpha.1",
+    "@agentcanvas/plugin-sdk": "0.3.0-alpha.2",
     "@workspace2/api-contracts": "file:.cutlery/deps/workspace2-api-contracts",
     "@hono/node-server": "^2.0.8",
     "@modelcontextprotocol/sdk": "^1.29.0",

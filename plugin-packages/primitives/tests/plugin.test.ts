@@ -87,7 +87,7 @@ describe('primitives plugin', () => {
     ).rejects.toThrow('text is literal text; replace HTML entities');
   });
 
-  it('rejects an explicitly undersized text frame unless clipping is intentional', async () => {
+  it('grows an explicitly undersized text frame unless clipping is intentional', async () => {
     const tools: PluginToolDescriptor[] = [];
     const elements: ElementTypeDescriptor[] = [];
     const host = {
@@ -104,20 +104,20 @@ describe('primitives plugin', () => {
     await plugin.activate(host);
 
     const addText = tools.find((tool) => tool.name === 'add-text') as PluginToolDescriptor;
-    await expect(
-      addText.invoke(
-        {
-          canvasId: 'canvas_1',
-          x: 0,
-          y: 0,
-          width: 900,
-          height: 56,
-          text: 'AgentCanvas — Instance Reference',
-          style: { fontSize: 36 }
-        },
-        {} as PluginInvocationContext
-      )
-    ).rejects.toThrow('is likely to clip this literal text');
+    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
+    await addText.invoke(
+      {
+        canvasId: 'canvas_1',
+        x: 0,
+        y: 0,
+        width: 900,
+        height: 56,
+        text: 'AgentCanvas — Instance Reference',
+        style: { fontSize: 36 }
+      },
+      { canvas: { upsertElementReceipt } } as unknown as PluginInvocationContext
+    );
+    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ width: 900, height: 79 });
 
     const textDescriptor = elements.find((element) => element.name === 'text') as ElementTypeDescriptor;
     const undersized = {
@@ -139,7 +139,6 @@ describe('primitives plugin', () => {
       })
     ).toEqual([expect.objectContaining({ code: 'literal_text_may_clip' })]);
 
-    const upsertElementReceipt = vi.fn(async (_canvasId: string, _element: CanvasElement) => ({ revision: 2 }));
     await addText.invoke(
       {
         canvasId: 'canvas_1',
@@ -153,7 +152,7 @@ describe('primitives plugin', () => {
       },
       { canvas: { upsertElementReceipt } } as unknown as PluginInvocationContext
     );
-    expect(upsertElementReceipt.mock.calls[0]?.[1]).toMatchObject({ data: { allowClipping: true } });
+    expect(upsertElementReceipt.mock.calls[1]?.[1]).toMatchObject({ height: 56, data: { allowClipping: true } });
   });
 
   it('renders rectangle, ellipse, and diamond as distinct snapshot nodes', () => {

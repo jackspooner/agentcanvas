@@ -8,6 +8,7 @@ import type {
   PluginToolDescriptor,
   ServerPluginHost
 } from '@agentcanvas/plugin-sdk';
+import { PluginValidationError } from '@agentcanvas/plugin-sdk';
 import { resolveConnectorEndpoints } from './browser/geometry.js';
 import { importLegacyPrimitive } from './legacy.js';
 import type { ConnectorEndpointData } from './browser/data.js';
@@ -31,7 +32,9 @@ function optionalNumber(input: JsonObject, key: string): number | null | undefin
 function assertLiteralText(value: unknown, field: string): void {
   if (typeof value !== 'string') return;
   if (/&(?:amp|lt|gt|quot|apos|#39);/iu.test(value)) {
-    throw new Error(`${field} is literal text; replace HTML entities such as &amp; with their intended character.`);
+    throw new PluginValidationError(
+      `${field} is literal text; replace HTML entities such as &amp; with their intended character.`
+    );
   }
 }
 
@@ -84,18 +87,6 @@ function inspectReadableLabelFrame(
   return issues;
 }
 
-function assertReadableLabelFrame(input: JsonObject, element: CanvasElement, text: unknown): void {
-  const requestedHeight = optionalNumber(input, 'height');
-  if (typeof requestedHeight !== 'number' || input.allowClipping === true || typeof text !== 'string' || !text) return;
-  const fontSize = styleFontSize(input);
-  const estimatedHeight = estimatedTextHeight(text, element.width ?? 240, fontSize, 28);
-  if (requestedHeight < estimatedHeight) {
-    throw new Error(
-      `Fixed frame height ${requestedHeight}px is likely to clip this literal text; use at least ${estimatedHeight}px or set allowClipping to true for intentional clipping.`
-    );
-  }
-}
-
 function completeElement(
   input: JsonObject,
   type: string,
@@ -120,6 +111,18 @@ function completeElement(
   if (input.style && typeof input.style === 'object' && !Array.isArray(input.style)) element.style = input.style;
   if (input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata))
     element.metadata = input.metadata;
+  const text = data.text ?? data.label;
+  if (
+    (data.text !== undefined || data.shape !== undefined) &&
+    input.allowClipping !== true &&
+    typeof text === 'string' &&
+    text
+  ) {
+    element.height = Math.max(
+      element.height ?? defaults.height,
+      estimatedTextHeight(text, element.width ?? defaults.width, styleFontSize(input), 28)
+    );
+  }
   return element;
 }
 
@@ -141,7 +144,6 @@ function tool(
       assertLiteralText(input.text, 'text');
       assertLiteralText(input.label, 'label');
       const element = makeElement(input);
-      assertReadableLabelFrame(input, element, input.text ?? input.label);
       const canvasId = input.canvasId as string;
       const result = await context.canvas.upsertElementReceipt(
         canvasId,
@@ -241,7 +243,7 @@ const plugin: AgentCanvasServerPlugin = {
       tool(
         'add-text',
         'Add text',
-        'Add literal text. Default frame is 240x100; explicitly undersized frames are rejected unless allowClipping is true.',
+        'Add literal text. Default frame is 240x100; height grows to fit estimated content unless allowClipping is true. Width and position remain unchanged.',
         addTextInputSchema as JsonObject,
         (input) =>
           completeElement(
@@ -259,7 +261,7 @@ const plugin: AgentCanvasServerPlugin = {
       tool(
         'add-shape',
         'Add shape',
-        'Add a labeled rectangle, ellipse, or diamond. Default frame is 240x160; labels are literal text and explicitly undersized frames are rejected unless allowClipping is true.',
+        'Add a labeled rectangle, ellipse, or diamond. Default frame is 240x160; labels are literal text and height grows to fit estimated content unless allowClipping is true. Width and position remain unchanged.',
         addShapeInputSchema as JsonObject,
         (input) =>
           completeElement(

@@ -1,5 +1,19 @@
 # Change history
 
+## 0.3.0-alpha.4 — primitive sizing and validation
+
+- Primitives 0.2.1 grows text/shape add-tool heights to the existing content
+  estimate, preserving width, position, larger frames and intentional clipping.
+  Actual frames remain available through element reads; overlap diagnostics run
+  against the grown frame. Generic writes, frame patches and stored data do not
+  change.
+- Host API 1.3.0 recognizes the SDK `PluginValidationError` as the existing
+  non-retryable 400 validation problem with safe corrective guidance. Primitive
+  HTML-entity rejection and Markdown 0.2.1 undersizing use this type; unexpected
+  errors remain sanitized 500s. SDK pins and generated contracts are refreshed.
+- No element-schema/database migration, dependency addition or package
+  publication. See the upgrade notes for runtime extension replacement.
+
 ## Unreleased — Markdown frame sizing
 
 - Markdown rendering, snapshot projection, and frame estimation now share one

@@ -934,7 +934,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Add a labeled rectangle, ellipse, or diamond. Default frame is 240x160; labels are literal text and explicitly undersized frames are rejected unless allowClipping is true.",
+    "description": "Add a labeled rectangle, ellipse, or diamond. Default frame is 240x160; labels are literal text and height grows to fit estimated content unless allowClipping is true. Width and position remain unchanged.",
     "errorCodes": [
       "idempotency_conflict",
       "internal_error",
@@ -960,7 +960,7 @@
           "type": "integer"
         },
         "height": {
-          "description": "Fixed visible height. Explicit undersizing is rejected unless allowClipping is true; allow enough space for every literal label line.",
+          "description": "Minimum visible height. Grows to fit the estimated label unless allowClipping is true; omitted/null height starts at 160px.",
           "type": [
             "number",
             "null"
@@ -1196,7 +1196,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Add literal text. Default frame is 240x100; explicitly undersized frames are rejected unless allowClipping is true.",
+    "description": "Add literal text. Default frame is 240x100; height grows to fit estimated content unless allowClipping is true. Width and position remain unchanged.",
     "errorCodes": [
       "idempotency_conflict",
       "internal_error",
@@ -1222,7 +1222,7 @@
           "type": "integer"
         },
         "height": {
-          "description": "Fixed visible height. Explicit undersizing is rejected unless allowClipping is true; use at least 72px for a 32-48px title.",
+          "description": "Minimum visible height. Grows to fit estimated text at this width and font size unless allowClipping is true; omitted/null height starts at 100px.",
           "type": [
             "number",
             "null"

@@ -8,6 +8,12 @@ author-maintained contribution declaration.
 
 Existing `@agentcanvas/plugin-sdk` consumers remain supported.
 
+Host API 1.3.0 supports the re-exported `PluginValidationError(message)` for
+expected tool/procedure input rejection. Its safe corrective message is returned
+as a non-retryable 400 `validation_error` through HTTP and MCP. Extensions using
+it must require `hostApi: "^1.3.0"`; never include secrets or internal details in
+the message.
+
 ```ts
 import { defineCommand, defineElement, defineExtension } from '@agentcanvas/extension-sdk';
 

@@ -12,13 +12,13 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
   ],
   layout: [
     'x and y are the top-left corner of a fixed-size element frame in canvas world coordinates.',
-    'Frames do not auto-grow after creation. Set explicit widths; omit height on Markdown and table add tools to request safe initial auto-sizing. Default to showing all content; use internal scrolling only when the user requested a compact scroller or a hard space constraint requires one.',
+    'Frames do not auto-grow after creation. Text and shape add tools grow height to fit estimated content unless allowClipping=true; read the persisted frame and repair overlap warnings. Set explicit widths; omit height on Markdown and table add tools to request safe initial auto-sizing. Default to showing all content; use internal scrolling only when the user requested a compact scroller or a hard space constraint requires one.',
     'Keep at least 32 world pixels between unrelated frames and reserve substantially more height for headings, lists, tables, and images.',
     'Fresh unlimited canvases open fitted to their content, but coherent compact layouts are still required.'
   ],
   text: [
     'Text and shape labels are literal text. Write Research & Planning, never Research &amp; Planning.',
-    'A 32-48px title normally needs a 700-1200px wide frame and at least 72px of height.'
+    'A 32-48px title normally needs a 700-1200px wide frame. Text and shape add tools increase height when their content estimate requires it.'
   ],
   truth: [
     'A successful mutation proves persisted data only; it does not prove readability or that a remote image loaded.',

@@ -150,7 +150,8 @@ shared fixed height before auto-sizing the content.
 
 - Use separate text elements for title, subtitle, and section labels.
 - Give large titles wide frames. A 32-48px title usually needs 700-1200px of
-  width and at least 72px of height, not the 240x100 default.
+  width. Text and shape add tools grow height to fit estimated content unless
+  `allowClipping=true`; read the saved frame and repair any overlap warnings.
 - Keep text frames vertically separate even when the visible line looks short.
 - Put literal text in labels. Write `Research & Planning`, not the HTML entity
   `Research &amp; Planning`.

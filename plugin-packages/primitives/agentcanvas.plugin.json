@@ -1,7 +1,7 @@
 {
   "apiVersion": "agentcanvas.plugin/v1",
   "id": "agentcanvas.primitives",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "displayName": "AgentCanvas primitives",
   "description": "Text, shape, line, and arrow elements.",
   "license": "MIT",
@@ -10,7 +10,7 @@
     "browser": "dist/browser/entry.mjs"
   },
   "requires": {
-    "hostApi": "^1.0.0",
+    "hostApi": "^1.3.0",
     "plugins": {},
     "capabilities": {}
   },

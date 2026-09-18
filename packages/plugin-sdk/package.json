@@ -1,6 +1,6 @@
 {
   "name": "@agentcanvas/plugin-sdk",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "description": "Public contracts for authoring AgentCanvas plugins.",
   "license": "MIT",
   "repository": {

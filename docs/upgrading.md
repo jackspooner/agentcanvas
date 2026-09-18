@@ -5,6 +5,22 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## 0.3.0-alpha.4
+
+Host API 1.3.0 adds `PluginValidationError` for caller-visible input validation.
+Primitives and Markdown 0.2.1 require `^1.3.0`; older extensions remain compatible.
+Text and shape add tools now grow height to fit estimated content, including when
+height was supplied explicitly. Use `allowClipping: true` when a hard height is
+intentional, then read the persisted frame and check overlap diagnostics.
+Generic element writes, frame patches, and existing documents are unchanged.
+Markdown sizing is unchanged; undersizing returns a corrective 400 problem.
+
+Rebuild packages/catalogs, disable and reinstall only the affected runtime
+extensions from the catalog, then restart the host and refresh the MCP catalog.
+The default materialization command skips already-installed versions; it does
+not replace runtime bytes. No SQLite migration or package publication is needed.
+See [release notes](release-notes-v0.3.0-alpha.4.md).
+
 ## 0.3.0-alpha.3
 
 Rebuild packages and the extension catalog. The optional [Diagrams extension](../plugin-packages/diagrams/README.md)

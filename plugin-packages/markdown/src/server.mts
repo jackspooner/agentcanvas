@@ -1,4 +1,5 @@
 import type { AgentCanvasServerPlugin, CanvasElement, JsonObject, ServerPluginHost } from '@agentcanvas/plugin-sdk';
+import { PluginValidationError } from '@agentcanvas/plugin-sdk';
 import { importLegacyMarkdown } from './legacy.js';
 import { type MarkdownLayoutStyle, requiredMarkdownHeight } from './markdown.js';
 import { addDocumentInputSchema, markdownDataSchema, markdownStyleSchema, mutationOutputSchema } from './schemas.js';
@@ -73,7 +74,7 @@ const plugin: AgentCanvasServerPlugin = {
         const estimatedHeight = requiredMarkdownHeight(markdown, width, layoutStyle(input.style));
         const requestedHeight = optionalNumber(input, 'height');
         if (typeof requestedHeight === 'number' && requestedHeight < estimatedHeight && input.allowScroll !== true) {
-          throw new Error(
+          throw new PluginValidationError(
             `Fixed Markdown frame height ${requestedHeight}px is likely to hide content; use at least ${estimatedHeight}px or set allowScroll to true for an intentional scrolling card.`
           );
         }

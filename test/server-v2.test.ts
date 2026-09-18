@@ -39,7 +39,8 @@ function fixturePlugins(): string {
   );
   fs.writeFileSync(
     path.join(pluginRoot, 'dist', 'server.mjs'),
-    `export default { activate(host) {
+    `import { PluginValidationError } from '@agentcanvas/plugin-sdk';
+    export default { activate(host) {
       host.registerElementType({
         name: 'card', schemaVersion: 1, browser: true, snapshot: 'supported',
         dataSchema: { type: 'object', additionalProperties: false, required: ['title'], properties: { title: { type: 'string' } } },
@@ -54,7 +55,11 @@ function fixturePlugins(): string {
         name: 'echo', description: 'Echo a value.',
         inputSchema: { type: 'object', additionalProperties: false, required: ['value'], properties: { value: { type: 'string' } } },
         outputSchema: { type: 'object', additionalProperties: false, required: ['value'], properties: { value: { type: 'string' } } },
-        invoke: async (input) => ({ value: input.value })
+        invoke: async (input) => {
+          if (input.value === 'reject') throw new PluginValidationError('Use a different value.');
+          if (input.value === 'crash') throw new Error('secret-token private-path');
+          return { value: input.value };
+        }
       });
     } };`
   );
@@ -70,6 +75,33 @@ afterEach(() => {
 });
 
 describe('v0.2 assembled runtime', () => {
+  it('maps SDK validation errors for HTTP procedures without persisting', async () => {
+    const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      const app = createV2App(runtime);
+      const canvas = runtime.store.createCanvas({ title: 'Unchanged' });
+      for (const [value, status, code, detail] of [
+        ['reject', 400, 'validation_error', 'Use a different value.'],
+        ['crash', 500, 'internal_error', 'AgentCanvas could not complete the request.']
+      ] as const) {
+        const response = await app.request('/api/v1/plugins/fixture.cards/procedures/echo', {
+          method: 'POST',
+          body: JSON.stringify({ value })
+        });
+        expect(response.status).toBe(status);
+        expect(response.headers.get('content-type')).toContain('application/problem+json');
+        const problem = await response.json();
+        expect(problem).toMatchObject({ code, status, detail, retryable: false, requestId: expect.any(String) });
+        expect(JSON.stringify(problem)).not.toMatch(/secret-token|private-path/);
+        expect(runtime.store.getCanvas(canvas.id)).toMatchObject({ revision: canvas.revision, elements: [] });
+      }
+    } finally {
+      stderr.mockRestore();
+      runtime.dispose();
+    }
+  });
+
   it('persists diagnostics independently of size and applies changes to HTTP, MCP, shares, embeds and snapshots', async () => {
     const pluginsRoot = fixturePlugins();
     const databasePath = path.join(pluginsRoot, 'settings.sqlite');

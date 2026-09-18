@@ -28,6 +28,14 @@ The public `ImageSourcesCapabilityV1` is the provider-neutral image boundary. So
 `SnapshotRendererContext.theme` expose the same complete resolved theme. The SDK helpers `themedString` and
 `themedNumber` implement explicit element style first, then theme token resolution.
 
+## Expected validation errors
+
+Host API 1.3.0 adds the SDK `PluginValidationError(message)` for expected tool and
+procedure input rejection. HTTP and MCP return its safe caller-visible message
+as a non-retryable `validation_error` problem with status 400. Do not include
+secrets or internal diagnostics in the message. Ordinary exceptions remain
+sanitized internal failures. Extensions using this type must require `^1.3.0`.
+
 ## Element descriptor
 
 An `ElementTypeDescriptor` declares:

@@ -137,7 +137,7 @@ export const addTextInputSchema = addToolSchema(
     height: {
       type: ['number', 'null'],
       description:
-        'Fixed visible height. Explicit undersizing is rejected unless allowClipping is true; use at least 72px for a 32-48px title.'
+        'Minimum visible height. Grows to fit estimated text at this width and font size unless allowClipping is true; omitted/null height starts at 100px.'
     },
     allowClipping: {
       type: 'boolean',
@@ -160,7 +160,7 @@ export const addShapeInputSchema = addToolSchema(
     height: {
       type: ['number', 'null'],
       description:
-        'Fixed visible height. Explicit undersizing is rejected unless allowClipping is true; allow enough space for every literal label line.'
+        'Minimum visible height. Grows to fit the estimated label unless allowClipping is true; omitted/null height starts at 160px.'
     },
     allowClipping: {
       type: 'boolean',
