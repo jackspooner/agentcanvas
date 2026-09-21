@@ -1,9 +1,30 @@
-import type { AgentCanvasServerPlugin, CanvasElement, JsonObject, ServerPluginHost } from '@agentcanvas/plugin-sdk';
+import type {
+  AgentCanvasServerPlugin,
+  CanvasElement,
+  JsonObject,
+  PluginValidationIssue,
+  ServerPluginHost
+} from '@agentcanvas/plugin-sdk';
 import { PluginValidationError } from '@agentcanvas/plugin-sdk';
+import {
+  CAROUSEL_CONTROL_HEIGHT,
+  CAROUSEL_DEFAULT_HEIGHT,
+  carouselData,
+  carouselTitle,
+  MARKDOWN_DEFAULT_HEIGHT,
+  MARKDOWN_DEFAULT_WIDTH,
+  markdownTitle
+} from './browser/carousel.js';
 import { importLegacyMarkdown } from './legacy.js';
 import { type MarkdownLayoutStyle, requiredMarkdownHeight } from './markdown.js';
-import { addDocumentInputSchema, markdownDataSchema, markdownStyleSchema, mutationOutputSchema } from './schemas.js';
-import { renderMarkdownSnapshot } from './snapshot.js';
+import {
+  addDocumentInputSchema,
+  markdownCarouselDataSchema,
+  markdownDataSchema,
+  markdownStyleSchema,
+  mutationOutputSchema
+} from './schemas.js';
+import { renderMarkdownCarouselSnapshot, renderMarkdownSnapshot } from './snapshot.js';
 
 const MAX_AUTO_HEIGHT = 1_200;
 
@@ -23,6 +44,28 @@ function layoutStyle(value: unknown): MarkdownLayoutStyle {
   };
 }
 
+function markdownInspection(
+  markdown: string,
+  allowScroll: unknown,
+  width: number,
+  height: number,
+  style: unknown,
+  path = '/height',
+  code = 'markdown_content_may_clip'
+): PluginValidationIssue[] {
+  if (allowScroll === true) return [];
+  const estimatedHeight = requiredMarkdownHeight(markdown, width, layoutStyle(style));
+  return height < estimatedHeight
+    ? [
+        {
+          path,
+          code,
+          message: `Markdown content is likely to need at least ${estimatedHeight}px at this width; current height is ${height}px. Increase height or persist data.allowScroll=true for an intentional scroller.`
+        }
+      ]
+    : [];
+}
+
 const plugin: AgentCanvasServerPlugin = {
   activate(host: ServerPluginHost) {
     host.registerElementType({
@@ -30,34 +73,74 @@ const plugin: AgentCanvasServerPlugin = {
       schemaVersion: 1,
       dataSchema: markdownDataSchema,
       styleSchema: markdownStyleSchema,
-      defaultFrame: { width: 360, height: 240 },
+      defaultFrame: { width: MARKDOWN_DEFAULT_WIDTH, height: MARKDOWN_DEFAULT_HEIGHT },
       browser: true,
       snapshot: 'supported',
-      inspect(element) {
-        if (element.data.allowScroll === true) return [];
-        const estimatedHeight = requiredMarkdownHeight(
+      inspect: (element) =>
+        markdownInspection(
           String(element.data.markdown ?? ''),
-          element.width ?? 360,
-          layoutStyle(element.style)
-        );
-        const actualHeight = element.height ?? 240;
-        return actualHeight < estimatedHeight
-          ? [
-              {
-                path: '/height',
-                code: 'markdown_content_may_clip',
-                message: `Markdown content is likely to need at least ${estimatedHeight}px at this width; current height is ${actualHeight}px. Increase height or persist data.allowScroll=true for an intentional scroller.`
-              }
-            ]
-          : [];
-      },
-      summarize: (element) => ({
-        title:
-          String(element.data.markdown ?? '')
-            .replace(/^#+\s*/u, '')
-            .slice(0, 80) || 'Markdown'
-      }),
+          element.data.allowScroll,
+          element.width ?? MARKDOWN_DEFAULT_WIDTH,
+          element.height ?? MARKDOWN_DEFAULT_HEIGHT,
+          element.style
+        ),
+      summarize: (element) => ({ title: markdownTitle(element.data.markdown) }),
       renderSnapshot: (element, context) => renderMarkdownSnapshot(element, context.theme)
+    });
+    host.registerElementType({
+      name: 'carousel',
+      schemaVersion: 1,
+      dataSchema: markdownCarouselDataSchema,
+      defaultFrame: { width: MARKDOWN_DEFAULT_WIDTH, height: CAROUSEL_DEFAULT_HEIGHT },
+      browser: true,
+      snapshot: 'supported',
+      validate(element) {
+        const data = carouselData(element.data);
+        const issues: PluginValidationIssue[] = [];
+        const seen = new Set<string>();
+        data.slides.forEach((slide, index) => {
+          if (seen.has(slide.id)) {
+            issues.push({
+              path: `/data/slides/${index}/id`,
+              code: 'markdown_carousel_slide_id_duplicate',
+              message: 'Markdown carousel slide IDs must be unique.'
+            });
+          }
+          seen.add(slide.id);
+        });
+        if (data.initialIndex >= data.slides.length) {
+          issues.push({
+            path: '/data/initialIndex',
+            code: 'markdown_carousel_initial_index_invalid',
+            message: 'Markdown carousel initialIndex must identify an existing slide.'
+          });
+        }
+        return issues;
+      },
+      inspect(element) {
+        const data = carouselData(element.data);
+        const width = element.width ?? MARKDOWN_DEFAULT_WIDTH;
+        const height = Math.max(1, (element.height ?? CAROUSEL_DEFAULT_HEIGHT) - CAROUSEL_CONTROL_HEIGHT);
+        return data.slides.flatMap((slide, index) =>
+          markdownInspection(
+            String(slide.data.markdown ?? ''),
+            slide.data.allowScroll,
+            width,
+            height,
+            slide.style,
+            `/data/slides/${index}`,
+            'markdown_carousel_slide_may_clip'
+          )
+        );
+      },
+      summarize(element) {
+        const data = carouselData(element.data);
+        return {
+          title: carouselTitle(data),
+          detail: `${data.slides.length} Markdown cards`
+        };
+      },
+      renderSnapshot: (element, context) => renderMarkdownCarouselSnapshot(element, context.theme)
     });
     host.registerTool({
       name: 'add-document',
@@ -70,7 +153,7 @@ const plugin: AgentCanvasServerPlugin = {
       async invoke(input, context) {
         const canvasId = input.canvasId as string;
         const markdown = input.markdown as string;
-        const width = optionalNumber(input, 'width') ?? 360;
+        const width = optionalNumber(input, 'width') ?? MARKDOWN_DEFAULT_WIDTH;
         const estimatedHeight = requiredMarkdownHeight(markdown, width, layoutStyle(input.style));
         const requestedHeight = optionalNumber(input, 'height');
         if (typeof requestedHeight === 'number' && requestedHeight < estimatedHeight && input.allowScroll !== true) {

@@ -773,6 +773,311 @@
         ],
         "type": "object"
       },
+      "Element_agentcanvas_markdown_carousel": {
+        "allOf": [
+          {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "height": {
+                "description": "Visible frame height. Explicit sizing prevents overlap and clipped content.",
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "locked": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "opacity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rotation": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "schemaVersion": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "style": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*/[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "width": {
+                "description": "Visible frame width. Explicit sizing prevents overlap and clipped content.",
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "x": {
+                "description": "Left edge in canvas world coordinates.",
+                "type": "number"
+              },
+              "y": {
+                "description": "Top edge in canvas world coordinates.",
+                "type": "number"
+              },
+              "zIndex": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "schemaVersion",
+              "x",
+              "y",
+              "data"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "data": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "initialIndex": {
+                    "maximum": 49,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "slides": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "data": {
+                          "$schema": "https://json-schema.org/draft/2020-12/schema",
+                          "additionalProperties": false,
+                          "properties": {
+                            "allowImages": {
+                              "description": "Whether supported image references may render. This setting does not prove that a remote image loaded.",
+                              "type": "boolean"
+                            },
+                            "allowScroll": {
+                              "description": "Whether a deliberately undersized frame may use its internal scrollbar.",
+                              "type": "boolean"
+                            },
+                            "markdown": {
+                              "maxLength": 20000,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "markdown"
+                          ],
+                          "type": "object"
+                        },
+                        "frame": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "height": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "opacity": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "rotation": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "width": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            },
+                            "zIndex": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ],
+                          "type": "object"
+                        },
+                        "id": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "metadata": {
+                          "type": "object"
+                        },
+                        "schemaVersion": {
+                          "const": 1
+                        },
+                        "style": {
+                          "anyOf": [
+                            {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "additionalProperties": false,
+                              "properties": {
+                                "background": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "border": {
+                                  "pattern": "^\\d+(?:\\.\\d+)?px\\s+(?:solid|dashed|dotted)\\s+#[0-9a-fA-F]{3,8}$",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "borderColor": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "borderRadius": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "borderWidth": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "color": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "fontFamily": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "fontSize": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "fontWeight": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "padding": {
+                                  "maximum": 1000,
+                                  "minimum": 0,
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "schemaVersion",
+                        "data",
+                        "frame"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 50,
+                    "minItems": 2,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "slides",
+                  "initialIndex"
+                ],
+                "type": "object"
+              },
+              "schemaVersion": {
+                "const": 1
+              },
+              "style": {
+                "type": "null"
+              },
+              "type": {
+                "const": "agentcanvas.markdown/carousel"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
       "Element_agentcanvas_markdown_document": {
         "allOf": [
           {
@@ -5785,6 +6090,9 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/Element_agentcanvas_markdown_document"
+          },
+          {
+            "$ref": "#/components/schemas/Element_agentcanvas_markdown_carousel"
           },
           {
             "$ref": "#/components/schemas/Element_agentcanvas_primitives_text"

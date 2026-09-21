@@ -1,5 +1,15 @@
 # Change history
 
+## Unreleased — Markdown card carousel
+
+- Markdown 0.3.0 adds an accessible `agentcanvas.markdown/carousel` element and
+  editor commands that atomically combine 2–50 unlocked Markdown documents or
+  unpack them without losing source IDs, content, styling, metadata, dimensions,
+  or relative layout.
+- Carousel navigation is browser-local with no autoplay. The persisted initial
+  card owns deterministic summaries and snapshots. Existing Markdown documents,
+  core APIs, database schemas, and dependencies are unchanged.
+
 ## 0.3.0-alpha.4 — primitive sizing and validation
 
 - Primitives 0.2.1 grows text/shape add-tool heights to the existing content

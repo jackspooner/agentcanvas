@@ -17,7 +17,14 @@ Automatic sizing is capped at 1200px; content that still needs more space
 returns a clipping warning so the caller can split or expand it. Set
 `allowScroll: true` only when an internal scrollbar is intentional.
 
-Version 0.2.1 requires host API 1.3.0. An explicitly undersized frame without
+Version 0.3.0 adds the `agentcanvas.markdown/carousel` element. Select 2–50
+unlocked Markdown documents and run **Combine as Markdown carousel** from the
+editor's Extensions menu. The inverse **Unpack Markdown carousel** command
+restores their source IDs and relative layout at the deck's current position.
+Navigation is local to the browser; snapshots use the persisted initial card.
+There is no autoplay or mixed-element nesting.
+
+Version 0.3.0 requires host API 1.3.0. An explicitly undersized frame without
 `allowScroll: true` returns a 400 validation problem with the required height,
 rather than a generic server error. Existing sizing and scrolling behavior is
 unchanged.

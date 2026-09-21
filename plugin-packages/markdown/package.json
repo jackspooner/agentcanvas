@@ -1,6 +1,6 @@
 {
   "name": "@agentcanvas/plugin-markdown",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "First-party safe Markdown plugin for AgentCanvas.",
   "license": "MIT",
   "private": true,

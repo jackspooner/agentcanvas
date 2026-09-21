@@ -5,6 +5,15 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## Unreleased Markdown 0.3.0
+
+Markdown 0.3.0 adds the `agentcanvas.markdown/carousel` element and its browser
+combine/unpack commands. Existing Markdown documents remain schema version 1;
+there is no database migration or new dependency. Rebuild the extension catalog,
+replace the active `agentcanvas.markdown` distribution while AgentCanvas is
+stopped, restart the host, and refresh browser/MCP plugin discovery. Downgrading
+preserves carousel envelopes but an older Markdown extension cannot render them.
+
 ## 0.3.0-alpha.4
 
 Host API 1.3.0 adds `PluginValidationError` for caller-visible input validation.

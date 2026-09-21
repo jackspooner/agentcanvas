@@ -28,7 +28,13 @@ const declarations = new Map<string, Array<{ type: string; schemaVersion: number
       schemaVersion: 1
     }))
   ],
-  ['agentcanvas.markdown', [{ type: 'agentcanvas.markdown/document', schemaVersion: 1 }]],
+  [
+    'agentcanvas.markdown',
+    [
+      { type: 'agentcanvas.markdown/document', schemaVersion: 1 },
+      { type: 'agentcanvas.markdown/carousel', schemaVersion: 1 }
+    ]
+  ],
   ['agentcanvas.table', [{ type: 'agentcanvas.table/table', schemaVersion: 1 }]],
   ['agentcanvas.assets2', [{ type: 'agentcanvas.assets2/asset', schemaVersion: 1 }]],
   ['agentcanvas.gallery', [{ type: 'agentcanvas.gallery/gallery', schemaVersion: 1 }]],
@@ -92,7 +98,14 @@ function catalog() {
         buildHash,
         browserEntryUrl: `/api/v1/plugin-modules/${id}/${buildHash}/entry.mjs`,
         elements: declarations.get(id),
-        contributions: { commands: id === 'external.signal-card' ? ['toggle-status'] : [] },
+        contributions: {
+          commands:
+            id === 'external.signal-card'
+              ? ['toggle-status']
+              : id === 'agentcanvas.markdown'
+                ? ['combine-as-carousel', 'unpack-carousel']
+                : []
+        },
         diagnostics: []
       };
     })

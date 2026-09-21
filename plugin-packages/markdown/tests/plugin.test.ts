@@ -7,11 +7,13 @@ import type {
   PluginToolDescriptor,
   ServerPluginHost
 } from '@agentcanvas/plugin-sdk';
+import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { validatePluginManifestStructure } from '@agentcanvas/plugin-testkit';
 import { describe, expect, it, vi } from 'vitest';
 import { importLegacyMarkdown } from '../src/legacy.js';
 import { requiredMarkdownHeight } from '../src/markdown.js';
 import plugin from '../src/server.mjs';
+import { renderMarkdownCarouselSnapshot } from '../src/snapshot.js';
 
 describe('Markdown plugin', () => {
   it('ships a conforming public manifest', () => {
@@ -34,10 +36,71 @@ describe('Markdown plugin', () => {
     } as unknown as ServerPluginHost;
     await plugin.activate(host);
     expect(registrations).toEqual({
-      elements: ['document'],
+      elements: ['document', 'carousel'],
       tools: ['add-document'],
       migrations: ['legacy-markdown-v1']
     });
+  });
+
+  it('validates, inspects, summarizes, and snapshots Markdown carousels', async () => {
+    const elements: ElementTypeDescriptor[] = [];
+    const host = {
+      registerElementType: (item: ElementTypeDescriptor) => elements.push(item),
+      registerTool: vi.fn(),
+      registerMigration: vi.fn(),
+      registerProcedure: vi.fn(),
+      provideCapability: vi.fn(),
+      consumeCapability: vi.fn(),
+      config: {},
+      kv: {},
+      diagnostics: { emit: vi.fn() }
+    } as unknown as ServerPluginHost;
+    await plugin.activate(host);
+    const carouselDescriptor = elements.find((element) => element.name === 'carousel') as ElementTypeDescriptor;
+    const longMarkdown = `# First\n\n${'Long carousel content '.repeat(80)}`;
+    const carousel = {
+      id: 'carousel_1',
+      type: 'agentcanvas.markdown/carousel',
+      schemaVersion: 1,
+      x: 0,
+      y: 0,
+      width: 360,
+      height: 180,
+      data: {
+        slides: [
+          { id: 'same', schemaVersion: 1, data: { markdown: longMarkdown }, frame: { x: 0, y: 0 } },
+          { id: 'same', schemaVersion: 1, data: { markdown: '# Second' }, frame: { x: 400, y: 0 } }
+        ],
+        initialIndex: 2
+      }
+    } as CanvasElement;
+    const validation = carouselDescriptor.validate?.(carousel, {
+      pluginId: 'agentcanvas.markdown',
+      type: carousel.type,
+      schemaVersion: 1
+    });
+    expect(validation).toEqual([
+      expect.objectContaining({ code: 'markdown_carousel_slide_id_duplicate' }),
+      expect.objectContaining({ code: 'markdown_carousel_initial_index_invalid' })
+    ]);
+    expect(
+      carouselDescriptor.inspect?.(carousel, {
+        pluginId: 'agentcanvas.markdown',
+        type: carousel.type,
+        schemaVersion: 1
+      })
+    ).toContainEqual(expect.objectContaining({ code: 'markdown_carousel_slide_may_clip', path: '/data/slides/0' }));
+    expect(carouselDescriptor.summarize({ ...carousel, data: { ...carousel.data, initialIndex: 0 } })).toEqual({
+      title: expect.stringMatching(/^First/u),
+      detail: '2 Markdown cards'
+    });
+
+    const snapshot = renderMarkdownCarouselSnapshot(
+      { ...carousel, height: 300, data: { ...carousel.data, initialIndex: 1 } },
+      DEFAULT_CANVAS_THEME
+    );
+    expect(snapshot.nodes).toContainEqual(expect.objectContaining({ kind: 'text', text: '2 / 2' }));
+    expect(snapshot.nodes).toContainEqual(expect.objectContaining({ kind: 'text', text: 'Second' }));
   });
 
   it('imports the legacy Markdown field into canonical data', () => {

@@ -201,6 +201,16 @@ tokens while explicit element styles remain authoritative. Use `canvas_set_theme
 `PATCH /api/v1/canvases/{canvasId}/theme`. Browser and snapshot output share the same theme. See
 [Canvas themes](docs/canvas-themes.md).
 
+### Markdown card carousels
+
+Select from 2 through 50 unlocked Markdown documents and choose **Combine as
+Markdown carousel** from the Extensions menu to replace them with one navigable
+card deck. Cards are ordered top-to-bottom and then left-to-right. Navigation is
+browser-local; the persisted initial card is used for deterministic snapshots.
+**Unpack Markdown carousel** restores the source IDs, content, styling, metadata,
+dimensions, and relative layout at the carousel's current position. Both actions
+are single undo/redo history units.
+
 ### Media galleries
 
 `agentcanvas.gallery` presents from 1 through 50 images in one accessible carousel node. Install it with either image-source extension:

@@ -33,7 +33,7 @@ async function persistedElement(page: Page, id: string): Promise<PersistedElemen
 async function openFixture(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('15 renderers');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -161,7 +161,7 @@ test('updates a Shadow DOM renderer without remounting its surface or root', asy
 test('runs an external dynamic renderer only while visible and disposes it permanently', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('15 renderers');
   const dynamic = page.locator('[data-element-id="dynamic-1"]');
   const counter = dynamic.locator('[data-role="frame-counter"]');
   await expect(dynamic.locator('[data-read-only]')).toHaveAttribute('data-read-only', 'false');
@@ -354,6 +354,45 @@ test('uses the shared command service for clipboard and viewport controls', asyn
   await expect(snap).toHaveAttribute('aria-pressed', 'false');
 });
 
+test('combines, navigates, undoes, redoes, and unpacks Markdown cards as one carousel', async ({ page }) => {
+  await openFixture(page);
+  const firstId = 'markdown-layout-definitions';
+  const secondId = 'markdown-layout-context';
+  const firstBefore = await persistedElement(page, firstId);
+  const secondBefore = await persistedElement(page, secondId);
+  await page.locator(`[data-element-id="${firstId}"]`).click();
+  await page.locator(`[data-element-id="${secondId}"]`).click({ modifiers: ['Control'] });
+  await page.getByRole('combobox', { name: 'Extension commands' }).selectOption({
+    label: 'Combine as Markdown carousel'
+  });
+
+  await expect
+    .poll(
+      async () => (await persistedElements(page)).filter((item) => item.type === 'agentcanvas.markdown/carousel').length
+    )
+    .toBe(1);
+  const carousel = (await persistedElements(page)).find((item) => item.type === 'agentcanvas.markdown/carousel');
+  if (!carousel) throw new Error('Markdown carousel was not persisted');
+  expect(carousel).toMatchObject({ x: firstBefore.x, y: firstBefore.y, width: 450 });
+  const carouselFrame = page.locator(`[data-element-id="${carousel.id}"]`);
+  await expect(carouselFrame.getByText('1 / 2')).toBeVisible();
+  await carouselFrame.getByRole('button', { name: 'Next card' }).click();
+  await expect(carouselFrame.getByText('2 / 2')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect.poll(async () => (await persistedElements(page)).some((item) => item.id === firstId)).toBe(true);
+  await expect.poll(async () => (await persistedElements(page)).some((item) => item.id === secondId)).toBe(true);
+  await page.getByRole('button', { name: 'Redo' }).click();
+  await expect.poll(async () => (await persistedElements(page)).some((item) => item.id === carousel.id)).toBe(true);
+
+  await page.locator(`[data-element-id="${carousel.id}"]`).click();
+  await page.getByRole('combobox', { name: 'Extension commands' }).selectOption({
+    label: 'Unpack Markdown carousel'
+  });
+  expect(await persistedElement(page, firstId)).toMatchObject(firstBefore);
+  expect(await persistedElement(page, secondId)).toMatchObject(secondBefore);
+});
+
 test('keeps a 500-element canvas responsive with visible-element culling', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const startedAt = Date.now();
@@ -394,14 +433,14 @@ test('preserves optional-plugin data while missing and restores rendering withou
   const before = JSON.stringify(await persistedElement(page, 'video-1'));
 
   await page.goto('/?canvas=all&video=missing');
-  await expect(page.getByTestId('registry-count')).toHaveText('13 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
   const missingCard = page.locator('[data-element-id="video-1"] [role="status"]');
   await expect(missingCard).toContainText('Plugin unavailable');
   await expect(missingCard).toContainText('No active browser renderer is available for agentcanvas.video/video.');
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 
   await page.goto('/?canvas=all');
-  await expect(page.getByTestId('registry-count')).toHaveText('14 renderers');
+  await expect(page.getByTestId('registry-count')).toHaveText('15 renderers');
   await expect(page.locator('[data-element-id="video-1"] video')).toHaveAttribute('src', /^blob:/);
   expect(JSON.stringify(await persistedElement(page, 'video-1'))).toBe(before);
 });

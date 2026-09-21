@@ -1,5 +1,12 @@
 import type { CanvasElement, CanvasThemeV1, SnapshotContribution, SnapshotNode } from '@agentcanvas/plugin-sdk';
 import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
+import {
+  CAROUSEL_CONTROL_HEIGHT,
+  CAROUSEL_DEFAULT_HEIGHT,
+  carouselData,
+  carouselTitle,
+  MARKDOWN_DEFAULT_WIDTH
+} from './browser/carousel.js';
 import { projectMarkdown } from './markdown.js';
 
 function styleString(element: Readonly<CanvasElement>, key: string, fallback: string): string {
@@ -72,4 +79,71 @@ export function renderMarkdownSnapshot(
     y += fontSize + (line.role === 'heading' ? 9 : 6);
   }
   return { space: 'frame', layer: 'content', nodes };
+}
+
+export function renderMarkdownCarouselSnapshot(
+  element: Readonly<CanvasElement>,
+  theme: Readonly<CanvasThemeV1> = DEFAULT_CANVAS_THEME
+): SnapshotContribution {
+  const data = carouselData(element.data);
+  const index = Math.min(data.initialIndex, data.slides.length - 1);
+  const slide = data.slides[index] ?? data.slides[0];
+  const width = typeof element.width === 'number' ? element.width : MARKDOWN_DEFAULT_WIDTH;
+  const height = typeof element.height === 'number' ? element.height : CAROUSEL_DEFAULT_HEIGHT;
+  const contentHeight = Math.max(1, height - CAROUSEL_CONTROL_HEIGHT);
+  const content = renderMarkdownSnapshot(
+    {
+      id: slide.id,
+      type: 'agentcanvas.markdown/document',
+      schemaVersion: slide.schemaVersion,
+      x: 0,
+      y: 0,
+      width,
+      height: contentHeight,
+      data: slide.data,
+      ...(slide.style !== undefined ? { style: slide.style } : {})
+    },
+    theme
+  );
+  const title = carouselTitle(data, index);
+  const footerY = height - CAROUSEL_CONTROL_HEIGHT;
+  return {
+    space: 'frame',
+    layer: 'content',
+    nodes: [
+      ...content.nodes,
+      {
+        kind: 'rect',
+        x: 0,
+        y: footerY,
+        width,
+        height: CAROUSEL_CONTROL_HEIGHT,
+        fill: theme.colors.surface,
+        stroke: theme.colors.border,
+        strokeWidth: theme.shape.borderWidth
+      },
+      {
+        kind: 'text',
+        x: 12,
+        y: footerY + 27,
+        text: title,
+        fill: theme.colors.text,
+        fontFamily: theme.typography.bodyFont,
+        fontSize: 12,
+        fontWeight: 600,
+        maxWidth: Math.max(1, width - 86)
+      },
+      {
+        kind: 'text',
+        x: width - 12,
+        y: footerY + 27,
+        text: `${index + 1} / ${data.slides.length}`,
+        fill: theme.colors.textMuted,
+        fontFamily: theme.typography.bodyFont,
+        fontSize: 12,
+        fontWeight: 600,
+        textAnchor: 'end'
+      }
+    ]
+  };
 }

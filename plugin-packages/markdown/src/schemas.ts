@@ -40,6 +40,46 @@ export const markdownStyleSchema: JsonSchema = {
   }
 };
 
+const carouselSlideFrameSchema: JsonObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['x', 'y'],
+  properties: {
+    x: { type: 'number' },
+    y: { type: 'number' },
+    width: { type: ['number', 'null'] },
+    height: { type: ['number', 'null'] },
+    zIndex: { type: ['number', 'null'] },
+    rotation: { type: ['number', 'null'] },
+    opacity: { type: ['number', 'null'] }
+  }
+};
+
+const carouselSlideSchema: JsonObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'schemaVersion', 'data', 'frame'],
+  properties: {
+    id: { type: 'string', minLength: 1 },
+    schemaVersion: { const: 1 },
+    data: markdownDataSchema,
+    style: { anyOf: [markdownStyleSchema, { type: 'null' }] },
+    metadata: { type: 'object' },
+    frame: carouselSlideFrameSchema
+  }
+};
+
+export const markdownCarouselDataSchema: JsonSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  additionalProperties: false,
+  required: ['slides', 'initialIndex'],
+  properties: {
+    slides: { type: 'array', minItems: 2, maxItems: 50, items: carouselSlideSchema },
+    initialIndex: { type: 'integer', minimum: 0, maximum: 49 }
+  }
+};
+
 export const addDocumentInputSchema: JsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',

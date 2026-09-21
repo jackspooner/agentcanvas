@@ -1,7 +1,7 @@
 {
   "apiVersion": "agentcanvas.plugin/v1",
   "id": "agentcanvas.markdown",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "displayName": "AgentCanvas Markdown",
   "description": "Safe GFM-style Markdown documents for AgentCanvas.",
   "license": "MIT",
@@ -17,7 +17,11 @@
   "provides": { "capabilities": {} },
   "permissions": ["canvas.read", "canvas.mutate-own"],
   "contributes": {
-    "elements": [{ "name": "document", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "elements": [
+      { "name": "document", "schemaVersion": 1, "browser": true, "snapshot": "supported" },
+      { "name": "carousel", "schemaVersion": 1, "browser": true, "snapshot": "supported" }
+    ],
+    "commands": ["combine-as-carousel", "unpack-carousel"],
     "tools": ["add-document"],
     "procedures": [],
     "migrations": ["legacy-markdown-v1"]
