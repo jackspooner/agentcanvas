@@ -293,6 +293,16 @@ describe('AgentCanvas Macros v1 domain', () => {
     expect(translated.previewElements[0]).toMatchObject({ x: 5, y: 10 });
     expect(translated.planId).not.toBe(origin.planId);
     expect(translated.previewElements[0].id).not.toBe(origin.previewElements[0].id);
+    const edgeDefinition = definition({
+      elements: [{ ...definition().elements[0], x: 0, y: 0, width: 500, height: 250 }]
+    });
+    expect(
+      planner.plan(
+        edgeDefinition,
+        { canvasId: 'canvas-1', anchor: ORIGIN, input: { rows: [] }, now: NOW },
+        canvas({ bounds: { mode: 'fixed', width: 500, height: 250 } })
+      ).previewElements[0]
+    ).toMatchObject({ x: 0, y: 0, width: 500, height: 250 });
     expect(() =>
       planner.plan(
         definition(),

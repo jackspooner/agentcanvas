@@ -28,7 +28,13 @@ import { CANVAS_LIST_LIMITS, DEFAULT_CANVAS_HEIGHT, DEFAULT_CANVAS_WIDTH } from 
 import { CanvasError } from '../errors.js';
 import type { PluginElementValidator } from '../plugin-runtime/elements.js';
 import { normalizeCanvasTheme } from '../theme.js';
-import { defaultViewport, normalizeCanvasBounds, normalizeViewportInput, validateSafeId } from '../validation.js';
+import {
+  defaultViewport,
+  elementFitsCanvasBounds,
+  normalizeCanvasBounds,
+  normalizeViewportInput,
+  validateSafeId
+} from '../validation.js';
 import { AGENTCANVAS_VERSION } from '../version.js';
 import { readAgentCanvasConfiguration, writeAgentCanvasConfiguration } from './configuration.js';
 import { initializeEmptyV2Database, inspectDatabaseVersion, requireV2Database } from './version.js';
@@ -133,6 +139,17 @@ function checkRevision(expected: number | undefined, current: number): void {
       'revision',
       409,
       true
+    );
+  }
+}
+
+function validateElementBounds(element: CanvasElement, bounds: CanvasBounds): void {
+  if (!elementFitsCanvasBounds(element, bounds)) {
+    throw new CanvasError(
+      'validation_error',
+      `element ${element.id} does not fit within the canvas bounds`,
+      'validation',
+      400
     );
   }
 }
@@ -280,6 +297,7 @@ export class V2SqliteCanvasStore {
       }
       checkRevision(input.expectedRevision, canvas.revision);
       const bounds = normalizeCanvasBounds(input.bounds);
+      for (const element of canvas.elements) validateElementBounds(element, bounds);
       const revision = canvas.revision + 1;
       const updatedAt = timestamp();
       this.db
@@ -622,6 +640,7 @@ export class V2SqliteCanvasStore {
     const canvas = this.getCanvas(canvasId);
     checkRevision(request.expectedRevision, canvas.revision);
     let elements = [...canvas.elements];
+    const geometryWrites = new Set<string>();
     const normalizedOperations: JsonObject[] = [];
     for (const raw of request.operations) {
       if (!raw || typeof raw !== 'object' || typeof raw.op !== 'string') {
@@ -640,6 +659,7 @@ export class V2SqliteCanvasStore {
       }
       if (raw.op === 'upsertElement') {
         const element = this.elementValidator.normalizeForWrite(raw.element);
+        geometryWrites.add(element.id);
         const index = elements.findIndex((current) => current.id === element.id);
         if (index >= 0) {
           if (elements[index].type !== element.type || elements[index].schemaVersion !== element.schemaVersion) {
@@ -661,6 +681,7 @@ export class V2SqliteCanvasStore {
       if (raw.op === 'patchElementFrame') {
         const frame = this.elementValidator.normalizeFramePatch(raw.frame);
         elements[index] = { ...current, ...frame };
+        if (['x', 'y', 'width', 'height'].some((key) => Object.hasOwn(frame, key))) geometryWrites.add(current.id);
         normalizedOperations.push({ op: 'patchElementFrame', elementId: current.id, frame: frame as JsonObject });
       } else if (raw.op === 'replaceElementData') {
         if (!isJsonObject(raw.data)) {
@@ -672,6 +693,13 @@ export class V2SqliteCanvasStore {
           ...(Object.hasOwn(raw, 'style') ? { style: raw.style } : {})
         });
         elements[index] = replacement;
+        if (
+          replacement.x !== current.x ||
+          replacement.y !== current.y ||
+          replacement.width !== current.width ||
+          replacement.height !== current.height
+        )
+          geometryWrites.add(current.id);
         normalizedOperations.push({
           op: 'replaceElementData',
           elementId: current.id,
@@ -695,6 +723,9 @@ export class V2SqliteCanvasStore {
     }
     if (elements.length > 2_000)
       throw new CanvasError('validation_error', 'canvas exceeds 2000 elements', 'validation', 400);
+    for (const element of elements) {
+      if (geometryWrites.has(element.id)) validateElementBounds(element, canvas.bounds);
+    }
     return {
       canvas,
       elements,

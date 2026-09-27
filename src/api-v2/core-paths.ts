@@ -476,7 +476,12 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         parameters: [canvasId],
         requestBody: jsonBody(CORE_REQUEST_SCHEMAS.bounds),
         responses: { 200: response('Updated canvas'), ...errorResponses },
-        'x-agent-notes': agentNotes(['Updates bounds and increments the canvas revision.'], true)
+        'x-agent-notes': agentNotes(
+          [
+            'Updates bounds and increments the canvas revision; rejects fixed bounds that exclude an existing element frame.'
+          ],
+          true
+        )
       }
     },
     '/api/v1/canvases/{canvasId}/title': {
@@ -512,7 +517,12 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         parameters: [canvasId],
         requestBody: jsonBody(CORE_REQUEST_SCHEMAS.batch),
         responses: { 200: response('Updated canvas projection', canvasProjection), ...errorResponses },
-        'x-agent-notes': agentNotes(['Mutates element envelopes and increments the canvas revision.'], true)
+        'x-agent-notes': agentNotes(
+          [
+            'Mutates element envelopes and increments the canvas revision; rejects new or changed frames outside fixed canvas bounds.'
+          ],
+          true
+        )
       }
     },
     '/api/v1/canvases/{canvasId}/snapshot': {

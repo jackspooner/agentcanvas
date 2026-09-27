@@ -9043,7 +9043,7 @@
             ]
           },
           "sideEffects": [
-            "Updates bounds and increments the canvas revision."
+            "Updates bounds and increments the canvas revision; rejects fixed bounds that exclude an existing element frame."
           ],
           "useWhen": [
             "Use when this exact AgentCanvas mutation is required."
@@ -10398,7 +10398,7 @@
             ]
           },
           "sideEffects": [
-            "Mutates element envelopes and increments the canvas revision."
+            "Mutates element envelopes and increments the canvas revision; rejects new or changed frames outside fixed canvas bounds."
           ],
           "useWhen": [
             "Use when this exact AgentCanvas mutation is required."

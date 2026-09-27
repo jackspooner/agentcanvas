@@ -1712,7 +1712,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Remove all elements from a canvas. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Remove all elements from a canvas. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -1808,7 +1808,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Clear a canvas theme and restore AgentCanvas defaults. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Clear a canvas theme and restore AgentCanvas defaults. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -1917,6 +1917,44 @@
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "bounds": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "const": "unlimited"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "height": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "mode": {
+                  "const": "fixed"
+                },
+                "width": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "mode",
+                "width",
+                "height"
+              ],
+              "type": "object"
+            }
+          ]
+        },
         "description": {
           "type": "string"
         },
@@ -2144,7 +2182,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Delete an element. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Delete an element. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -4047,7 +4085,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Patch only kernel-owned frame fields. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Patch only kernel-owned frame fields. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -4273,7 +4311,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Rename a canvas. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Rename a canvas. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -4374,7 +4412,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Replace plugin-owned element data and optional style atomically. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Replace plugin-owned element data and optional style atomically. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -4491,7 +4529,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Replace generic element metadata atomically. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Replace generic element metadata atomically. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -4894,7 +4932,142 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Set a complete semantic theme on a canvas. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Set unlimited or fixed canvas bounds. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
+    "errorCodes": [
+      "database_version_invalid",
+      "idempotency_conflict",
+      "internal_error",
+      "not_found",
+      "revision_conflict",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "bounds": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "const": "unlimited"
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "height": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                "mode": {
+                  "const": "fixed"
+                },
+                "width": {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "mode",
+                "width",
+                "height"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "canvasId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "expectedRevision": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "canvasId",
+        "bounds"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_set_bounds",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "inspectionSummary": {
+              "additionalProperties": false,
+              "properties": {
+                "errorCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "infoCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "warningCount": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "errorCount",
+                "warningCount",
+                "infoCount"
+              ],
+              "type": "object"
+            },
+            "revision": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "canvasId",
+            "revision",
+            "inspectionSummary"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Set unlimited or fixed canvas bounds"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Set a complete semantic theme on a canvas. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
@@ -5120,7 +5293,7 @@
       "openWorldHint": false,
       "readOnlyHint": false
     },
-    "description": "Upsert a complete current-version element; prefer a plugin-specific tool when one exists for its detailed schema. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.",
+    "description": "Upsert a complete current-version element; prefer a plugin-specific tool when one exists for its detailed schema. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.",
     "errorCodes": [
       "database_version_invalid",
       "idempotency_conflict",
