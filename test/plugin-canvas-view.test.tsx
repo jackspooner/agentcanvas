@@ -59,6 +59,19 @@ function canvas(): CanvasDocument {
 }
 
 describe('plugin canvas React host', () => {
+  it('hides and restores the top bar for read-only canvases', () => {
+    const { container, getByRole } = render(
+      <CanvasView canvas={canvas()} elementRuntime={{}} diagnostics={[]} browserRegistry={registry()} readOnly />
+    );
+    const topbar = container.querySelector<HTMLElement>('#canvas-topbar');
+    expect(topbar?.hidden).toBe(false);
+    fireEvent.click(getByRole('button', { name: 'Hide top bar' }));
+    expect(topbar?.hidden).toBe(true);
+    expect(container.querySelector('.canvas-viewport')).not.toBeNull();
+    fireEvent.click(getByRole('button', { name: 'Show top bar' }));
+    expect(topbar?.hidden).toBe(false);
+  });
+
   it('exposes the same default frame and anchor to browser renderers as the editor', async () => {
     const mount = vi.fn<BrowserElementRenderer['mount']>(() => ({ update() {}, dispose() {} }));
     const browserRegistry = registry();

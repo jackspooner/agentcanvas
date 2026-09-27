@@ -1,5 +1,10 @@
 # Change history
 
+## Unreleased — canvas navigation visibility
+
+- Canvas viewers can hide the top bar to give the canvas more space and restore
+  it with an always available button, including in read-only shares.
+
 ## Unreleased — Markdown card carousel
 
 - Markdown 0.3.0 adds an accessible `agentcanvas.markdown/carousel` element and

@@ -78,6 +78,7 @@ export function CanvasView({
   const [viewport, setViewport] = useState(() => coerceViewport(initialViewport));
   const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
   const [gridSnapEnabled, setGridSnapEnabled] = useState(true);
+  const [topbarVisible, setTopbarVisible] = useState(true);
   const [transientFrames, setTransientFrames] = useState<ReadonlyMap<string, EditorFrame>>(() => new Map());
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<PluginDiagnostic[]>([]);
   const [macroDrawerOpen, setMacroDrawerOpen] = useState(false);
@@ -288,7 +289,7 @@ export function CanvasView({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: Delegates descendant shortcuts; editable and Shadow DOM controls are excluded.
     <div className="canvas-shell" onKeyDown={handleCommandKeyDown}>
-      <header className="topbar">
+      <header className="topbar" id="canvas-topbar" hidden={!topbarVisible}>
         <div className="topbar-title">
           <strong>{canvas.title}</strong>
           <span>revision {canvas.revision}</span>
@@ -321,8 +322,28 @@ export function CanvasView({
             gridSnapEnabled={gridSnapEnabled}
             onCommandError={(error) => setMoveError(error instanceof Error ? error.message : String(error))}
           />
+          <button
+            type="button"
+            className="topbar-toggle"
+            aria-expanded={topbarVisible}
+            aria-controls="canvas-topbar"
+            onClick={() => setTopbarVisible(false)}
+          >
+            Hide top bar
+          </button>
         </div>
       </header>
+      {!topbarVisible && (
+        <button
+          type="button"
+          className="topbar-toggle topbar-restore"
+          aria-expanded={topbarVisible}
+          aria-controls="canvas-topbar"
+          onClick={() => setTopbarVisible(true)}
+        >
+          Show top bar
+        </button>
+      )}
       {moveError && <div className="node-move-error">{moveError}</div>}
       {visibleDiagnostics.length > 0 && (
         <details className="plugin-diagnostics">

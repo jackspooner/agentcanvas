@@ -17,6 +17,7 @@ button {
 }
 
 .canvas-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -189,6 +190,27 @@ button {
   background: #ffffff;
   color: #111827;
   flex: 0 0 auto;
+}
+
+.topbar[hidden] {
+  display: none;
+}
+
+.topbar-toggle {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+}
+
+.topbar-restore {
+  position: absolute;
+  z-index: 20;
+  top: 8px;
+  left: 8px;
 }
 
 .topbar-title {
