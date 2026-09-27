@@ -3971,6 +3971,125 @@
   },
   {
     "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List anonymous visible browser tabs viewing this canvas. Each viewport gives world-space center and zoom plus actual CSS-pixel dimensions. Entries expire 30 seconds after the last report; an empty list means no recently reporting visible tab.",
+    "errorCodes": [
+      "database_version_invalid",
+      "internal_error",
+      "not_found",
+      "stored_canvas_invalid",
+      "validation_error"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "canvasId": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "canvasId"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_list_viewers",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "asOf": {
+              "type": "string"
+            },
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "viewers": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "lastSeenAt": {
+                    "type": "string"
+                  },
+                  "viewerId": {
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    "type": "string"
+                  },
+                  "viewport": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "centerX": {
+                        "type": "number"
+                      },
+                      "centerY": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "width": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "zoom": {
+                        "exclusiveMinimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "centerX",
+                      "centerY",
+                      "zoom",
+                      "width",
+                      "height"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "viewerId",
+                  "viewport",
+                  "lastSeenAt"
+                ],
+                "type": "object"
+              },
+              "maxItems": 1000,
+              "type": "array"
+            }
+          },
+          "required": [
+            "canvasId",
+            "asOf",
+            "viewers"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "List active canvas viewers"
+  },
+  {
+    "annotations": {
       "destructiveHint": true,
       "idempotentHint": false,
       "openWorldHint": false,

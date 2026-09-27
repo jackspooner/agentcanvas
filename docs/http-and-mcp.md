@@ -81,7 +81,7 @@ The pre-alpha.2 flat `{ok:false, code, message, stage, retryable, correlationId}
 | Health and identity | `GET /health`, `GET /whoami` |
 | Canvas documents | `GET/POST /api/v1/canvases`, `GET/PATCH /api/v1/canvases/{canvasId}`, `PATCH .../title`, `PATCH .../theme` |
 | Elements | `POST /api/v1/canvases/{canvasId}/elements:batch` |
-| Viewports | `GET/POST .../viewport`, `POST .../viewport/focus` |
+| Viewports | `GET/POST .../viewport`, `POST .../viewport/focus`, `PUT/DELETE .../viewer-presence/{viewerId}` |
 | Sharing | `GET/POST .../share-links`, `DELETE .../share-links/{shareLinkId}`, `GET /api/v1/share/{token}` |
 | Embedding | `POST /api/v1/embed-sessions`, `GET/DELETE /api/v1/embed-sessions/{token}` |
 | Snapshots | `POST /api/v1/canvases/{canvasId}/snapshot` |
@@ -94,6 +94,15 @@ Human routes `/`, `/canvases`, `/canvases/{canvasId}`, `/c/{shareToken}`, and
 `/embed/{token}` serve the browser application and remain unversioned. Only the
 embed route is frameable, and only by the exact parent origin in its active
 session. See [Embedding AgentCanvas](embedding.md).
+
+Visible canvas tabs, including direct, shared, and embedded views, report their
+current world-space center and zoom plus measured CSS-pixel width and height to
+`PUT /api/v1/canvases/{canvasId}/viewer-presence/{viewerId}`. The browser uses a
+random UUID for each visible session, refreshes it every 10 seconds, and attempts
+`DELETE` when hidden or closed. Entries expire after 30 seconds without a report
+and disappear on service restart. They are not saved canvas viewports, do not
+change document revisions, and are not returned by any browser HTTP read. At
+most 1,000 sessions may be active across the process.
 
 ## Canvas read projection
 
@@ -258,6 +267,7 @@ The kernel registers:
 - `canvas_create`
 - `canvas_list`
 - `canvas_get`
+- `canvas_list_viewers`
 - `canvas_list_elements`
 - `canvas_get_element`
 - `canvas_get_url`
@@ -296,6 +306,12 @@ permissions, invocation context, and errors. `/mcp/full` additionally publishes
 every named extension tool as `<normalized-plugin-id>__<normalized-local-name>`.
 The stdio bridge uses `/mcp` unless `AGENT_CANVAS_MCP_PROFILE=full` is set.
 `/whoami` reports both endpoints and the default profile.
+
+`canvas_list_viewers({canvasId})` returns `{canvasId, asOf, viewers}`. Each
+viewer has an opaque `viewerId`, a viewport, and `lastSeenAt`; the array is empty
+when no visible tab has reported recently. IDs identify sessions, not people.
+Viewport data is geometry only, and the list is available through MCP rather
+than a browser HTTP read.
 
 `canvas_create` returns the direct browser `url` for the new canvas. Use
 `canvas_get_url` to recover that URL from a canvas ID later. Both URLs are

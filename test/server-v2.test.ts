@@ -487,6 +487,7 @@ describe('v0.2 assembled runtime', () => {
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
+      viewerPresence: runtime.viewerPresence,
       diagnostics: () => runtime.plugins.diagnostics.list()
     });
     const client = new Client({ name: 'test-client', version: '1.0.0' });
@@ -509,7 +510,7 @@ describe('v0.2 assembled runtime', () => {
       schemaVersion: 1,
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
-      mcpCatalog: { coreToolCount: 29, pluginToolCount: 0, totalToolCount: 29 }
+      mcpCatalog: { coreToolCount: 30, pluginToolCount: 0, totalToolCount: 30 }
     });
     const invalidMcp = await client.callTool({ name: 'canvas_get', arguments: {} });
     expect(invalidMcp.isError).toBe(true);
@@ -609,6 +610,7 @@ describe('v0.2 assembled runtime', () => {
       store: runtime.store,
       macros: runtime.macros,
       browserCatalog: runtime.browserCatalog,
+      viewerPresence: runtime.viewerPresence,
       diagnostics: () => []
     });
     const catalogBeforeMutations = structuredClone(mcp.tools);

@@ -47,6 +47,7 @@ it('preserves literal macro input through HTTP/MCP planning, execution and repla
     macros: runtime.macros,
     publicBaseUrl: runtime.config.publicBaseUrl,
     browserCatalog: runtime.browserCatalog,
+    viewerPresence: runtime.viewerPresence,
     diagnostics: () => []
   });
   const client = new Client({ name: 'literal-input-test', version: '1.0.0' });

@@ -115,6 +115,7 @@ describe('filesystem image runtime without Assets-2', () => {
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
+      viewerPresence: runtime.viewerPresence,
       diagnostics: () => runtime.plugins.diagnostics.list()
     });
     const client = new Client({ name: 'test-client', version: '1.0.0' });

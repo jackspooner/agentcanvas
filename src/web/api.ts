@@ -186,6 +186,36 @@ export async function saveUserViewport(canvasId: string, viewport: CanvasViewpor
   await jsonResponse(response, 'failed to save viewport');
 }
 
+export async function reportViewerPresence(
+  canvasId: string,
+  viewerId: string,
+  viewport: CanvasViewport
+): Promise<void> {
+  const response = await fetch(
+    `/api/v1/canvases/${encodeURIComponent(canvasId)}/viewer-presence/${encodeURIComponent(viewerId)}`,
+    {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        centerX: viewport.centerX,
+        centerY: viewport.centerY,
+        zoom: viewport.zoom,
+        width: viewport.width,
+        height: viewport.height
+      })
+    }
+  );
+  await jsonResponse(response, 'failed to report viewer presence');
+}
+
+export async function removeViewerPresence(canvasId: string, viewerId: string): Promise<void> {
+  const response = await fetch(
+    `/api/v1/canvases/${encodeURIComponent(canvasId)}/viewer-presence/${encodeURIComponent(viewerId)}`,
+    { method: 'DELETE', keepalive: true }
+  );
+  await jsonResponse(response, 'failed to remove viewer presence');
+}
+
 export async function applyCanvasOperations(
   canvasId: string,
   operations: readonly CanvasOperation[],

@@ -82,6 +82,7 @@ describe('external plugin host proof', () => {
       registry: runtime.registry,
       store: runtime.store,
       browserCatalog: runtime.browserCatalog,
+      viewerPresence: runtime.viewerPresence,
       diagnostics: () => []
     };
     const { server } = createMcpV2Server(mcpRuntime);

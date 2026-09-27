@@ -18307,6 +18307,1463 @@
         }
       }
     },
+    "/api/v1/canvases/{canvasId}/viewer-presence/{viewerId}": {
+      "delete": {
+        "operationId": "canvasRemoveViewerPresence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "viewerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Viewer presence removed or already absent"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "invalid_parent_origin": {
+                    "value": {
+                      "category": "validation",
+                      "code": "invalid_parent_origin",
+                      "detail": "The embed parent origin is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Parent origin invalid",
+                      "type": "urn:workspace2:problem:invalid_parent_origin"
+                    }
+                  },
+                  "macro_canvas_limit_exceeded": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_canvas_limit_exceeded",
+                      "detail": "Macro output would exceed the canvas limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Canvas limit exceeded",
+                      "type": "urn:workspace2:problem:macro_canvas_limit_exceeded"
+                    }
+                  },
+                  "macro_definition_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_definition_invalid",
+                      "detail": "The macro definition is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro definition invalid",
+                      "type": "urn:workspace2:problem:macro_definition_invalid"
+                    }
+                  },
+                  "macro_definition_too_large": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_definition_too_large",
+                      "detail": "The macro definition exceeds its size limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro definition too large",
+                      "type": "urn:workspace2:problem:macro_definition_too_large"
+                    }
+                  },
+                  "macro_dependency_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_dependency_invalid",
+                      "detail": "A macro dependency declaration is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro dependency invalid",
+                      "type": "urn:workspace2:problem:macro_dependency_invalid"
+                    }
+                  },
+                  "macro_element_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_element_invalid",
+                      "detail": "A generated element is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro element invalid",
+                      "type": "urn:workspace2:problem:macro_element_invalid"
+                    }
+                  },
+                  "macro_idempotency_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_idempotency_invalid",
+                      "detail": "The macro idempotency key is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Idempotency key invalid",
+                      "type": "urn:workspace2:problem:macro_idempotency_invalid"
+                    }
+                  },
+                  "macro_input_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_input_invalid",
+                      "detail": "Macro input does not satisfy its schema.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro input invalid",
+                      "type": "urn:workspace2:problem:macro_input_invalid"
+                    }
+                  },
+                  "macro_input_too_large": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_input_too_large",
+                      "detail": "Macro input exceeds its size limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro input too large",
+                      "type": "urn:workspace2:problem:macro_input_too_large"
+                    }
+                  },
+                  "macro_limit_exceeded": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_limit_exceeded",
+                      "detail": "Macro output exceeds the supported limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro limit exceeded",
+                      "type": "urn:workspace2:problem:macro_limit_exceeded"
+                    }
+                  },
+                  "macro_ref_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_ref_invalid",
+                      "detail": "A macro reference is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro reference invalid",
+                      "type": "urn:workspace2:problem:macro_ref_invalid"
+                    }
+                  },
+                  "macro_ref_pointer_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_ref_pointer_invalid",
+                      "detail": "A macro JSON pointer is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro reference pointer invalid",
+                      "type": "urn:workspace2:problem:macro_ref_pointer_invalid"
+                    }
+                  },
+                  "macro_unsafe": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_unsafe",
+                      "detail": "The macro contains an unsafe construct.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro is unsafe",
+                      "type": "urn:workspace2:problem:macro_unsafe"
+                    }
+                  },
+                  "validation_error": {
+                    "value": {
+                      "category": "validation",
+                      "code": "validation_error",
+                      "detail": "The request does not satisfy the declared contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Request validation failed",
+                      "type": "urn:workspace2:problem:validation_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Request validation failed",
+            "x-error-codes": [
+              {
+                "category": "validation",
+                "code": "validation_error",
+                "description": "The request does not satisfy the declared contract.",
+                "retryable": false,
+                "status": 400,
+                "title": "Request validation failed"
+              },
+              {
+                "category": "validation",
+                "code": "macro_definition_invalid",
+                "description": "The macro definition is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro definition invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_definition_too_large",
+                "description": "The macro definition exceeds its size limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro definition too large"
+              },
+              {
+                "category": "validation",
+                "code": "macro_input_invalid",
+                "description": "Macro input does not satisfy its schema.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro input invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_input_too_large",
+                "description": "Macro input exceeds its size limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro input too large"
+              },
+              {
+                "category": "validation",
+                "code": "macro_unsafe",
+                "description": "The macro contains an unsafe construct.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro is unsafe"
+              },
+              {
+                "category": "validation",
+                "code": "macro_ref_invalid",
+                "description": "A macro reference is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro reference invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_ref_pointer_invalid",
+                "description": "A macro JSON pointer is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro reference pointer invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_dependency_invalid",
+                "description": "A macro dependency declaration is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro dependency invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_element_invalid",
+                "description": "A generated element is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro element invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_limit_exceeded",
+                "description": "Macro output exceeds the supported limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro limit exceeded"
+              },
+              {
+                "category": "validation",
+                "code": "macro_canvas_limit_exceeded",
+                "description": "Macro output would exceed the canvas limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Canvas limit exceeded"
+              },
+              {
+                "category": "validation",
+                "code": "macro_idempotency_invalid",
+                "description": "The macro idempotency key is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Idempotency key invalid"
+              },
+              {
+                "category": "validation",
+                "code": "invalid_parent_origin",
+                "description": "The embed parent origin is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Parent origin invalid"
+              }
+            ]
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "element_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "element_not_found",
+                      "detail": "The requested element does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Element not found",
+                      "type": "urn:workspace2:problem:element_not_found"
+                    }
+                  },
+                  "embed_session_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "embed_session_not_found",
+                      "detail": "The embed session does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Embed session not found",
+                      "type": "urn:workspace2:problem:embed_session_not_found"
+                    }
+                  },
+                  "macro_dependency_missing": {
+                    "value": {
+                      "category": "dependency",
+                      "code": "macro_dependency_missing",
+                      "detail": "A required macro dependency is unavailable.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro dependency missing",
+                      "type": "urn:workspace2:problem:macro_dependency_missing"
+                    }
+                  },
+                  "macro_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_not_found",
+                      "detail": "The macro does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro not found",
+                      "type": "urn:workspace2:problem:macro_not_found"
+                    }
+                  },
+                  "macro_plan_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_plan_not_found",
+                      "detail": "The macro plan does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro plan not found",
+                      "type": "urn:workspace2:problem:macro_plan_not_found"
+                    }
+                  },
+                  "macro_ref_missing": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_ref_missing",
+                      "detail": "A referenced macro value does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro reference missing",
+                      "type": "urn:workspace2:problem:macro_ref_missing"
+                    }
+                  },
+                  "macro_version_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_version_not_found",
+                      "detail": "The exact macro version does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro version not found",
+                      "type": "urn:workspace2:problem:macro_version_not_found"
+                    }
+                  },
+                  "not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "not_found",
+                      "detail": "The requested resource does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Resource not found",
+                      "type": "urn:workspace2:problem:not_found"
+                    }
+                  },
+                  "plugin_unavailable": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "plugin_unavailable",
+                      "detail": "The requested plugin is not active.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Plugin unavailable",
+                      "type": "urn:workspace2:problem:plugin_unavailable"
+                    }
+                  },
+                  "procedure_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "procedure_not_found",
+                      "detail": "The plugin procedure does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Procedure not found",
+                      "type": "urn:workspace2:problem:procedure_not_found"
+                    }
+                  },
+                  "resource_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "resource_not_found",
+                      "detail": "The resource handle does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Resource not found",
+                      "type": "urn:workspace2:problem:resource_not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Resource was not found",
+            "x-error-codes": [
+              {
+                "category": "not_found",
+                "code": "not_found",
+                "description": "The requested resource does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Resource not found"
+              },
+              {
+                "category": "not_found",
+                "code": "element_not_found",
+                "description": "The requested element does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Element not found"
+              },
+              {
+                "category": "not_found",
+                "code": "plugin_unavailable",
+                "description": "The requested plugin is not active.",
+                "retryable": false,
+                "status": 404,
+                "title": "Plugin unavailable"
+              },
+              {
+                "category": "not_found",
+                "code": "embed_session_not_found",
+                "description": "The embed session does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Embed session not found"
+              },
+              {
+                "category": "not_found",
+                "code": "procedure_not_found",
+                "description": "The plugin procedure does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Procedure not found"
+              },
+              {
+                "category": "not_found",
+                "code": "resource_not_found",
+                "description": "The resource handle does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Resource not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_not_found",
+                "description": "The macro does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_version_not_found",
+                "description": "The exact macro version does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro version not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_plan_not_found",
+                "description": "The macro plan does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro plan not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_ref_missing",
+                "description": "A referenced macro value does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro reference missing"
+              },
+              {
+                "category": "dependency",
+                "code": "macro_dependency_missing",
+                "description": "A required macro dependency is unavailable.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro dependency missing"
+              }
+            ]
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "internal_error": {
+                    "value": {
+                      "category": "internal",
+                      "code": "internal_error",
+                      "detail": "AgentCanvas could not complete the request.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Internal server error",
+                      "type": "urn:workspace2:problem:internal_error"
+                    }
+                  },
+                  "macro_execution_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "macro_execution_invalid",
+                      "detail": "Macro execution failed unexpectedly.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Macro execution failed",
+                      "type": "urn:workspace2:problem:macro_execution_invalid"
+                    }
+                  },
+                  "stored_canvas_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "stored_canvas_invalid",
+                      "detail": "Stored canvas data violates the canonical contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Stored canvas invalid",
+                      "type": "urn:workspace2:problem:stored_canvas_invalid"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request",
+            "x-error-codes": [
+              {
+                "category": "internal",
+                "code": "macro_execution_invalid",
+                "description": "Macro execution failed unexpectedly.",
+                "retryable": false,
+                "status": 500,
+                "title": "Macro execution failed"
+              },
+              {
+                "category": "internal",
+                "code": "stored_canvas_invalid",
+                "description": "Stored canvas data violates the canonical contract.",
+                "retryable": false,
+                "status": 500,
+                "title": "Stored canvas invalid"
+              },
+              {
+                "category": "internal",
+                "code": "internal_error",
+                "description": "AgentCanvas could not complete the request.",
+                "retryable": false,
+                "status": 500,
+                "title": "Internal server error"
+              }
+            ]
+          }
+        },
+        "summary": "Remove one browser viewport session",
+        "tags": [
+          "Viewport"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Call canvas_list_viewers for the current active viewer list."
+            ]
+          },
+          "sideEffects": [
+            "Removes one temporary viewer session if present."
+          ],
+          "useWhen": [
+            "A visible browser tab reports or clears its own temporary viewport session."
+          ]
+        }
+      },
+      "put": {
+        "description": "Process-memory presence expires 30 seconds after its last report and does not change canvas revisions.",
+        "operationId": "canvasReportViewerPresence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "viewerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "centerX": {
+                    "type": "number"
+                  },
+                  "centerY": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "width": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "zoom": {
+                    "exclusiveMinimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "centerX",
+                  "centerY",
+                  "zoom",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Send a valid JSON object matching this schema. Malformed JSON or schema violations return 400 Problem Details before mutation.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Viewer presence reported"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "invalid_parent_origin": {
+                    "value": {
+                      "category": "validation",
+                      "code": "invalid_parent_origin",
+                      "detail": "The embed parent origin is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Parent origin invalid",
+                      "type": "urn:workspace2:problem:invalid_parent_origin"
+                    }
+                  },
+                  "macro_canvas_limit_exceeded": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_canvas_limit_exceeded",
+                      "detail": "Macro output would exceed the canvas limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Canvas limit exceeded",
+                      "type": "urn:workspace2:problem:macro_canvas_limit_exceeded"
+                    }
+                  },
+                  "macro_definition_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_definition_invalid",
+                      "detail": "The macro definition is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro definition invalid",
+                      "type": "urn:workspace2:problem:macro_definition_invalid"
+                    }
+                  },
+                  "macro_definition_too_large": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_definition_too_large",
+                      "detail": "The macro definition exceeds its size limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro definition too large",
+                      "type": "urn:workspace2:problem:macro_definition_too_large"
+                    }
+                  },
+                  "macro_dependency_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_dependency_invalid",
+                      "detail": "A macro dependency declaration is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro dependency invalid",
+                      "type": "urn:workspace2:problem:macro_dependency_invalid"
+                    }
+                  },
+                  "macro_element_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_element_invalid",
+                      "detail": "A generated element is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro element invalid",
+                      "type": "urn:workspace2:problem:macro_element_invalid"
+                    }
+                  },
+                  "macro_idempotency_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_idempotency_invalid",
+                      "detail": "The macro idempotency key is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Idempotency key invalid",
+                      "type": "urn:workspace2:problem:macro_idempotency_invalid"
+                    }
+                  },
+                  "macro_input_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_input_invalid",
+                      "detail": "Macro input does not satisfy its schema.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro input invalid",
+                      "type": "urn:workspace2:problem:macro_input_invalid"
+                    }
+                  },
+                  "macro_input_too_large": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_input_too_large",
+                      "detail": "Macro input exceeds its size limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro input too large",
+                      "type": "urn:workspace2:problem:macro_input_too_large"
+                    }
+                  },
+                  "macro_limit_exceeded": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_limit_exceeded",
+                      "detail": "Macro output exceeds the supported limit.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro limit exceeded",
+                      "type": "urn:workspace2:problem:macro_limit_exceeded"
+                    }
+                  },
+                  "macro_ref_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_ref_invalid",
+                      "detail": "A macro reference is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro reference invalid",
+                      "type": "urn:workspace2:problem:macro_ref_invalid"
+                    }
+                  },
+                  "macro_ref_pointer_invalid": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_ref_pointer_invalid",
+                      "detail": "A macro JSON pointer is invalid.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro reference pointer invalid",
+                      "type": "urn:workspace2:problem:macro_ref_pointer_invalid"
+                    }
+                  },
+                  "macro_unsafe": {
+                    "value": {
+                      "category": "validation",
+                      "code": "macro_unsafe",
+                      "detail": "The macro contains an unsafe construct.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Macro is unsafe",
+                      "type": "urn:workspace2:problem:macro_unsafe"
+                    }
+                  },
+                  "validation_error": {
+                    "value": {
+                      "category": "validation",
+                      "code": "validation_error",
+                      "detail": "The request does not satisfy the declared contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Request validation failed",
+                      "type": "urn:workspace2:problem:validation_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Request validation failed",
+            "x-error-codes": [
+              {
+                "category": "validation",
+                "code": "validation_error",
+                "description": "The request does not satisfy the declared contract.",
+                "retryable": false,
+                "status": 400,
+                "title": "Request validation failed"
+              },
+              {
+                "category": "validation",
+                "code": "macro_definition_invalid",
+                "description": "The macro definition is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro definition invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_definition_too_large",
+                "description": "The macro definition exceeds its size limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro definition too large"
+              },
+              {
+                "category": "validation",
+                "code": "macro_input_invalid",
+                "description": "Macro input does not satisfy its schema.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro input invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_input_too_large",
+                "description": "Macro input exceeds its size limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro input too large"
+              },
+              {
+                "category": "validation",
+                "code": "macro_unsafe",
+                "description": "The macro contains an unsafe construct.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro is unsafe"
+              },
+              {
+                "category": "validation",
+                "code": "macro_ref_invalid",
+                "description": "A macro reference is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro reference invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_ref_pointer_invalid",
+                "description": "A macro JSON pointer is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro reference pointer invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_dependency_invalid",
+                "description": "A macro dependency declaration is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro dependency invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_element_invalid",
+                "description": "A generated element is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro element invalid"
+              },
+              {
+                "category": "validation",
+                "code": "macro_limit_exceeded",
+                "description": "Macro output exceeds the supported limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Macro limit exceeded"
+              },
+              {
+                "category": "validation",
+                "code": "macro_canvas_limit_exceeded",
+                "description": "Macro output would exceed the canvas limit.",
+                "retryable": false,
+                "status": 400,
+                "title": "Canvas limit exceeded"
+              },
+              {
+                "category": "validation",
+                "code": "macro_idempotency_invalid",
+                "description": "The macro idempotency key is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Idempotency key invalid"
+              },
+              {
+                "category": "validation",
+                "code": "invalid_parent_origin",
+                "description": "The embed parent origin is invalid.",
+                "retryable": false,
+                "status": 400,
+                "title": "Parent origin invalid"
+              }
+            ]
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "element_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "element_not_found",
+                      "detail": "The requested element does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Element not found",
+                      "type": "urn:workspace2:problem:element_not_found"
+                    }
+                  },
+                  "embed_session_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "embed_session_not_found",
+                      "detail": "The embed session does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Embed session not found",
+                      "type": "urn:workspace2:problem:embed_session_not_found"
+                    }
+                  },
+                  "macro_dependency_missing": {
+                    "value": {
+                      "category": "dependency",
+                      "code": "macro_dependency_missing",
+                      "detail": "A required macro dependency is unavailable.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro dependency missing",
+                      "type": "urn:workspace2:problem:macro_dependency_missing"
+                    }
+                  },
+                  "macro_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_not_found",
+                      "detail": "The macro does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro not found",
+                      "type": "urn:workspace2:problem:macro_not_found"
+                    }
+                  },
+                  "macro_plan_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_plan_not_found",
+                      "detail": "The macro plan does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro plan not found",
+                      "type": "urn:workspace2:problem:macro_plan_not_found"
+                    }
+                  },
+                  "macro_ref_missing": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_ref_missing",
+                      "detail": "A referenced macro value does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro reference missing",
+                      "type": "urn:workspace2:problem:macro_ref_missing"
+                    }
+                  },
+                  "macro_version_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "macro_version_not_found",
+                      "detail": "The exact macro version does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Macro version not found",
+                      "type": "urn:workspace2:problem:macro_version_not_found"
+                    }
+                  },
+                  "not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "not_found",
+                      "detail": "The requested resource does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Resource not found",
+                      "type": "urn:workspace2:problem:not_found"
+                    }
+                  },
+                  "plugin_unavailable": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "plugin_unavailable",
+                      "detail": "The requested plugin is not active.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Plugin unavailable",
+                      "type": "urn:workspace2:problem:plugin_unavailable"
+                    }
+                  },
+                  "procedure_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "procedure_not_found",
+                      "detail": "The plugin procedure does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Procedure not found",
+                      "type": "urn:workspace2:problem:procedure_not_found"
+                    }
+                  },
+                  "resource_not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "resource_not_found",
+                      "detail": "The resource handle does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Resource not found",
+                      "type": "urn:workspace2:problem:resource_not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Resource was not found",
+            "x-error-codes": [
+              {
+                "category": "not_found",
+                "code": "not_found",
+                "description": "The requested resource does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Resource not found"
+              },
+              {
+                "category": "not_found",
+                "code": "element_not_found",
+                "description": "The requested element does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Element not found"
+              },
+              {
+                "category": "not_found",
+                "code": "plugin_unavailable",
+                "description": "The requested plugin is not active.",
+                "retryable": false,
+                "status": 404,
+                "title": "Plugin unavailable"
+              },
+              {
+                "category": "not_found",
+                "code": "embed_session_not_found",
+                "description": "The embed session does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Embed session not found"
+              },
+              {
+                "category": "not_found",
+                "code": "procedure_not_found",
+                "description": "The plugin procedure does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Procedure not found"
+              },
+              {
+                "category": "not_found",
+                "code": "resource_not_found",
+                "description": "The resource handle does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Resource not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_not_found",
+                "description": "The macro does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_version_not_found",
+                "description": "The exact macro version does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro version not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_plan_not_found",
+                "description": "The macro plan does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro plan not found"
+              },
+              {
+                "category": "not_found",
+                "code": "macro_ref_missing",
+                "description": "A referenced macro value does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro reference missing"
+              },
+              {
+                "category": "dependency",
+                "code": "macro_dependency_missing",
+                "description": "A required macro dependency is unavailable.",
+                "retryable": false,
+                "status": 404,
+                "title": "Macro dependency missing"
+              }
+            ]
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "internal_error": {
+                    "value": {
+                      "category": "internal",
+                      "code": "internal_error",
+                      "detail": "AgentCanvas could not complete the request.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Internal server error",
+                      "type": "urn:workspace2:problem:internal_error"
+                    }
+                  },
+                  "macro_execution_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "macro_execution_invalid",
+                      "detail": "Macro execution failed unexpectedly.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Macro execution failed",
+                      "type": "urn:workspace2:problem:macro_execution_invalid"
+                    }
+                  },
+                  "stored_canvas_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "stored_canvas_invalid",
+                      "detail": "Stored canvas data violates the canonical contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Stored canvas invalid",
+                      "type": "urn:workspace2:problem:stored_canvas_invalid"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request",
+            "x-error-codes": [
+              {
+                "category": "internal",
+                "code": "macro_execution_invalid",
+                "description": "Macro execution failed unexpectedly.",
+                "retryable": false,
+                "status": 500,
+                "title": "Macro execution failed"
+              },
+              {
+                "category": "internal",
+                "code": "stored_canvas_invalid",
+                "description": "Stored canvas data violates the canonical contract.",
+                "retryable": false,
+                "status": 500,
+                "title": "Stored canvas invalid"
+              },
+              {
+                "category": "internal",
+                "code": "internal_error",
+                "description": "AgentCanvas could not complete the request.",
+                "retryable": false,
+                "status": 500,
+                "title": "Internal server error"
+              }
+            ]
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "viewer_presence_capacity": {
+                    "value": {
+                      "category": "dependency",
+                      "code": "viewer_presence_capacity",
+                      "detail": "The active viewer limit has been reached.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": true,
+                      "status": 503,
+                      "title": "Viewer presence capacity reached",
+                      "type": "urn:workspace2:problem:viewer_presence_capacity"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Viewer presence capacity reached",
+            "x-error-codes": [
+              {
+                "category": "dependency",
+                "code": "viewer_presence_capacity",
+                "description": "The active viewer limit has been reached.",
+                "retryable": true,
+                "status": 503,
+                "title": "Viewer presence capacity reached"
+              }
+            ]
+          }
+        },
+        "summary": "Report one visible browser viewport",
+        "tags": [
+          "Viewport"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Call canvas_list_viewers for the current active viewer list."
+            ]
+          },
+          "sideEffects": [
+            "Creates or refreshes one temporary viewer session."
+          ],
+          "useWhen": [
+            "A visible browser tab reports or clears its own temporary viewport session."
+          ]
+        }
+      }
+    },
     "/api/v1/canvases/{canvasId}/viewport": {
       "get": {
         "operationId": "canvasGetViewport",

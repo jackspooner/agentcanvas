@@ -30,11 +30,11 @@ interface CanvasViewProps {
   onCanvasBoundsChange?: (bounds: CanvasBounds) => Promise<void> | void;
 }
 
-function reportedViewport(viewport: CanvasViewport): CanvasViewport {
+function reportedViewport(viewport: CanvasViewport, width: number, height: number): CanvasViewport {
   return {
     ...viewport,
-    width: DEFAULT_REPORTED_VIEWPORT_WIDTH,
-    height: DEFAULT_REPORTED_VIEWPORT_HEIGHT,
+    width,
+    height,
     source: 'user',
     updatedAt: viewport.updatedAt ?? new Date().toISOString()
   };
@@ -93,6 +93,7 @@ export function CanvasView({
   const [moveError, setMoveError] = useState<string | null>(null);
   const [viewportError, setViewportError] = useState<string | null>(null);
   const viewportNode = useRef<HTMLDivElement | null>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const autoFittedCanvas = useRef<string | null>(null);
   const lastAgentViewport = useRef<string | null>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: These transient UI values belong to one canvas identity.
@@ -200,10 +201,30 @@ export function CanvasView({
     return () => window.cancelAnimationFrame(animationFrame);
   }, [canvas.id, fixedBounds, initialViewport?.source, nodeElements, fitCanvas]);
   useEffect(() => {
-    if (!onViewportChange || canvas.id === 'empty') return undefined;
-    const timer = window.setTimeout(() => onViewportChange(reportedViewport(viewport)), 250);
+    const node = viewportNode.current;
+    if (!node) return undefined;
+    const update = () => {
+      const width = node.clientWidth;
+      const height = node.clientHeight;
+      setViewportSize((current) =>
+        current.width === width && current.height === height ? current : { width, height }
+      );
+    };
+    update();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!onViewportChange || canvas.id === 'empty' || viewportSize.width < 1 || viewportSize.height < 1)
+      return undefined;
+    const timer = window.setTimeout(
+      () => onViewportChange(reportedViewport(viewport, viewportSize.width, viewportSize.height)),
+      250
+    );
     return () => window.clearTimeout(timer);
-  }, [canvas.id, onViewportChange, viewport]);
+  }, [canvas.id, onViewportChange, viewport, viewportSize]);
   useEffect(() => {
     if (!loadViewport || canvas.id === 'empty') return undefined;
     const timer = window.setInterval(() => {

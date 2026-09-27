@@ -222,9 +222,21 @@ const CANVAS_VIEWPORT_INPUT_SCHEMA = {
   }
 } as JsonObject & { properties: Record<string, JsonObject> };
 
+export const VIEWER_ID_PATTERN = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+export const VIEWER_ID_SCHEMA: JsonObject = { type: 'string', pattern: VIEWER_ID_PATTERN };
+
 /** Shared request definitions for HTTP validation, OpenAPI, and corresponding MCP fields. */
 export const CORE_REQUEST_SCHEMAS: Record<
-  'configuration' | 'create' | 'bounds' | 'title' | 'theme' | 'batch' | 'share' | 'viewport' | 'focus',
+  | 'configuration'
+  | 'create'
+  | 'bounds'
+  | 'title'
+  | 'theme'
+  | 'batch'
+  | 'share'
+  | 'viewport'
+  | 'focus'
+  | 'viewerPresence',
   JsonObject & { properties: Record<string, JsonObject> }
 > = {
   configuration: {
@@ -339,5 +351,6 @@ export const CORE_REQUEST_SCHEMAS: Record<
     properties: { label: { type: 'string' }, expiresAt: { type: ['string', 'null'] } }
   },
   viewport: CANVAS_VIEWPORT_INPUT_SCHEMA,
-  focus: CANVAS_VIEWPORT_INPUT_SCHEMA
+  focus: CANVAS_VIEWPORT_INPUT_SCHEMA,
+  viewerPresence: { ...CANVAS_VIEWPORT_INPUT_SCHEMA, additionalProperties: false }
 };

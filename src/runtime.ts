@@ -23,6 +23,7 @@ import {
 import type { ResourceBroker } from './resources/broker.js';
 import { V2SqliteCanvasStore } from './store/v2.js';
 import { AGENTCANVAS_VERSION } from './version.js';
+import { ViewerPresenceRegistry } from './viewer-presence.js';
 export interface V2Runtime {
   config: AgentCanvasConfig;
   plugins: PreparedPluginRuntime;
@@ -32,6 +33,7 @@ export interface V2Runtime {
   store: V2SqliteCanvasStore;
   macros: MacroRuntime;
   embedSessions: EmbedSessionRegistry;
+  viewerPresence: ViewerPresenceRegistry;
   openapi: JsonObject;
   developmentReloadVersion?: string;
   dispose(): void;
@@ -50,6 +52,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
   const store = new V2SqliteCanvasStore(new PluginElementValidator(plugins.registry), config.databasePath, config);
   const macros = new MacroRuntime(store, plugins.registry);
   const embedSessions = new EmbedSessionRegistry(config.publicBaseUrl);
+  const viewerPresence = new ViewerPresenceRegistry();
   plugins.bindDatabase(store.db);
   assertPluginSchemasReady(store.db, plugins.registry, config.databasePath, plugins.pluginsRoot);
   const browserCatalog = await createBrowserPluginCatalog(plugins.registry);
@@ -76,6 +79,7 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     store,
     macros,
     embedSessions,
+    viewerPresence,
     openapi,
     dispose() {
       plugins.resources.dispose();

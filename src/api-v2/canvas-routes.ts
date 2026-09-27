@@ -4,10 +4,11 @@ import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import type { Context, Hono } from 'hono';
 import { canvasPageUrl } from '../canvas-url.js';
 import { CanvasError } from '../errors.js';
+import { normalizeViewportInput } from '../validation.js';
 import type { V2Runtime } from '../runtime.js';
 import { collectSnapshotItems, composeSnapshot } from '../snapshot-runtime/index.js';
 import { resolveCanvasProjection } from './canvas-projection.js';
-import { CORE_REQUEST_SCHEMAS } from './schemas.js';
+import { CORE_REQUEST_SCHEMAS, VIEWER_ID_PATTERN } from './schemas.js';
 export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
   const { config, registry, resources, store } = runtime;
   const ajv = new Ajv2020({ strict: true, allErrors: true, useDefaults: false });
@@ -116,6 +117,27 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
       viewport: store.recordViewport(c.req.param('canvasId'), await readCoreJson(c, 'focus'), 'agent')
     })
   );
+  const viewerIdPattern = new RegExp(VIEWER_ID_PATTERN);
+  function viewerId(value: string): string {
+    if (!viewerIdPattern.test(value))
+      throw new CanvasError('validation_error', 'viewerId must be a UUID', 'validation', 400);
+    return value;
+  }
+  app.put('/api/v1/canvases/:canvasId/viewer-presence/:viewerId', async (c) => {
+    const canvasId = c.req.param('canvasId');
+    store.getCanvas(canvasId);
+    const id = viewerId(c.req.param('viewerId'));
+    const input = await readCoreJson(c, 'viewerPresence');
+    const { centerX, centerY, zoom, width, height } = normalizeViewportInput(input as Record<string, unknown>);
+    runtime.viewerPresence.upsert(canvasId, id, { centerX, centerY, zoom, width, height });
+    return c.json({ ok: true });
+  });
+  app.delete('/api/v1/canvases/:canvasId/viewer-presence/:viewerId', (c) => {
+    const canvasId = c.req.param('canvasId');
+    store.getCanvas(canvasId);
+    runtime.viewerPresence.remove(canvasId, viewerId(c.req.param('viewerId')));
+    return c.json({ ok: true });
+  });
   app.post('/api/v1/canvases/:canvasId/snapshot', async (c) => {
     const canvas = store.getCanvas(c.req.param('canvasId'));
     const projection = await resolveCanvasProjection(

@@ -7,6 +7,8 @@ import {
   fetchCanvasFromLocation,
   fetchCanvasList,
   fetchViewportState,
+  removeViewerPresence,
+  reportViewerPresence,
   saveUserViewport,
   updateAgentCanvasConfiguration,
   updateCanvasBounds
@@ -41,6 +43,49 @@ export function App() {
   const mounted = useRef(false);
   const readGeneration = useRef(0);
   const refreshAfterMutation = useRef<() => Promise<void>>(async () => {});
+  const reportViewer = useRef<(viewport: CanvasViewport) => void>(() => {});
+  const activeCanvasId = state?.mode === 'canvas' && !error ? state.canvas.id : null;
+
+  useEffect(() => {
+    if (!activeCanvasId || activeCanvasId === 'empty') return undefined;
+    let viewerId: string | null = null;
+    let latestViewport: CanvasViewport | null = null;
+    let closed = false;
+    const publish = () => {
+      if (document.visibilityState !== 'visible' || !latestViewport) return;
+      viewerId ??= crypto.randomUUID();
+      void reportViewerPresence(activeCanvasId, viewerId, latestViewport)
+        .then(() => {
+          if (!closed) setWarning((current) => (current?.startsWith('Viewer presence failed:') ? null : current));
+        })
+        .catch((cause) => {
+          if (!closed) setWarning(`Viewer presence failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+        });
+    };
+    const leave = () => {
+      const departingId = viewerId;
+      viewerId = null;
+      if (departingId) void removeViewerPresence(activeCanvasId, departingId).catch(() => {});
+    };
+    const onVisibilityChange = () => (document.visibilityState === 'visible' ? publish() : leave());
+    reportViewer.current = (viewport) => {
+      latestViewport = viewport;
+      publish();
+    };
+    const timer = window.setInterval(publish, 10_000);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('pageshow', publish);
+    return () => {
+      closed = true;
+      reportViewer.current = () => {};
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pageshow', publish);
+      leave();
+    };
+  }, [activeCanvasId]);
 
   async function saveConfiguration(settings: UpdateAgentCanvasConfigurationInput) {
     const generation = ++readGeneration.current;
@@ -299,6 +344,7 @@ export function App() {
       }}
       onViewportChange={(viewport) => {
         writeViewportCookie(state.canvas.id, viewport);
+        reportViewer.current(viewport);
         void saveUserViewport(state.canvas.id, viewport).catch((cause) =>
           setWarning(`Viewport save failed: ${cause instanceof Error ? cause.message : String(cause)}`)
         );

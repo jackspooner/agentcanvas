@@ -65,6 +65,7 @@ export function createV2ServiceHandler(runtime: V2Runtime): RequestListener {
           store: runtime.store,
           macros: runtime.macros,
           browserCatalog: runtime.browserCatalog,
+          viewerPresence: runtime.viewerPresence,
           diagnostics: () => runtime.plugins.diagnostics.list()
         },
         requestUrl.pathname === '/mcp/full' ? 'full' : 'lean'

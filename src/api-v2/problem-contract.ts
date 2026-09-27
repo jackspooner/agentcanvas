@@ -169,6 +169,13 @@ export const AGENTCANVAS_PROBLEM_CODES = defineProblemCodes({
     'The active embed session limit has been reached.',
     true
   ),
+  viewer_presence_capacity: code(
+    503,
+    'Viewer presence capacity reached',
+    'dependency',
+    'The active viewer limit has been reached.',
+    true
+  ),
   invalid_parent_origin: code(400, 'Parent origin invalid', 'validation', 'The embed parent origin is invalid.'),
   database_version_invalid: code(
     503,

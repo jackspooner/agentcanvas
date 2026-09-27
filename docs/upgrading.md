@@ -5,6 +5,15 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## Unreleased live viewer viewports
+
+The browser now reports measured viewport geometry for visible direct, shared,
+and embedded tabs. The read-only `canvas_list_viewers` MCP tool returns anonymous
+sessions that expire after 30 seconds; existing saved user/agent viewports and
+canvas revisions are unchanged. Rebuild the browser, restart AgentCanvas, and
+refresh the MCP client's tool catalog. No database migration or new dependency
+is required.
+
 ## Unreleased Markdown 0.3.0
 
 Markdown 0.3.0 adds the `agentcanvas.markdown/carousel` element and its browser

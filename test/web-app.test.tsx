@@ -69,6 +69,69 @@ afterEach(() => {
 });
 
 describe('browser projection reconciliation', () => {
+  it('reports direct, shared, and embedded visible views and replaces a hidden session', async () => {
+    let visible = true;
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => (visible ? 'visible' : 'hidden')
+    });
+    const viewport = {
+      centerX: 15,
+      centerY: -3,
+      zoom: 1.5,
+      width: 800,
+      height: 600,
+      source: 'user' as const,
+      updatedAt: null
+    };
+    try {
+      for (const route of ['/canvases/test', '/c/share-token', '/embed/embed-token']) {
+        window.history.replaceState({}, '', route);
+        read = async () =>
+          Response.json({
+            ...current,
+            ...(route.startsWith('/embed/')
+              ? {
+                  session: {
+                    id: 'session',
+                    canvasIds: ['test'],
+                    mode: 'read',
+                    parentOrigin: 'https://parent.example',
+                    createdAt: '',
+                    expiresAt: 'later'
+                  },
+                  readOnly: true
+                }
+              : {})
+          });
+        const screen = await act(async () => render(<App />));
+        requests.mockClear();
+        await act(async () => view.current.onViewportChange?.(viewport));
+        const reports = () =>
+          requests.mock.calls.filter(([url, init]) => url.includes('/viewer-presence/') && init?.method === 'PUT');
+        expect(reports()).toHaveLength(1);
+        expect(JSON.parse(reports()[0][1].body as string)).toEqual({
+          centerX: 15,
+          centerY: -3,
+          zoom: 1.5,
+          width: 800,
+          height: 600
+        });
+        const firstUrl = reports()[0][0];
+        visible = false;
+        await act(async () => fireEvent(document, new Event('visibilitychange')));
+        expect(requests).toHaveBeenCalledWith(firstUrl, expect.objectContaining({ method: 'DELETE', keepalive: true }));
+        visible = true;
+        await act(async () => fireEvent(document, new Event('visibilitychange')));
+        expect(reports()).toHaveLength(2);
+        expect(reports()[1][0]).not.toBe(firstUrl);
+        screen.unmount();
+      }
+    } finally {
+      Reflect.deleteProperty(document, 'visibilityState');
+    }
+  });
+
   it('does not let an earlier index poll reset saved diagnostics settings', async () => {
     window.history.replaceState({}, '', '/');
     const initial = {

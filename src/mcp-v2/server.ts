@@ -2,7 +2,8 @@ import {
   CANVAS_BOUNDS_SCHEMA,
   CANVAS_ELEMENT_SCHEMA,
   CANVAS_LIST_LIMIT_SCHEMA,
-  CORE_REQUEST_SCHEMAS
+  CORE_REQUEST_SCHEMAS,
+  VIEWER_ID_SCHEMA
 } from '../api-v2/schemas.js';
 import {
   CANVAS_INSPECTION_SUMMARY_SCHEMA,
@@ -57,12 +58,14 @@ import { AGENTCANVAS_VERSION } from '../version.js';
 import { canvasPageUrl } from '../canvas-url.js';
 import { AGENTCANVAS_AGENT_GUIDANCE, AGENTCANVAS_MCP_INSTRUCTIONS } from './agent-guidance.js';
 import { CanvasError, toCanvasError } from '../errors.js';
+import { VIEWER_PRESENCE_MAX_ACTIVE, type ViewerPresenceRegistry } from '../viewer-presence.js';
 
 export interface McpV2Runtime {
   publicBaseUrl: string;
   registry: FrozenPluginRegistry;
   store: V2SqliteCanvasStore;
   browserCatalog: BrowserPluginCatalog;
+  viewerPresence: ViewerPresenceRegistry;
   diagnostics(): readonly import('@agentcanvas/plugin-sdk').PluginDiagnostic[];
   macros?: MacroRuntime;
 }
@@ -404,6 +407,42 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
         properties: { canvasId: CANVAS_ID }
       },
       outputSchema: inspectedCanvas,
+      annotations: { readOnlyHint: true }
+    },
+    {
+      name: 'canvas_list_viewers',
+      title: 'List active canvas viewers',
+      description:
+        'List anonymous visible browser tabs viewing this canvas. Each viewport gives world-space center and zoom plus actual CSS-pixel dimensions. Entries expire 30 seconds after the last report; an empty list means no recently reporting visible tab.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId'],
+        properties: { canvasId: CANVAS_ID }
+      },
+      outputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId', 'asOf', 'viewers'],
+        properties: {
+          canvasId: CANVAS_ID,
+          asOf: { type: 'string' },
+          viewers: {
+            type: 'array',
+            maxItems: VIEWER_PRESENCE_MAX_ACTIVE,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['viewerId', 'viewport', 'lastSeenAt'],
+              properties: {
+                viewerId: VIEWER_ID_SCHEMA,
+                viewport: CORE_REQUEST_SCHEMAS.viewerPresence,
+                lastSeenAt: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
       annotations: { readOnlyHint: true }
     },
     {
@@ -1021,6 +1060,10 @@ async function invokeCore(
       }))
     } as unknown as JsonObject;
   if (name === 'canvas_get') return withInspection(store.getCanvas(canvasId), runtime);
+  if (name === 'canvas_list_viewers') {
+    store.getCanvas(canvasId);
+    return json(runtime.viewerPresence.list(canvasId));
+  }
   if (name === 'canvas_list_elements') {
     const canvas = store.getCanvas(canvasId);
     const limit = (input.limit as number | undefined) ?? 100;

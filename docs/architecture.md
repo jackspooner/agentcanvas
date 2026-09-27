@@ -10,6 +10,8 @@ implementations are trusted extensions discovered from `plugins/`.
 The kernel does not provide a marketplace, remote loading, production hot
 reload, sandboxing, user accounts, or real-time multi-user editing. Short-lived
 embed sessions provide origin-scoped iframe authority, not user authentication.
+Visible browser viewport presence is process-memory state with a 30-second
+expiry; SQLite viewports remain saved user/agent state.
 
 ## System map
 

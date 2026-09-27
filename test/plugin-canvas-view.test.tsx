@@ -1,7 +1,7 @@
 import type { BrowserElementRenderer } from '@agentcanvas/plugin-sdk';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasView } from '../src/web/components/CanvasView';
 import type { LoadedBrowserRegistry } from '../src/web/plugins/catalog';
 import type { CanvasDocument } from '../src/web/v2-types';
@@ -59,6 +59,93 @@ function canvas(): CanvasDocument {
 }
 
 describe('plugin canvas React host', () => {
+  const nativeWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+  const nativeHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).classList.contains('canvas-viewport') ? 1920 : 0;
+      }
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).classList.contains('canvas-viewport') ? 900 : 0;
+      }
+    });
+  });
+  afterEach(() => {
+    if (nativeWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', nativeWidth);
+    else Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth');
+    if (nativeHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', nativeHeight);
+    else Reflect.deleteProperty(HTMLElement.prototype, 'clientHeight');
+  });
+
+  it('reports measured viewport dimensions on load and resize', async () => {
+    const originalWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const originalHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    let size = { width: 640, height: 480 };
+    const updates: Array<() => void> = [];
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).classList.contains('canvas-viewport') ? size.width : 1;
+      }
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).classList.contains('canvas-viewport') ? size.height : 1;
+      }
+    });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(update: () => void) {
+          this.update = update;
+        }
+        update: () => void;
+        observe(node: Element) {
+          if (node.classList.contains('canvas-viewport')) updates.push(this.update);
+        }
+        unobserve() {}
+        disconnect() {}
+      }
+    );
+    const onViewportChange = vi.fn();
+    let unmount: (() => void) | undefined;
+    try {
+      const screen = render(
+        <CanvasView
+          canvas={canvas()}
+          elementRuntime={{}}
+          diagnostics={[]}
+          browserRegistry={registry()}
+          onViewportChange={onViewportChange}
+        />
+      );
+      unmount = screen.unmount;
+      await waitFor(() =>
+        expect(onViewportChange).toHaveBeenCalledWith(expect.objectContaining({ width: 640, height: 480 }))
+      );
+      size = { width: 900, height: 700 };
+      act(() => {
+        for (const update of updates) update();
+      });
+      await waitFor(() =>
+        expect(onViewportChange).toHaveBeenCalledWith(expect.objectContaining({ width: 900, height: 700 }))
+      );
+    } finally {
+      unmount?.();
+      if (originalWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalWidth);
+      else Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth');
+      if (originalHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalHeight);
+      else Reflect.deleteProperty(HTMLElement.prototype, 'clientHeight');
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('hides and restores the top bar for read-only canvases', () => {
     const { container, getByRole } = render(
       <CanvasView canvas={canvas()} elementRuntime={{}} diagnostics={[]} browserRegistry={registry()} readOnly />

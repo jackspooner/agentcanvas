@@ -6,6 +6,7 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
   workflow: [
     'Read this guidance, then call canvas_list_plugins before relying on optional element or media capabilities.',
     'Inspect an existing target with canvas_list_elements and canvas_get_element. Use canvas_get only when the complete persisted document is genuinely needed.',
+    'Use canvas_list_viewers to read recently reported viewports of visible browser tabs; sessions are anonymous and expire after 30 seconds without a report.',
     'canvas_create returns a compact receipt and the direct browser URL. Give that URL to the user when appropriate; use canvas_get_url to recover it later. A direct URL does not create a public share link or bypass the host access controls.',
     'Plan element frames before composing. Mutation receipts contain only the resulting revision and diagnostic severity counts. Call canvas_inspect when any count is nonzero and repair unintended warnings immediately. Use canvas_get after a write only when the full persisted document is genuinely needed; finish with canvas_inspect and no later mutation.',
     'Use rendered browser evidence for appearance and remote-image claims when browser access exists.'

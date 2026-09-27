@@ -1,7 +1,12 @@
 import type { JsonObject } from '@agentcanvas/plugin-sdk';
 import { EMBED_SESSION_CREATE_REQUEST_SCHEMA, EMBED_SESSION_LIMITS } from '../embed-sessions.js';
 import { codesForStatus, problemResponse } from './problem-contract.js';
-import { CANVAS_LIST_LIMIT_SCHEMA, CORE_REQUEST_SCHEMAS, CONFIGURATION_RESPONSE_SCHEMA } from './schemas.js';
+import {
+  CANVAS_LIST_LIMIT_SCHEMA,
+  CORE_REQUEST_SCHEMAS,
+  CONFIGURATION_RESPONSE_SCHEMA,
+  VIEWER_ID_SCHEMA
+} from './schemas.js';
 
 export function coreOpenApiPaths(): Record<string, JsonObject> {
   const canvasId = { name: 'canvasId', in: 'path', required: true, schema: { type: 'string' } };
@@ -22,7 +27,10 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     409: problemResponse('Revision or idempotency conflict', codesForStatus(409)),
     410: problemResponse('The requested session or plan has expired', codesForStatus(410)),
     500: problemResponse('AgentCanvas failed to complete the request', codesForStatus(500)),
-    503: problemResponse('AgentCanvas dependency is unavailable', codesForStatus(503)),
+    503: problemResponse(
+      'AgentCanvas dependency is unavailable',
+      codesForStatus(503).filter((code) => code !== 'viewer_presence_capacity')
+    ),
     504: problemResponse('A dependent operation timed out', codesForStatus(504))
   };
   const macroErrors = {
@@ -136,6 +144,17 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
     },
     ...(retry ? { workflow: ['Retry only when the returned Problem Details object has retryable=true.'] } : {})
   });
+  const presenceNotes = (sideEffect: string): JsonObject => ({
+    useWhen: ['A visible browser tab reports or clears its own temporary viewport session.'],
+    sideEffects: [sideEffect],
+    consistency: { refresh: ['Call canvas_list_viewers for the current active viewer list.'] }
+  });
+  const presenceResponse = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['ok'],
+    properties: { ok: { const: true } }
+  };
   const embedSession = {
     type: 'object',
     additionalProperties: false,
@@ -592,6 +611,38 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
         requestBody: jsonBody(CORE_REQUEST_SCHEMAS.focus),
         responses: { 200: response('Saved agent viewport'), ...errorResponses },
         'x-agent-notes': agentNotes(['Updates agent viewport state.'])
+      }
+    },
+    '/api/v1/canvases/{canvasId}/viewer-presence/{viewerId}': {
+      put: {
+        operationId: 'canvasReportViewerPresence',
+        summary: 'Report one visible browser viewport',
+        description:
+          'Process-memory presence expires 30 seconds after its last report and does not change canvas revisions.',
+        tags: ['Viewport'],
+        parameters: [canvasId, { name: 'viewerId', in: 'path', required: true, schema: VIEWER_ID_SCHEMA }],
+        requestBody: jsonBody(CORE_REQUEST_SCHEMAS.viewerPresence),
+        responses: {
+          200: response('Viewer presence reported', presenceResponse),
+          400: errorResponses[400],
+          404: errorResponses[404],
+          503: problemResponse('Viewer presence capacity reached', ['viewer_presence_capacity']),
+          500: errorResponses[500]
+        },
+        'x-agent-notes': presenceNotes('Creates or refreshes one temporary viewer session.')
+      },
+      delete: {
+        operationId: 'canvasRemoveViewerPresence',
+        summary: 'Remove one browser viewport session',
+        tags: ['Viewport'],
+        parameters: [canvasId, { name: 'viewerId', in: 'path', required: true, schema: VIEWER_ID_SCHEMA }],
+        responses: {
+          200: response('Viewer presence removed or already absent', presenceResponse),
+          400: errorResponses[400],
+          404: errorResponses[404],
+          500: errorResponses[500]
+        },
+        'x-agent-notes': presenceNotes('Removes one temporary viewer session if present.')
       }
     },
     '/api/v1/share/{token}': {
