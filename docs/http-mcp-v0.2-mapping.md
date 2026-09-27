@@ -50,12 +50,13 @@ Type or schema-version changes require migration or delete plus upsert.
 | none | `canvas_get_url` returns the direct browser URL for an existing canvas |
 | none | `canvas_get_guidance`, `canvas_inspect` |
 | rename | `canvas_rename` |
+| none | `canvas_set_bounds`; `canvas_create` also accepts optional `bounds` |
 | none | `canvas_set_theme`, `canvas_clear_theme` |
 | generic add/update | `canvas_upsert_element`, `canvas_patch_element_frame`, `canvas_replace_element_data`, `canvas_replace_element_metadata` |
 | `canvas_delete_element` | `canvas_delete_element` |
 | `canvas_clear` | `canvas_clear` |
 | none | `canvas_list_plugins`, `canvas_get_plugin` |
-| configuration/bounds/share/viewport/screenshot tools | no current v0.2 MCP core equivalent; use the corresponding HTTP route where implemented |
+| configuration/share/viewport/screenshot tools | no current v0.2 MCP core equivalent; use the corresponding HTTP route where implemented |
 
 ## MCP feature tools
 

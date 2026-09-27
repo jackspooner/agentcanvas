@@ -1,5 +1,15 @@
 # Change history
 
+## Unreleased — MCP canvas bounds and fixed-frame enforcement
+
+- MCP canvas creation accepts bounds, and `canvas_set_bounds` changes them with
+  revision checks. HTTP and MCP element writes reject new or changed frames
+  outside fixed bounds; bounds changes reject sizes that exclude existing
+  elements. Invalid writes leave the document and revision unchanged.
+- Existing fixed canvases with older out-of-bounds elements remain readable;
+  move or delete those elements before reducing bounds. No database migration
+  or new dependency is required.
+
 ## Unreleased — canvas navigation visibility
 
 - Canvas viewers can hide the top bar to give the canvas more space and restore

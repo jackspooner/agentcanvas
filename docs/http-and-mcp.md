@@ -175,6 +175,15 @@ Example current-version element write:
 
 The owning plugin must be active for upserts and data/style replacement. `id`, `type`, and `schemaVersion` are immutable during normal patch operations. Type changes use delete plus upsert; schema changes use registered migrations.
 
+On a fixed canvas, new or geometry-updated elements must fit their whole
+unrotated frame within the bounds. Omitted or null frame sizes use the host's
+240 × 120 render defaults. The server rejects negative sizes and out-of-bounds
+frames with `validation_error` (400), without clamping or saving a partial
+batch. Changing bounds also fails if any existing frame would be excluded.
+Older out-of-bounds elements remain readable and can be moved or deleted;
+unrelated edits do not require repairing them first. Unlimited canvases have
+no position limit.
+
 ## Macro operations
 
 Macros are host-owned declarative creation definitions. Create and version them
@@ -273,6 +282,7 @@ The kernel registers:
 - `canvas_get_url`
 - `canvas_inspect`
 - `canvas_rename`
+- `canvas_set_bounds`
 - `canvas_set_theme`
 - `canvas_clear_theme`
 - `canvas_upsert_element`
@@ -313,6 +323,9 @@ when no visible tab has reported recently. IDs identify sessions, not people.
 Viewport data is geometry only, and the list is available through MCP rather
 than a browser HTTP read.
 
+`canvas_create` accepts optional `bounds` (`{"mode":"unlimited"}` or
+`{"mode":"fixed","width":1600,"height":1000}`). Use `canvas_set_bounds`
+with `canvasId`, `bounds`, and optionally `expectedRevision` to change them.
 `canvas_create` returns the direct browser `url` for the new canvas. Use
 `canvas_get_url` to recover that URL from a canvas ID later. Both URLs are
 derived from `AGENT_CANVAS_PUBLIC_BASE_URL`; they are direct application routes,

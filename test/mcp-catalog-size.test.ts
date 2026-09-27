@@ -33,7 +33,7 @@ describe('installed MCP catalog size', () => {
         .sort((left, right) => right[1] - left[1])
         .slice(0, 12);
       expect(JSON.stringify(catalog).length, JSON.stringify(largest)).toBeLessThanOrEqual(90_000);
-      expect(JSON.stringify(full).length).toBeLessThanOrEqual(155_000);
+      expect(JSON.stringify(full).length).toBeLessThanOrEqual(157_000);
       expect(JSON.stringify(catalog.find((tool) => tool.name === 'canvas_upsert_element')).length).toBeLessThan(10_000);
     } finally {
       offline.resources.dispose();

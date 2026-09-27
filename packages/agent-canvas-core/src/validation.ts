@@ -1,4 +1,5 @@
 import type { CanvasBounds, CanvasElement, CanvasViewport, CanvasViewportInput } from './contracts.js';
+import { resolveElementFrame } from '@agentcanvas/plugin-sdk';
 import { CanvasError } from './errors.js';
 
 export const LIMITS = {
@@ -48,6 +49,20 @@ export function normalizeCanvasBounds(
     validation(`fixed canvas bounds cannot exceed ${LIMITS.maxCanvasWidth}x${LIMITS.maxCanvasHeight}`);
   }
   return { mode: 'fixed', width: Math.round(width), height: Math.round(height) };
+}
+
+/** The canonical unrotated frame, including host sizing defaults, must fit fixed bounds. */
+export function elementFitsCanvasBounds(element: CanvasElement, bounds: CanvasBounds): boolean {
+  if (bounds.mode === 'unlimited') return true;
+  const frame = resolveElementFrame(element);
+  return (
+    frame.x >= 0 &&
+    frame.y >= 0 &&
+    frame.width >= 0 &&
+    frame.height >= 0 &&
+    frame.x + frame.width <= bounds.width &&
+    frame.y + frame.height <= bounds.height
+  );
 }
 
 export function validateSafeId(value: unknown, label = 'id'): string {

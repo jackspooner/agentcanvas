@@ -75,6 +75,77 @@ afterEach(() => {
 });
 
 describe('v0.2 assembled runtime', () => {
+  it('sets fixed bounds through MCP and rejects out-of-bounds HTTP and MCP writes', async () => {
+    const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
+    const app = createV2App(runtime);
+    const mcp = createMcpV2Server({ ...runtime, publicBaseUrl: runtime.config.publicBaseUrl, diagnostics: () => [] });
+    const client = new Client({ name: 'bounds-test', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    try {
+      await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
+      const created = await client.callTool({
+        name: 'canvas_create',
+        arguments: { title: 'Bounded canvas', bounds: { mode: 'fixed', width: 300, height: 200 } }
+      });
+      const canvasId = (created.structuredContent as { canvasId: string }).canvasId;
+      expect(runtime.store.getCanvas(canvasId).bounds).toEqual({ mode: 'fixed', width: 300, height: 200 });
+      const resized = await client.callTool({
+        name: 'canvas_set_bounds',
+        arguments: { canvasId, bounds: { mode: 'fixed', width: 500, height: 300 }, expectedRevision: 1 }
+      });
+      expect(resized.structuredContent).toMatchObject({ canvasId, revision: 2 });
+      const stale = await client.callTool({
+        name: 'canvas_set_bounds',
+        arguments: { canvasId, bounds: { mode: 'unlimited' }, expectedRevision: 1 }
+      });
+      expect(stale.isError).toBe(true);
+      expect(stale.structuredContent).toMatchObject({ problem: { code: 'revision_conflict', status: 409 } });
+      const element = (x: number, y: number) => ({
+        id: 'card_1',
+        type: 'fixture.cards/card',
+        schemaVersion: 1,
+        x,
+        y,
+        data: { title: 'Card' }
+      });
+      const batch = (x: number, y: number) =>
+        app.request(`/api/v1/canvases/${canvasId}/elements:batch`, {
+          method: 'POST',
+          body: JSON.stringify({ operations: [{ op: 'upsertElement', element: element(x, y) }] })
+        });
+      const badHttp = await batch(261, 180);
+      expect(badHttp.status).toBe(400);
+      expect(await badHttp.json()).toMatchObject({
+        code: 'validation_error',
+        detail: expect.stringContaining('card_1')
+      });
+      const badMcp = await client.callTool({
+        name: 'canvas_upsert_element',
+        arguments: { canvasId, element: element(260, 181) }
+      });
+      expect(badMcp.isError).toBe(true);
+      expect(badMcp.structuredContent).toMatchObject({ problem: { code: 'validation_error', status: 400 } });
+      expect(runtime.store.getCanvas(canvasId)).toMatchObject({ revision: 2, elements: [] });
+      expect((await batch(260, 180)).status).toBe(200);
+      const tooSmall = await app.request(`/api/v1/canvases/${canvasId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ bounds: { mode: 'fixed', width: 499, height: 300 } })
+      });
+      expect(tooSmall.status).toBe(400);
+      expect(await tooSmall.json()).toMatchObject({
+        code: 'validation_error',
+        detail: expect.stringContaining('card_1')
+      });
+      expect(runtime.store.getCanvas(canvasId)).toMatchObject({
+        revision: 3,
+        bounds: { mode: 'fixed', width: 500, height: 300 }
+      });
+    } finally {
+      await Promise.all([client.close(), mcp.server.close()]);
+      runtime.dispose();
+    }
+  });
+
   it('maps SDK validation errors for HTTP procedures without persisting', async () => {
     const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
@@ -510,7 +581,7 @@ describe('v0.2 assembled runtime', () => {
       schemaVersion: 1,
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
-      mcpCatalog: { coreToolCount: 30, pluginToolCount: 0, totalToolCount: 30 }
+      mcpCatalog: { coreToolCount: 31, pluginToolCount: 0, totalToolCount: 31 }
     });
     const invalidMcp = await client.callTool({ name: 'canvas_get', arguments: {} });
     expect(invalidMcp.isError).toBe(true);

@@ -1,5 +1,6 @@
 import type { CanvasElement, CanvasOperation, JsonObject } from '../contracts.js';
 import { isJsonObject, isJsonValue, type JsonValue } from '@agentcanvas/plugin-sdk';
+import { elementFitsCanvasBounds } from '../validation.js';
 import { MacroError } from './errors.js';
 import { validateMacroInput } from './input-validation.js';
 import { canonicalJson, deepFreeze, sha256 } from './canonical-json.js';
@@ -308,16 +309,8 @@ function checkCanvas(request: MacroPlanRequest, canvas: MacroCanvasSnapshot): vo
 }
 
 function checkCanvasBounds(elements: readonly CanvasElement[], canvas: MacroCanvasSnapshot): void {
-  if (canvas.bounds.mode !== 'fixed') return;
   for (const element of elements) {
-    if (
-      element.x < 0 ||
-      element.y < 0 ||
-      (element.width ?? 0) <= 0 ||
-      (element.height ?? 0) <= 0 ||
-      element.x + (element.width as number) > canvas.bounds.width ||
-      element.y + (element.height as number) > canvas.bounds.height
-    ) {
+    if (!elementFitsCanvasBounds(element, canvas.bounds)) {
       throw new MacroError(
         'macro_element_invalid',
         `element ${element.id} does not fit within the canvas bounds`,

@@ -62,6 +62,114 @@ function makeStore(): V2SqliteCanvasStore {
 }
 
 describe('v0.2 canonical store', () => {
+  it('enforces the rendered frame within fixed bounds and keeps rejected batches atomic', () => {
+    const store = makeStore();
+    try {
+      const canvas = store.createCanvas({ title: 'Bounded', bounds: { mode: 'fixed', width: 500, height: 300 } });
+      const cardAt = (id: string, x: number, y: number, width?: number, height?: number) => ({
+        id,
+        type: 'fixture.cards/card',
+        schemaVersion: 1,
+        x,
+        y,
+        ...(width === undefined ? {} : { width }),
+        ...(height === undefined ? {} : { height }),
+        data: { title: id }
+      });
+      const upsert = (element: ReturnType<typeof cardAt>) => ({ op: 'upsertElement' as const, element });
+      const edge = store.applyOperations(canvas.id, { operations: [upsert(cardAt('edge', 260, 180))] });
+      expect(edge.revision).toBe(2); // Missing sizes render as 240 × 120.
+      const before = store.getCanvas(canvas.id);
+      const events = store.db.prepare('SELECT * FROM canvas_events').all();
+      for (const element of [
+        cardAt('right', 261, 180),
+        cardAt('bottom', 260, 181),
+        cardAt('negative', -1, 0),
+        cardAt('negative_width', 10, 10, -1, 10)
+      ]) {
+        expect(() =>
+          store.applyOperations(canvas.id, { operations: [upsert(cardAt('valid', 0, 0)), upsert(element)] })
+        ).toThrow(`element ${element.id} does not fit within the canvas bounds`);
+        expect(store.getCanvas(canvas.id)).toEqual(before);
+        expect(store.db.prepare('SELECT * FROM canvas_events').all()).toEqual(events);
+      }
+      expect(() =>
+        store.applyOperations(canvas.id, {
+          operations: [{ op: 'patchElementFrame', elementId: 'edge', frame: { x: 261 } }]
+        })
+      ).toThrow('element edge does not fit within the canvas bounds');
+      expect(store.getCanvas(canvas.id)).toEqual(before);
+      expect(store.applyOperations(canvas.id, { operations: [upsert(cardAt('zero', 500, 300, 0, 0))] }).revision).toBe(
+        3
+      );
+    } finally {
+      store.close();
+    }
+  });
+
+  it('rejects bounds that strand elements and permits repair of legacy outliers', () => {
+    const store = makeStore();
+    try {
+      const canvas = store.createCanvas({ title: 'Existing elements' });
+      const inserted = store.applyOperations(canvas.id, {
+        operations: [
+          {
+            op: 'upsertElement',
+            element: { id: 'outside', type: 'fixture.cards/card', schemaVersion: 1, x: 400, y: 0, data: { title: 'A' } }
+          }
+        ]
+      });
+      expect(() =>
+        store.updateCanvasBounds(canvas.id, {
+          bounds: { mode: 'fixed', width: 500, height: 300 },
+          expectedRevision: inserted.revision
+        })
+      ).toThrow('element outside does not fit within the canvas bounds');
+      expect(store.getCanvas(canvas.id)).toEqual(inserted);
+      store.db
+        .prepare('UPDATE canvases SET bounds_json=?,width=?,height=? WHERE id=?')
+        .run(JSON.stringify({ mode: 'fixed', width: 500, height: 300 }), 500, 300, canvas.id); // Existing databases may already have out-of-bounds elements.
+      const renamed = store.applyOperations(canvas.id, {
+        operations: [{ op: 'replaceElementMetadata', elementId: 'outside', metadata: { legacy: true } }]
+      });
+      expect(renamed.revision).toBe(3);
+      expect(() =>
+        store.applyOperations(canvas.id, {
+          operations: [{ op: 'patchElementFrame', elementId: 'outside', frame: { x: 400 } }]
+        })
+      ).toThrow('element outside does not fit within the canvas bounds');
+      const repaired = store.applyOperations(canvas.id, {
+        operations: [{ op: 'patchElementFrame', elementId: 'outside', frame: { x: 260 } }]
+      });
+      expect(repaired.elements[0].x).toBe(260);
+      expect(
+        store.updateCanvasBounds(canvas.id, {
+          bounds: { mode: 'fixed', width: 500, height: 300 },
+          expectedRevision: repaired.revision
+        }).revision
+      ).toBe(5);
+      expect(
+        store.updateCanvasBounds(canvas.id, {
+          bounds: { mode: 'unlimited' },
+          expectedRevision: 5
+        }).revision
+      ).toBe(6);
+      expect(
+        store.applyOperations(canvas.id, {
+          operations: [
+            {
+              op: 'patchElementFrame',
+              elementId: 'outside',
+              frame: { x: -100, width: -10 }
+            }
+          ]
+        }).elements[0]
+      ).toMatchObject({ x: -100, width: -10 });
+    } finally {
+      store.close();
+    }
+  });
+
   it('rolls back metadata, revision, and events together when event recording fails', () => {
     const store = makeStore();
     try {

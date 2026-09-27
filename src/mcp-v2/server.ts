@@ -20,6 +20,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import { nanoid } from 'nanoid';
+import type { CanvasBounds } from '../contracts.js';
 import {
   AGENTCANVAS_PROBLEM_CODES,
   createMcpToolCatalog,
@@ -378,6 +379,7 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
           title: CORE_REQUEST_SCHEMAS.create.properties.title,
           project: CORE_REQUEST_SCHEMAS.create.properties.project,
           description: CORE_REQUEST_SCHEMAS.create.properties.description,
+          bounds: CANVAS_BOUNDS_SCHEMA,
           theme: { oneOf: [CANVAS_THEME_V1_SCHEMA, { type: 'null' }] }
         }
       },
@@ -550,6 +552,17 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
         expectedRevision: CORE_REQUEST_SCHEMAS.title.properties.expectedRevision
       },
       ['canvasId', 'title'],
+      CANVAS_MUTATION_RECEIPT_SCHEMA
+    ),
+    mutationTool(
+      'canvas_set_bounds',
+      'Set unlimited or fixed canvas bounds',
+      {
+        canvasId: CANVAS_ID,
+        bounds: CANVAS_BOUNDS_SCHEMA,
+        expectedRevision: CORE_REQUEST_SCHEMAS.bounds.properties.expectedRevision
+      },
+      ['canvasId', 'bounds'],
       CANVAS_MUTATION_RECEIPT_SCHEMA
     ),
     mutationTool(
@@ -774,7 +787,7 @@ function mutationTool(
   return {
     name,
     title: description,
-    description: `${description}. Returns only the resulting revision and diagnostic severity counts; call canvas_inspect when any count is nonzero.`,
+    description: `${description}. Returns revision and diagnostic counts; inspect nonzero counts with canvas_inspect.`,
     inputSchema: { type: 'object', additionalProperties: false, required, properties },
     outputSchema,
     annotations: { readOnlyHint: false, idempotentHint: false }
@@ -1139,6 +1152,12 @@ async function invokeCore(
         title: input.title as string,
         expectedRevision
       }),
+      runtime
+    );
+  }
+  if (name === 'canvas_set_bounds') {
+    return mutationReceipt(
+      store.updateCanvasBounds(canvasId, { bounds: input.bounds as CanvasBounds, expectedRevision }),
       runtime
     );
   }
