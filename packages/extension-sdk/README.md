@@ -8,6 +8,10 @@ author-maintained contribution declaration.
 
 Existing `@agentcanvas/plugin-sdk` consumers remain supported.
 
+Host API 1.4.0 adds managed `ServerPluginLifecycle`, provider-neutral
+`ImageSourceNotReadyError`, Gallery authoring and filesystem admission contracts.
+They are re-exported from this facade; offline activation never starts workers.
+
 Host API 1.3.0 supports the re-exported `PluginValidationError(message)` for
 expected tool/procedure input rejection. Its safe corrective message is returned
 as a non-retryable 400 `validation_error` through HTTP and MCP. Extensions using

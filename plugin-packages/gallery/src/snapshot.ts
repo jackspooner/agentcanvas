@@ -11,6 +11,8 @@ import { fitToObjectFit, galleryData } from './contracts.js';
 interface RuntimeGalleryItem {
   id: string;
   contentHandle?: string;
+  message?: string;
+  state?: string;
 }
 
 function runtimeItems(runtime: Readonly<JsonObject> | null): RuntimeGalleryItem[] {
@@ -19,11 +21,13 @@ function runtimeItems(runtime: Readonly<JsonObject> | null): RuntimeGalleryItem[
     if (!item || typeof item !== 'object' || Array.isArray(item) || typeof (item as { id?: unknown }).id !== 'string') {
       return [];
     }
-    const candidate = item as { id: string; contentHandle?: unknown };
+    const candidate = item as { id: string; contentHandle?: unknown; message?: unknown; state?: unknown };
     return [
       {
         id: candidate.id,
-        ...(typeof candidate.contentHandle === 'string' ? { contentHandle: candidate.contentHandle } : {})
+        ...(typeof candidate.contentHandle === 'string' ? { contentHandle: candidate.contentHandle } : {}),
+        ...(typeof candidate.message === 'string' ? { message: candidate.message } : {}),
+        ...(typeof candidate.state === 'string' ? { state: candidate.state } : {})
       }
     ];
   });
@@ -78,7 +82,7 @@ export function renderGallerySnapshot(
       kind: 'text',
       x: width / 2,
       y: contentHeight / 2,
-      text: 'Image unavailable',
+      text: resolved?.message ?? 'Image unavailable',
       fill: theme.colors.textMuted,
       fontFamily: theme.typography.bodyFont,
       fontSize: 14,
@@ -119,7 +123,7 @@ export function renderGallerySnapshot(
     space: 'frame',
     layer: 'content',
     nodes,
-    ...(resolved?.contentHandle
+    ...(resolved?.contentHandle || resolved?.state
       ? {}
       : {
           diagnostics: [

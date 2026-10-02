@@ -1,5 +1,17 @@
 # Change history
 
+## 0.3.0-alpha.5 — MediaTools image bindings
+
+- Optional MediaTools 0.1.0 attaches existing jobs to Gallery slots and converts
+  completed outputs through Filesystem Images admission. Persisted binding intents,
+  collection before conversion, five-second polling and bounded outage backoff
+  support recovery without submitting new generation.
+- Host API 1.4.0 adds managed extension lifecycle hooks. Gallery and Filesystem
+  Images 0.1.1 expose narrow authoring/admission capabilities; the SDK adds generic
+  not-ready image states for matching runtime, browser and snapshot placeholders.
+- External revisions preserve unrelated undo/redo and prune conflicting dependencies.
+  Standard default activation and persisted element schemas remain unchanged.
+
 ## Unreleased — MCP canvas bounds and fixed-frame enforcement
 
 - MCP canvas creation accepts bounds, and `canvas_set_bounds` changes them with

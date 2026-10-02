@@ -4,13 +4,19 @@ import type {
   JsonObject,
   PluginDiagnostic,
   PluginValidationIssue,
-  ServerPluginHost
+  ServerPluginHost,
+  PluginInvocationContext
 } from '@agentcanvas/plugin-sdk';
-import { IMAGE_SOURCES_CAPABILITY } from '@agentcanvas/plugin-sdk';
+import {
+  GALLERY_AUTHORING_CAPABILITY,
+  IMAGE_SOURCES_CAPABILITY,
+  ImageSourceNotReadyError
+} from '@agentcanvas/plugin-sdk';
 import { galleryData } from './contracts.js';
 import { galleryDataSchema, galleryStyleSchema } from './schemas.js';
 import { renderGallerySnapshot } from './snapshot.js';
 import { galleryTools } from './tools.js';
+import { galleryAuthoring } from './authoring.js';
 
 function validationIssues(
   data: ReturnType<typeof galleryData>,
@@ -52,6 +58,20 @@ function validationIssues(
 const plugin: AgentCanvasServerPlugin = {
   activate(host: ServerPluginHost) {
     const imageSources = host.consumeCapability<ImageSourcesCapabilityV1>(IMAGE_SOURCES_CAPABILITY, '^1.0.0').get();
+    const tools = galleryTools(imageSources);
+    let service: PluginInvocationContext | null = null;
+    host.provideCapability({
+      name: GALLERY_AUTHORING_CAPABILITY,
+      version: '1.0.0',
+      value: galleryAuthoring(
+        () => {
+          if (!service) throw new Error('Gallery authoring is unavailable before runtime start.');
+          return service;
+        },
+        tools,
+        imageSources
+      )
+    });
     host.registerElementType({
       name: 'gallery',
       schemaVersion: 1,
@@ -85,7 +105,18 @@ const plugin: AgentCanvasServerPlugin = {
                 ...(resource.width !== undefined ? { width: resource.width } : {}),
                 ...(resource.height !== undefined ? { height: resource.height } : {})
               };
-            } catch {
+            } catch (error) {
+              if (error instanceof ImageSourceNotReadyError) {
+                diagnostics.push({
+                  code: error.code,
+                  severity: error.state === 'failed' ? 'error' : 'info',
+                  message: error.message,
+                  retryable: error.retryable,
+                  pluginId: 'agentcanvas.gallery',
+                  elementId: element.id
+                });
+                return { id: item.id, state: error.state, message: error.message };
+              }
               diagnostics.push({
                 code: imageSources.hasProvider(item.source.provider)
                   ? 'gallery_image_resolution_failed'
@@ -106,7 +137,15 @@ const plugin: AgentCanvasServerPlugin = {
       },
       renderSnapshot: (element, context) => renderGallerySnapshot(element, context.runtime, context.theme)
     });
-    for (const tool of galleryTools(imageSources)) host.registerTool(tool);
+    for (const tool of tools) host.registerTool(tool);
+    return {
+      start(context) {
+        service = context;
+      },
+      dispose() {
+        service = null;
+      }
+    };
   }
 };
 

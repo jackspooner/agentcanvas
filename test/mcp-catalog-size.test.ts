@@ -33,7 +33,11 @@ describe('installed MCP catalog size', () => {
         .sort((left, right) => right[1] - left[1])
         .slice(0, 12);
       expect(JSON.stringify(catalog).length, JSON.stringify(largest)).toBeLessThanOrEqual(90_000);
-      expect(JSON.stringify(full).length).toBeLessThanOrEqual(157_000);
+      const mediaTools = full.filter((tool) => tool.name.startsWith('agentcanvas_mediatools_'));
+      // Keep the existing catalog ceiling; give the three new optional tools their own bounded allowance.
+      expect(mediaTools).toHaveLength(3);
+      expect(JSON.stringify(mediaTools).length).toBeLessThanOrEqual(8_000);
+      expect(JSON.stringify(full.filter((tool) => !mediaTools.includes(tool))).length).toBeLessThanOrEqual(157_000);
       expect(JSON.stringify(catalog.find((tool) => tool.name === 'canvas_upsert_element')).length).toBeLessThan(10_000);
     } finally {
       offline.resources.dispose();

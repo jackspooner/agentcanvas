@@ -1,14 +1,19 @@
 import { createServer } from 'node:http';
-import { mkdtemp, rm } from 'node:fs/promises';
-import os from 'node:os';
+import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
+import { STANDARD_PLUGINS } from '../../src/cli/openapi.js';
 import { createV2Runtime, createV2ServiceHandler } from '../../src/server-v2.js';
 
 const host = '127.0.0.1';
 const port = 23174;
 const repositoryRoot = path.resolve(import.meta.dirname, '../..');
-const pluginsRoot = path.join(repositoryRoot, 'plugin-packages');
-const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'agentcanvas-macro-e2e-'));
+const tempBase = path.join(repositoryRoot, 'tmp');
+await mkdir(tempBase, { recursive: true });
+const tempRoot = await mkdtemp(path.join(tempBase, 'agentcanvas-macro-e2e-'));
+const pluginsRoot = path.join(tempRoot, 'plugins');
+await mkdir(pluginsRoot);
+for (const id of STANDARD_PLUGINS)
+  await cp(path.join(repositoryRoot, 'dist', 'plugin-catalog', id), path.join(pluginsRoot, id), { recursive: true });
 const databasePath = path.join(tempRoot, 'macro-proof.sqlite');
 const runtime = await createV2Runtime({
   pluginsRoot,

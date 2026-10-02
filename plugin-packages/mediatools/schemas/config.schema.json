@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseUrl", "outputDirectory", "filesystemRootId"],
+  "properties": {
+    "baseUrl": {
+      "type": "string",
+      "pattern": "^https?://[^\\s]+$"
+    },
+    "outputDirectory": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:[A-Za-z]:[/\\\\]|\\\\\\\\[^/\\\\]+[/\\\\][^/\\\\]+|/)"
+    },
+    "filesystemRootId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    }
+  }
+}

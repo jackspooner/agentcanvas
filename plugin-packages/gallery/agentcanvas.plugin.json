@@ -1,7 +1,7 @@
 {
   "apiVersion": "agentcanvas.plugin/v1",
   "id": "agentcanvas.gallery",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Media Gallery",
   "description": "Provider-neutral image galleries with accessible carousel controls and deterministic snapshots.",
   "license": "MIT",
@@ -10,16 +10,27 @@
     "browser": "dist/browser/entry.mjs"
   },
   "requires": {
-    "hostApi": "^1.0.0",
+    "hostApi": "^1.4.0",
     "plugins": {},
     "capabilities": {
       "agentcanvas.image-sources": "^1.0.0"
     }
   },
-  "provides": { "capabilities": {} },
+  "provides": {
+    "capabilities": {
+      "agentcanvas.gallery-authoring": "1.0.0"
+    }
+  },
   "permissions": ["canvas.read", "canvas.mutate-own", "diagnostics.emit"],
   "contributes": {
-    "elements": [{ "name": "gallery", "schemaVersion": 1, "browser": true, "snapshot": "supported" }],
+    "elements": [
+      {
+        "name": "gallery",
+        "schemaVersion": 1,
+        "browser": true,
+        "snapshot": "supported"
+      }
+    ],
     "tools": ["create", "append-items", "remove-item", "reorder-items", "set-cover", "update-settings"],
     "procedures": [],
     "migrations": []

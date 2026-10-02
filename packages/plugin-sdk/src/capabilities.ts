@@ -1,4 +1,5 @@
 import type { JsonObject } from './json.js';
+import type { CanvasMutationReceipt } from './server.js';
 
 export interface OpaqueResourceHandle {
   handle: string;
@@ -82,4 +83,49 @@ export interface ImageSourcesCapabilityV1 {
   listProviders(): readonly string[];
   validateReference(value: unknown): ImageSourceReference;
   resolve(value: unknown, signal: AbortSignal): Promise<OpaqueResourceHandle>;
+}
+
+/** A source exists as an identity but is not ready to display. Messages must be safe for viewers. */
+export class ImageSourceNotReadyError extends Error {
+  constructor(
+    readonly state: 'queued' | 'running' | 'failed',
+    message: string,
+    readonly code: string,
+    readonly retryable: boolean
+  ) {
+    super(message);
+    this.name = 'ImageSourceNotReadyError';
+  }
+}
+
+export const GALLERY_AUTHORING_CAPABILITY = 'agentcanvas.gallery-authoring' as const;
+export interface GalleryAuthoringCapabilityV1 {
+  create(input: JsonObject, signal: AbortSignal): Promise<CanvasMutationReceipt>;
+  append(input: JsonObject, signal: AbortSignal): Promise<CanvasMutationReceipt>;
+  getItem(
+    canvasId: string,
+    elementId: string,
+    itemId: string,
+    signal: AbortSignal
+  ): Promise<{
+    source: ImageSourceReference | null;
+    revision: number;
+  }>;
+  replaceSource(
+    input: {
+      canvasId: string;
+      elementId: string;
+      itemId: string;
+      expectedSource: ImageSourceReference;
+      source: ImageSourceReference;
+      expectedRevision?: number;
+    },
+    signal: AbortSignal
+  ): Promise<{ changed: boolean; receipt?: CanvasMutationReceipt }>;
+}
+
+export const FILESYSTEM_IMAGE_ADMISSION_CAPABILITY = 'agentcanvas.filesystem-image-admission' as const;
+export interface FilesystemImageAdmissionCapabilityV1 {
+  /** Admit an existing file through this provider's configured root and content checks. */
+  fromPath(absolutePath: string, rootId: string, signal: AbortSignal): Promise<ImageSourceReference>;
 }

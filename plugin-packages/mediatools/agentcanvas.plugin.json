@@ -1,0 +1,38 @@
+{
+  "apiVersion": "agentcanvas.plugin/v1",
+  "id": "agentcanvas.mediatools",
+  "version": "0.1.0",
+  "displayName": "MediaTools image bindings",
+  "description": "Attach completed or running MediaTools image jobs to AgentCanvas image elements and galleries.",
+  "license": "MIT",
+  "entrypoints": {
+    "server": "dist/server.mjs"
+  },
+  "requires": {
+    "hostApi": "^1.4.0",
+    "plugins": {
+      "agentcanvas.gallery": "^0.1.1",
+      "agentcanvas.filesystem-images": "^0.1.1"
+    },
+    "capabilities": {
+      "agentcanvas.image-sources": "^1.0.0",
+      "agentcanvas.gallery-authoring": "^1.0.0",
+      "agentcanvas.filesystem-image-admission": "^1.0.0"
+    }
+  },
+  "provides": {
+    "capabilities": {}
+  },
+  "permissions": ["diagnostics.emit"],
+  "contributes": {
+    "elements": [],
+    "tools": ["bind", "get-binding", "list-bindings"],
+    "procedures": [],
+    "migrations": []
+  },
+  "configuration": {
+    "schema": "schemas/config.schema.json",
+    "file": "plugin.config.json",
+    "environment": ["AGENT_CANVAS_MEDIATOOLS_TOKEN"]
+  }
+}

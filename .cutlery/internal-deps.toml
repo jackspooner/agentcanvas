@@ -6,3 +6,12 @@ resolvedCommit = "8ed0303b1dbcdbaf26133efa38530977c5ea9958"
 expectedPackageName = "@workspace2/api-contracts"
 buildCommand = "npm install && npm run build"
 buildOutputs = ["dist/index.js", "dist/index.d.ts", "dist/cli.js"]
+
+[dependencies.media-tools-mcp]
+repoId = "media-tools-mcp"
+repoUrl = "https://github.com/jackspooner/MediaToolsMcp.git"
+track = "main"
+resolvedCommit = "62bca478ff6dae2982564eeda721d1f503fafb8e"
+expectedPackageName = "media-tools-mcp"
+buildCommand = "node C:/Workspace2/infrastructure/Workspace2InternalDeps/src/cli.mjs materialize --repo . && npm install && npm run build"
+buildOutputs = ["dist/client.js", "dist/client.d.ts"]

@@ -8,7 +8,7 @@ import type {
   ServerPluginHost,
   SnapshotResourcesCapabilityV1
 } from '@agentcanvas/plugin-sdk';
-import { IMAGE_SOURCES_CAPABILITY } from '@agentcanvas/plugin-sdk';
+import { FILESYSTEM_IMAGE_ADMISSION_CAPABILITY, IMAGE_SOURCES_CAPABILITY } from '@agentcanvas/plugin-sdk';
 import { fileSystemImageData } from './contracts.js';
 import { FileSystemImageSourceResolver, normalizeRelativeImagePath, readFileSystemImagesConfig } from './filesystem.js';
 import {
@@ -84,6 +84,18 @@ const plugin: AgentCanvasServerPlugin = {
       provider: 'agentcanvas.filesystem-images',
       validateReference: (value) => sourceResolver.validateSource(value) as unknown as JsonObject,
       resolve: (reference, signal) => sourceResolver.resource(reference, signal)
+    });
+    host.provideCapability({
+      name: FILESYSTEM_IMAGE_ADMISSION_CAPABILITY,
+      version: '1.0.0',
+      value: {
+        async fromPath(absolutePath: string, rootId: string, signal: AbortSignal) {
+          return {
+            provider: 'agentcanvas.filesystem-images',
+            reference: await sourceResolver.fromPath(absolutePath, rootId, signal)
+          };
+        }
+      }
     });
     host.registerElementType({
       name: 'image',

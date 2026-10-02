@@ -31,6 +31,7 @@ The public distribution is the GitHub source repository. The root package remain
 | Understand persisted data | [Data contracts](data-contracts.md) |
 | Create or apply a canvas theme | [Canvas themes](canvas-themes.md) |
 | Create editable ERDs or Mermaid diagrams | [Diagrams extension](../plugin-packages/diagrams/README.md) |
+| Attach an existing image job to a frame or carousel | [MediaTools extension](../plugin-packages/mediatools/README.md) |
 | Create an extension | [Extension authoring](plugin-authoring/README.md) |
 | Follow a complete extension example | [Build your first extension](plugin-authoring/tutorial.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |

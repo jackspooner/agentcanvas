@@ -261,5 +261,13 @@ export interface ServerPluginHost {
 }
 
 export interface AgentCanvasServerPlugin {
-  activate(host: ServerPluginHost): void | Promise<void>;
+  activate(host: ServerPluginHost): void | ServerPluginLifecycle | Promise<void | ServerPluginLifecycle>;
+}
+
+/** Per-activation services. Offline registries never start these hooks. */
+export interface ServerPluginLifecycle {
+  /** Called in dependency order after database binding and schema readiness. */
+  start(context: PluginInvocationContext): void | Promise<void>;
+  /** Synchronously stop timers and abort work before the database closes. */
+  dispose(): void;
 }

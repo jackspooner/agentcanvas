@@ -3,7 +3,31 @@ import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGalleryRenderer } from '../src/browser/entry.mjs';
 
-function context(): RendererContext {
+type RuntimeItem = {
+  id: string;
+  contentHandle?: string;
+  contentUrl?: string;
+  mimeType?: string;
+  state?: string;
+  message?: string;
+};
+
+function context(
+  runtimeItems: RuntimeItem[] = [
+    {
+      id: 'first',
+      contentHandle: 'first-handle',
+      contentUrl: '/api/v1/resources/first-handle/content',
+      mimeType: 'image/png'
+    },
+    {
+      id: 'second',
+      contentHandle: 'second-handle',
+      contentUrl: '/api/v1/resources/second-handle/content',
+      mimeType: 'image/png'
+    }
+  ]
+): RendererContext {
   return {
     element: {
       id: 'gallery',
@@ -27,22 +51,7 @@ function context(): RendererContext {
         showIndicators: true
       }
     },
-    runtime: {
-      items: [
-        {
-          id: 'first',
-          contentHandle: 'first-handle',
-          contentUrl: '/api/v1/resources/first-handle/content',
-          mimeType: 'image/png'
-        },
-        {
-          id: 'second',
-          contentHandle: 'second-handle',
-          contentUrl: '/api/v1/resources/second-handle/content',
-          mimeType: 'image/png'
-        }
-      ]
-    },
+    runtime: { items: runtimeItems },
     readOnly: false,
     selected: false,
     signal: new AbortController().signal,
@@ -88,5 +97,44 @@ describe('gallery browser lifecycle', () => {
     await mounted.dispose();
     expect(URL.revokeObjectURL).toHaveBeenCalled();
     expect(root.childNodes).toHaveLength(0);
+  });
+
+  it('shows a pending item and keeps it active when runtime data arrives', async () => {
+    const rendererContext = context([
+      {
+        id: 'first',
+        contentHandle: 'first-handle',
+        contentUrl: '/api/v1/resources/first-handle/content',
+        mimeType: 'image/png'
+      },
+      { id: 'second', state: 'queued', message: 'Waiting for image…' }
+    ]);
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, rendererContext);
+    await mounted.update(rendererContext);
+    await vi.waitFor(() => expect(root.querySelector('img')?.alt).toBe('First image'));
+
+    root.querySelector<HTMLButtonElement>('button.next')?.click();
+    await vi.waitFor(() => expect(root.querySelector('.placeholder')?.textContent).toBe('Waiting for image…'));
+
+    const completed = context([
+      {
+        id: 'first',
+        contentHandle: 'first-handle',
+        contentUrl: '/api/v1/resources/first-handle/content',
+        mimeType: 'image/png'
+      },
+      {
+        id: 'second',
+        contentHandle: 'second-handle',
+        contentUrl: '/api/v1/resources/second-handle/content',
+        mimeType: 'image/png'
+      }
+    ]);
+    await mounted.update(completed);
+    await vi.waitFor(() => expect(root.querySelector('img')?.alt).toBe('Second image'));
+    expect(root.querySelector('.indicator')?.textContent).toBe('2 / 2');
+
+    await mounted.dispose();
   });
 });

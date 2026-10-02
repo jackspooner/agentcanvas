@@ -23,6 +23,7 @@ import {
 import type { ResourceBroker } from './resources/broker.js';
 import { V2SqliteCanvasStore } from './store/v2.js';
 import { AGENTCANVAS_VERSION } from './version.js';
+import { startPluginServices } from './plugin-runtime/lifecycle.js';
 import { ViewerPresenceRegistry } from './viewer-presence.js';
 export interface V2Runtime {
   config: AgentCanvasConfig;
@@ -70,6 +71,15 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
       ShareLink: SHARE_LINK_SCHEMA
     }
   });
+  let stopServices: () => void;
+  try {
+    stopServices = await startPluginServices(plugins.registry, store);
+  } catch (error) {
+    plugins.resources.dispose();
+    store.close();
+    throw error;
+  }
+  let disposed = false;
   return {
     config,
     plugins,
@@ -82,8 +92,14 @@ export async function createV2Runtime(options: CreateV2RuntimeOptions = {}): Pro
     viewerPresence,
     openapi,
     dispose() {
-      plugins.resources.dispose();
-      store.close();
+      if (disposed) return;
+      disposed = true;
+      try {
+        stopServices();
+      } finally {
+        plugins.resources.dispose();
+        store.close();
+      }
     },
     ...(options.developmentReloadVersion ? { developmentReloadVersion: options.developmentReloadVersion } : {})
   };

@@ -64,6 +64,12 @@ maintaining separate browser and snapshot defaults.
 
 ## Documentation
 
+Host API 1.4.0 adds `ServerPluginLifecycle`: activation may return `start(context)`
+and `dispose()`. Services start after database/schema readiness and abort/stop
+before database closure; offline contract generation never starts them. The SDK
+also exports `ImageSourceNotReadyError`, Gallery authoring and Filesystem Images
+admission capability contracts. See the server SDK and capability documentation.
+
 - [Plugin authoring overview](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/README.md)
 - [Build your first plugin](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/tutorial.md)
 - [Plugin API reference](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-api-reference.md)

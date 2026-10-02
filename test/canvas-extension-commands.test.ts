@@ -1,9 +1,9 @@
+import { CORE_EDITOR_COMMANDS } from '@agentcanvas/editor';
 import type {
   BrowserCommandContext,
   BrowserCommandDescriptor,
   BrowserOwnCanvasOperation
 } from '@agentcanvas/plugin-sdk';
-import { CORE_EDITOR_COMMANDS } from '@agentcanvas/editor';
 import { act, renderHook } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { expect, it, vi } from 'vitest';
@@ -178,7 +178,10 @@ it('binds renderer input to its origin and reads only current owned confirmed el
       { ...canvas.elements[0], id: 'foreign', type: 'other/card' }
     ]
   };
-  h.rerender({ document: changed, readOnly: true });
+  await act(async () => {
+    h.rerender({ document: changed, readOnly: true });
+    await Promise.resolve();
+  });
   expect(h.contexts[0].readOnly).toBe(true);
   expect(h.contexts[0].canvasRevision).toBe(2);
   expect(h.contexts[0].getElement?.('one')).toMatchObject({ revision: 2, element: { data: { value: 2 } } });

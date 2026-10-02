@@ -11,6 +11,16 @@ if (!['materialize', 'verify'].includes(action) || process.argv.length !== 3) {
 }
 fs.accessSync(path.join(root, '.cutlery', 'internal-deps.toml'));
 
+// Nested first-party pins can exceed Win32's legacy path limit in linked worktrees.
+// Scope Git's supported long-path option to this setup process and its children.
+if (process.platform === 'win32') {
+  const index = Number(process.env.GIT_CONFIG_COUNT ?? 0);
+  if (!Number.isSafeInteger(index) || index < 0) throw new Error('Invalid GIT_CONFIG_COUNT');
+  process.env[`GIT_CONFIG_KEY_${index}`] = 'core.longpaths';
+  process.env[`GIT_CONFIG_VALUE_${index}`] = 'true';
+  process.env.GIT_CONFIG_COUNT = String(index + 1);
+}
+
 // Bootstrap the existing dependency owner without requiring an installed npm package.
 const materializerRepository = 'https://github.com/jackspooner/workspace2-internal-deps.git';
 const materializerCommit = 'f5f2b53cfc0300da646427ee03953dcd5829bf3b';

@@ -49,6 +49,15 @@ when a trusted in-process consumer genuinely needs the full document.
 
 Use `host.kv` for namespaced JSON storage and `host.diagnostics.emit` for safe structured diagnostics. Capability access is semantic-versioned and singleton. Treat consumed handles as runtime dependencies and report readiness failures; do not persist resolved URLs or provider responses into element data.
 
+Host API 1.4.0 allows activation to return `ServerPluginLifecycle` with
+`start(context)` and synchronous `dispose()`. Start runs after the database is
+bound and installed schemas are ready, in dependency order. Context supplies an
+abort signal and permission-scoped canvas operations. Dispose runs in reverse
+order after the host aborts the signal, before resources and SQLite close. Stop
+timers and abort-aware work; do not perform new writes during disposal. Offline
+contract generation does not call either lifecycle hook. Keep each lifetime's
+state in its activation closure, because multiple registries may share a module.
+
 Migration importers must be pure and deterministic. They receive a legacy record and return one canonical envelope plus explicitly stripped response-only fields. Unknown fields and unsupported legacy types should fail rather than be silently retained or discarded.
 
 Continue with [Browser and snapshot ABI](browser-and-snapshot.md), [Versioning and migrations](versioning-and-migrations.md), and the concise [plugin API reference](../plugin-api-reference.md).

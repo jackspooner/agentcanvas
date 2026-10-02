@@ -41,6 +41,23 @@ function movingCanvas(revision = 1, x = 0): CanvasDocument {
   };
 }
 
+function imageCanvas(revision = 1, status = 'processing'): CanvasDocument {
+  return {
+    ...canvas,
+    revision,
+    elements: [
+      { id: 'image', type: 'fixture/image', schemaVersion: 1, x: 0, y: 0, data: { status } },
+      { id: 'card', type: 'fixture/card', schemaVersion: 1, x: 0, y: 0, data: {} },
+      { id: 'other', type: 'fixture/card', schemaVersion: 1, x: 0, y: 0, data: {} },
+      { id: 'd', type: 'fixture/card', schemaVersion: 1, x: 0, y: 0, data: {} }
+    ]
+  };
+}
+
+function elementMove(elementId: string, x: number): CanvasOperation[] {
+  return [{ op: 'patchElementFrame', elementId, frame: { x } }];
+}
+
 function savedMove(operations: readonly CanvasOperation[], revision: number): CanvasDocument {
   const operation = operations[0];
   if (operation?.op !== 'patchElementFrame' || typeof operation.frame.x !== 'number') {
@@ -348,7 +365,10 @@ it('preserves local history on confirmed rerender and clears it for external rev
   });
   rerender({ document: { ...canvas, revision: 2 } });
   expect(result.current.canUndo).toBe(true);
-  rerender({ document: { ...canvas, revision: 3 } });
+  await act(async () => {
+    rerender({ document: { ...canvas, revision: 3, title: 'Changed title' } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
   expect(result.current.canUndo).toBe(false);
   await act(async () => {
     await result.current.commitHistory('delete', forward, inverse, []);
@@ -356,6 +376,251 @@ it('preserves local history on confirmed rerender and clears it for external rev
   rerender({ document: { ...canvas, id: 'another' } });
   expect(result.current.canUndo).toBe(false);
   expect(result.current.getConfirmedDocument().id).toBe('another');
+});
+
+it.each(['undo', 'redo'] as const)('preserves unrelated %s when an image finishes loading', async (direction) => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Move card', elementMove('card', 10), elementMove('card', 0), ['card']);
+    if (direction === 'redo') await result.current.undo();
+  });
+  persisted = imageCanvas(result.current.getConfirmedDocument().revision + 1, 'complete');
+  await act(async () => {
+    rerender({ document: persisted });
+    await Promise.resolve();
+  });
+  expect(direction === 'undo' ? result.current.canUndo : result.current.canRedo).toBe(true);
+  await act(async () => {
+    expect(await result.current[direction]()).toEqual(['card']);
+  });
+  expect(result.current.getConfirmedDocument().elements.find((element) => element.id === 'image')?.data).toEqual({
+    status: 'complete'
+  });
+});
+
+it('invalidates conflicting multi-element entries transitively across undo and redo', async () => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Image and card', elementMove('image', 1), elementMove('image', 0), [
+      'image',
+      'card'
+    ]);
+    await result.current.commitHistory('D', elementMove('d', 1), elementMove('d', 0), ['d']);
+    await result.current.commitHistory('Card and other', elementMove('card', 1), elementMove('card', 0), [
+      'card',
+      'other'
+    ]);
+    await result.current.undo();
+  });
+  persisted = {
+    ...imageCanvas(result.current.getConfirmedDocument().revision + 1),
+    elements: imageCanvas().elements.map((element) =>
+      element.id === 'image' ? { ...element, data: { changed: true } } : element
+    )
+  };
+  await act(async () => {
+    rerender({ document: persisted });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(result.current.canUndo).toBe(true);
+  expect(result.current.canRedo).toBe(false);
+  await act(async () => {
+    expect(await result.current.undo()).toEqual(['d']);
+  });
+  expect(result.current.canUndo).toBe(false);
+});
+
+it('clears history when canvas-wide fields change and ignores runtime-only refreshes', async () => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Move card', elementMove('card', 10), elementMove('card', 0), ['card']);
+  });
+  await act(async () => {
+    rerender({
+      document: {
+        ...persisted,
+        revision: persisted.revision + 1,
+        elementRuntime: { image: { ready: true } }
+      } as CanvasDocument
+    });
+    await Promise.resolve();
+  });
+  expect(result.current.canUndo).toBe(true);
+  await act(async () => {
+    rerender({ document: { ...persisted, revision: persisted.revision + 2, title: 'Changed title' } });
+    await Promise.resolve();
+  });
+  expect(result.current.canUndo).toBe(false);
+});
+
+it('clears history when an entry contains a canvas-wide operation even with element IDs', async () => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Clear', [{ op: 'clear' }], elementMove('card', 0), ['card']);
+  });
+  await act(async () => {
+    rerender({
+      document: {
+        ...persisted,
+        revision: persisted.revision + 1,
+        elements: persisted.elements.map((element) =>
+          element.id === 'image' ? { ...element, data: { status: 'complete' } } : element
+        )
+      }
+    });
+    await Promise.resolve();
+  });
+  expect(result.current.canUndo).toBe(false);
+});
+
+it('clears history for an element update when a history entry has unknown affected IDs', async () => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Unknown scope', elementMove('card', 10), elementMove('card', 0), []);
+  });
+  await act(async () => {
+    rerender({
+      document: {
+        ...persisted,
+        revision: persisted.revision + 1,
+        elements: persisted.elements.map((element) =>
+          element.id === 'image' ? { ...element, data: { status: 'complete' } } : element
+        )
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(result.current.canUndo).toBe(false);
+});
+
+it('ignores an older persisted document revision', async () => {
+  let persisted = imageCanvas();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) => useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Move card', elementMove('card', 10), elementMove('card', 0), ['card']);
+  });
+  await act(async () => {
+    rerender({ document: { ...imageCanvas(1, 'complete'), title: 'Old poll' } });
+    await Promise.resolve();
+  });
+  expect(result.current.getConfirmedDocument()).toBe(persisted);
+  expect(result.current.canUndo).toBe(true);
+});
+
+it('clears unsafe history and reports a reconciliation failure', async () => {
+  let persisted = imageCanvas();
+  const onReconcileError = vi.fn();
+  const save = vi.fn(async (_operations: readonly CanvasOperation[], revision: number) => {
+    persisted = { ...persisted, revision: revision + 1 };
+    return persisted;
+  });
+  const { result, rerender } = renderHook(
+    ({ document }) =>
+      useCanvasHistory({ canvas: document, readOnly: false, onCanvasOperations: save, onReconcileError }),
+    { initialProps: { document: persisted } }
+  );
+  await act(async () => {
+    await result.current.commitHistory('Move card', elementMove('card', 10), elementMove('card', 0), ['card']);
+  });
+  const circular: Record<string, unknown> = {};
+  circular.self = circular;
+  const invalidDocument = {
+    ...persisted,
+    revision: persisted.revision + 1,
+    elements: persisted.elements.map((element) => (element.id === 'image' ? { ...element, data: circular } : element))
+  } as unknown as CanvasDocument;
+  await act(async () => {
+    rerender({ document: invalidDocument });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(result.current.canUndo).toBe(false);
+  expect(onReconcileError).toHaveBeenCalledWith(expect.any(TypeError));
+});
+
+it('does not let a queued poll replace a document confirmed by a pending local save', async () => {
+  const initial = imageCanvas();
+  const started = deferred<void>();
+  const pending = deferred<CanvasDocument>();
+  const save = vi.fn(() => {
+    started.resolve();
+    return pending.promise;
+  });
+  const { result, rerender } = renderHook(
+    ({ document, readOnly, onCanvasOperations }) =>
+      useCanvasHistory({ canvas: document, readOnly, onCanvasOperations }),
+    { initialProps: { document: initial, readOnly: false, onCanvasOperations: save } }
+  );
+  let commit!: Promise<void>;
+  await act(async () => {
+    commit = result.current.commitHistory('Move card', elementMove('card', 10), elementMove('card', 0), ['card']);
+    await started.promise;
+  });
+  const polled = { ...initial, revision: 2, title: 'poll' };
+  await act(async () => {
+    rerender({ document: polled, readOnly: false, onCanvasOperations: save });
+    await Promise.resolve();
+  });
+  const committed = {
+    ...initial,
+    revision: 2,
+    elements: imageCanvas().elements.map((element) =>
+      element.id === 'image' ? { ...element, data: { status: 'complete' } } : element
+    )
+  };
+  await act(async () => {
+    pending.resolve(committed);
+    await commit;
+    await Promise.resolve();
+  });
+  expect(result.current.getConfirmedDocument()).toEqual(committed);
+  expect(result.current.canUndo).toBe(true);
 });
 
 it('reuses a failed macro key and records a successful macro as one undo unit', async () => {

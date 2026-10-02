@@ -1281,6 +1281,8 @@ export function mcpErrorCodesForTool(tool: McpJsonSchemaTool): readonly AgentCan
   if (tool.source === 'plugin') {
     codes.add('plugin_unavailable');
     codes.add('plugin_permission_denied');
+    codes.add('not_found');
+    codes.add('element_not_found');
   }
   if (tool.name.startsWith('macro_') || tool.name === 'canvas_run_macro') {
     for (const code of Object.keys(AGENTCANVAS_PROBLEM_CODES) as AgentCanvasProblemCode[]) {

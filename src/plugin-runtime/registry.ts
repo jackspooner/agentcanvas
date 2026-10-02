@@ -10,7 +10,8 @@ import type {
   PluginMigrationDescriptor,
   PluginProcedureDescriptor,
   PluginToolDescriptor,
-  ServerPluginHost
+  ServerPluginHost,
+  ServerPluginLifecycle
 } from '@agentcanvas/plugin-sdk';
 import type { DiscoveredPlugin } from './discovery.js';
 import { PluginRuntimeError } from './errors.js';
@@ -28,6 +29,7 @@ export interface ActivatedPlugin {
   tools: readonly PluginToolDescriptor[];
   procedures: readonly PluginProcedureDescriptor[];
   migrations: readonly PluginMigrationDescriptor[];
+  lifecycle?: ServerPluginLifecycle;
 }
 
 export class FrozenPluginRegistry {
@@ -131,7 +133,10 @@ export async function activatePlugins(
         `${plugin.manifest.id} server entry must default-export a plugin`
       );
     }
-    await module.default.activate(host);
+    const lifecycle = await module.default.activate(host);
+    if (lifecycle && (typeof lifecycle.start !== 'function' || typeof lifecycle.dispose !== 'function')) {
+      throw new PluginRuntimeError('plugin_activation_invalid', `${plugin.manifest.id} lifecycle is invalid`);
+    }
     assertNames(
       'element',
       plugin.manifest.contributes.elements.map((item) => item.name),
@@ -153,7 +158,8 @@ export async function activatePlugins(
       elements: deepFreeze(elements),
       tools: deepFreeze(tools),
       procedures: deepFreeze(procedures),
-      migrations: deepFreeze(migrations)
+      migrations: deepFreeze(migrations),
+      ...(lifecycle ? { lifecycle } : {})
     });
   }
   return new FrozenPluginRegistry(activated, capabilities);

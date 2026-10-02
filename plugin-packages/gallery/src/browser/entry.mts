@@ -11,6 +11,7 @@ interface RuntimeGalleryItem {
   contentHandle?: string;
   contentUrl?: string;
   mimeType?: string;
+  message?: string;
 }
 
 const styles = `
@@ -34,7 +35,8 @@ function runtimeItems(runtime: Readonly<JsonObject> | null): RuntimeGalleryItem[
         id: value.id,
         ...(typeof value.contentHandle === 'string' ? { contentHandle: value.contentHandle } : {}),
         ...(typeof value.contentUrl === 'string' ? { contentUrl: value.contentUrl } : {}),
-        ...(typeof value.mimeType === 'string' ? { mimeType: value.mimeType } : {})
+        ...(typeof value.mimeType === 'string' ? { mimeType: value.mimeType } : {}),
+        ...(typeof value.message === 'string' ? { message: value.message } : {})
       }
     ];
   });
@@ -146,6 +148,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         showPlaceholder();
         const item = activeItem();
         const runtime = runtimeItems(context.runtime).find((candidate) => candidate.id === item.id);
+        placeholder.textContent = runtime?.message ?? 'Image unavailable';
         const url = safeResourceUrl(runtime?.contentUrl);
         if (!runtime?.contentHandle || !url || !runtime.mimeType?.toLowerCase().startsWith('image/')) return;
         const version = requestVersion;

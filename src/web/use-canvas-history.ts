@@ -10,16 +10,56 @@ interface CanvasHistoryOptions {
   readOnly: boolean;
   onCanvasOperations?: (operations: readonly CanvasOperation[], expectedRevision: number) => Promise<CanvasDocument>;
   onMacroExecute?: (request: MacroServiceExecuteRequest) => Promise<MacroExecutionResult>;
+  onReconcileError?: (error: unknown) => void;
 }
 interface PreparedHistoryEntry {
   forward: readonly CanvasOperation[];
   inverse: readonly CanvasOperation[];
   affectedElementIds: readonly string[];
 }
-export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacroExecute }: CanvasHistoryOptions) {
+
+function persistedDocumentChanges(
+  previous: CanvasDocument,
+  next: CanvasDocument
+): { canvasWide: boolean; elementIds: string[] } {
+  const canvasFieldNames = [
+    'id',
+    'title',
+    'description',
+    'project',
+    'conversationId',
+    'createdBy',
+    'createdAt',
+    'bounds',
+    'width',
+    'height',
+    'background',
+    'theme',
+    'metadata',
+    'documentVersion'
+  ] as const;
+  const canvasFields = (document: CanvasDocument) => canvasFieldNames.map((key) => [key, document[key]]);
+  if (JSON.stringify(canvasFields(previous)) !== JSON.stringify(canvasFields(next))) {
+    return { canvasWide: true, elementIds: [] };
+  }
+
+  const previousElements = new Map(previous.elements.map((element) => [element.id, JSON.stringify(element)]));
+  const nextElements = new Map(next.elements.map((element) => [element.id, JSON.stringify(element)]));
+  const elementIds = new Set([...previousElements.keys(), ...nextElements.keys()]);
+  return {
+    canvasWide: false,
+    elementIds: [...elementIds].filter((id) => previousElements.get(id) !== nextElements.get(id))
+  };
+}
+
+export function useCanvasHistory({
+  canvas,
+  readOnly,
+  onCanvasOperations,
+  onMacroExecute,
+  onReconcileError
+}: CanvasHistoryOptions) {
   const [version, setHistoryVersion] = useState(0);
-  const lastLocalRevision = useRef<number | null>(null);
-  const pendingLocalMutations = useRef(0);
   const confirmedCanvas = useRef(canvas);
   const currentCanvas = useRef({ id: canvas.id, readOnly });
   currentCanvas.current = { id: canvas.id, readOnly };
@@ -31,12 +71,7 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
     const task = mutationQueue.current.then(async () => {
       if (currentCanvas.current.id !== canvasId) throw new Error('The canvas changed before saving.');
       if (currentCanvas.current.readOnly) throw new Error('The canvas is read-only.');
-      pendingLocalMutations.current += 1;
-      try {
-        return await operation();
-      } finally {
-        pendingLocalMutations.current -= 1;
-      }
+      return operation();
     });
     // Recover the queue only; the caller must still receive this operation's failure.
     mutationQueue.current = task.then(
@@ -53,7 +88,6 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
       if (currentCanvas.current.id !== canvasId) throw new Error('The canvas changed while saving.');
       if (!result) throw new Error('Canvas mutation did not return a document.');
       confirmedCanvas.current = result;
-      lastLocalRevision.current = result.revision;
       return result;
     },
     [onCanvasOperations]
@@ -100,7 +134,6 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
         if (!completed) throw new Error('Macro execution did not return a result.');
         const updatedCanvas = completed.canvas as CanvasDocument;
         confirmedCanvas.current = updatedCanvas;
-        lastLocalRevision.current = updatedCanvas.revision;
         history.current.record({
           label: completed.history.label,
           forward: completed.history.forward,
@@ -115,24 +148,49 @@ export function useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacro
     [enqueue, onMacroExecute, readOnly, refreshCommandState]
   );
 
+  const reconcileIncoming = useCallback(
+    (incoming: CanvasDocument) => {
+      const task = mutationQueue.current.then(() => {
+        if (currentCanvas.current.id !== incoming.id || confirmedCanvas.current.id !== incoming.id) return;
+        if (incoming.revision <= confirmedCanvas.current.revision) return;
+        const changes = persistedDocumentChanges(confirmedCanvas.current, incoming);
+        confirmedCanvas.current = incoming;
+        if (changes.canvasWide) {
+          const hadHistory = history.current.canUndo || history.current.canRedo;
+          history.current.clear();
+          if (hadHistory) refreshCommandState();
+        } else if (
+          history.current.invalidateElements(changes.elementIds, (entry) =>
+            [...entry.forward, ...entry.inverse].some((operation) => operation.op === 'clear')
+          )
+        ) {
+          refreshCommandState();
+        }
+      });
+      // Keep reconciliation failures out of the effect's unhandled-promise path and recover the queue.
+      mutationQueue.current = task.then(
+        () => undefined,
+        () => undefined
+      );
+      void task.catch((error: unknown) => {
+        history.current.clear();
+        refreshCommandState();
+        onReconcileError?.(error);
+      });
+    },
+    [onReconcileError, refreshCommandState]
+  );
+
   useEffect(() => {
     if (confirmedCanvas.current.id !== canvas.id) {
       confirmedCanvas.current = canvas;
-      lastLocalRevision.current = null;
       history.current.clear();
       macroIdempotencyKeys.current.clear();
       refreshCommandState();
       return;
     }
-    if (confirmedCanvas.current.revision !== canvas.revision) {
-      const external = pendingLocalMutations.current === 0 && lastLocalRevision.current !== canvas.revision;
-      confirmedCanvas.current = canvas;
-      if (external) {
-        history.current.clear();
-        refreshCommandState();
-      }
-    }
-  }, [canvas, refreshCommandState]);
+    if (canvas.revision > confirmedCanvas.current.revision) reconcileIncoming(canvas);
+  }, [canvas, reconcileIncoming, refreshCommandState]);
   async function undo() {
     return enqueue(async () => {
       const entry = history.current.peekUndo();

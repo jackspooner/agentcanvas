@@ -78,6 +78,39 @@ Never put raw invocation inputs, secrets, or sensitive row content into
 provenance, labels, or agent-facing logs; retain only an explicitly safe
 summary where the public response permits it.
 
+## Existing image jobs
+
+Use optional `agentcanvas.mediatools` when the user wants an existing MediaTools
+image job placed when ready. Discover it with `canvas_list_plugins`, then fetch
+`canvas_get_extension_tool({pluginId:"agentcanvas.mediatools", toolName:"bind"})`
+and follow its live dispatcher/schema. It never submits generation. Example
+arguments for `canvas_mutate_extension_tool`:
+
+```json
+{"pluginId":"agentcanvas.mediatools","toolName":"bind","arguments":{"bindingId":"scene-hero","canvasId":"existing-canvas-id","runId":"existing-image-job-id","target":{"kind":"image","x":-160,"y":-120},"caption":"Scene concept"}}
+```
+
+Keep a stable caller-supplied binding ID; identical inputs resume an attachment,
+different inputs return an idempotency conflict. New image frames default to
+320×240 and contain fit with navigation/indicators hidden. Use target
+`{kind:"append",elementId:"existing-gallery",itemId:"new-slot"}` or
+`{kind:"replace",elementId:"existing-gallery",itemId:"existing-slot"}` for
+carousels. Existing slots keep their captions/settings; completion preserves
+frame geometry and item order.
+
+Read `get-binding` or bounded `list-bindings` through the read-only dispatcher.
+Queued/running are expected pending states; collection and conversion continue
+across restarts. A transient outage remains retryable. Failed/expired jobs,
+missing output indexes and rejected files are terminal; inspect the safe error
+and bind a different job using a new binding ID. Removed/rebound slots supersede
+the old binding. Do not resubmit generation to recover collection uncertainty.
+
+Complete outputs become normal filesystem source references; no absolute output
+paths or bytes are returned. Collect before the current 24-hour job-history
+expiry. Collected references survive expiry. Inspect the stored target and run
+`canvas_inspect` after completion; a pending reference is not a completed image.
+Operator setup is in [MediaTools extension](../../plugin-packages/mediatools/README.md).
+
 ## Truth Discipline
 
 - Distinguish persisted state from rendered state. `canvas_get` is

@@ -46,6 +46,51 @@ export class EditorHistory<TOperation> {
     this.undoEntries.push(entry);
   }
 
+  invalidateElements(
+    changedElementIds: readonly string[],
+    isUnsafe: (entry: EditorHistoryEntry<TOperation>) => boolean = () => false
+  ): boolean {
+    if (changedElementIds.length === 0) return false;
+    const entries = [...this.undoEntries, ...this.redoEntries];
+    if (
+      entries.some(
+        (entry) =>
+          entry.affectedElementIds.length === 0 ||
+          entry.affectedElementIds.some((id) => typeof id !== 'string' || id.length === 0) ||
+          isUnsafe(entry)
+      )
+    ) {
+      const changed = entries.length > 0;
+      this.clear();
+      return changed;
+    }
+
+    const affected = new Set(changedElementIds);
+    let expanded = true;
+    // ponytail: rescan at most 200 bounded history entries; index relationships only if the history limit grows.
+    while (expanded) {
+      expanded = false;
+      for (const entry of entries) {
+        if (entry.affectedElementIds.some((id) => affected.has(id))) {
+          for (const id of entry.affectedElementIds) {
+            if (!affected.has(id)) {
+              affected.add(id);
+              expanded = true;
+            }
+          }
+        }
+      }
+    }
+
+    const retain = (entry: EditorHistoryEntry<TOperation>) => !entry.affectedElementIds.some((id) => affected.has(id));
+    const before = this.undoEntries.length + this.redoEntries.length;
+    const undo = this.undoEntries.filter(retain);
+    const redo = this.redoEntries.filter(retain);
+    this.undoEntries.splice(0, this.undoEntries.length, ...undo);
+    this.redoEntries.splice(0, this.redoEntries.length, ...redo);
+    return this.undoEntries.length + this.redoEntries.length !== before;
+  }
+
   clear(): void {
     this.undoEntries.length = 0;
     this.redoEntries.length = 0;

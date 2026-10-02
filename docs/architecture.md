@@ -48,12 +48,24 @@ through `@agentcanvas/plugin-sdk`.
 ## Source ownership
 
 - `src/runtime.ts` constructs and disposes the store, macro runtime, resources and one frozen extension registry.
+- `src/plugin-runtime/lifecycle.ts` starts optional managed extension services after database binding and schema readiness, with the same permission-scoped canvas operations as tools. It aborts and stops services before closing SQLite. Offline contract generation only activates descriptors and never starts services.
 - `src/api-v2/app.ts` constructs Hono, installs the common Problem Details boundary, and registers host, embed and browser routes. `canvas-routes.ts`, `macro-routes.ts` and `plugin-routes.ts` own their route groups and compile request/response validators during app construction.
 - `src/api-v2/core-paths.ts` owns the declarative core OpenAPI paths; `canvas-projection.ts` owns read projections and anchor resolution. `src/server-v2.ts` retains Node HTTP security, resident MCP dispatch and startup, plus its compatibility exports.
 - `packages/agent-canvas-core/src/contracts.ts` owns canvas records, operations and batch requests. Store `V2CanvasRecord`/`V2CanvasOperation`/`V2CanvasBatchRequest` and browser `CanvasDocument` remain compatibility aliases. Raw operation data still passes through runtime validation; a TypeScript annotation does not validate JSON.
 - `packages/plugin-sdk/src/manifest-schema.ts` owns `PLUGIN_MANIFEST_SCHEMA` and the duplicate-element-name check. The SDK has no Ajv dependency. Runtime and testkit compile this shared structural schema; the runtime additionally checks semver, filesystem containment and installed dependencies.
 - `CanvasView` composes presentation, selection, geometry, viewport and diagnostics. `PluginRendererSurface` owns renderer lifetime and context updates. `canvas-clipboard.ts` owns the existing clipboard format and cloning; `canvas-operations.ts` builds forward/inverse operations.
 - `use-canvas-history.ts` owns the confirmed document, one mutation queue, one `EditorHistory`, revision reconciliation and macro retry keys. `use-canvas-commands.ts` consumes that owner and registers commands against current canvas, selection and viewport state. It does not maintain a second history or mutation queue.
+
+External revisions reconcile through that queue. Changes to persisted elements
+prune conflicting undo/redo entries and their transitive multi-element dependencies;
+unrelated entries survive. Canvas-wide changes or unknown affected IDs clear history.
+Runtime-only media progress does not change persisted revisions or history.
+
+The optional `agentcanvas.mediatools` extension owns binding records in namespaced
+SQLite KV and one polling worker. Gallery owns slot creation and conditional source
+replacement; Filesystem Images owns admission of collected files. Completion saves
+the output reference before replacing only a matching Gallery item's source with a
+normal filesystem reference. Core has no MediaTools requirement.
 
 Renderer context changes update an existing renderer; element identity/type or renderer changes dispose and remount it. The editor's render callback is an explicit projection dependency so runtime-only updates reach mounted renderers without changing node identity.
 

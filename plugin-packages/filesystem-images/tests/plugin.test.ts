@@ -39,6 +39,7 @@ describe('filesystem images plugin', () => {
       config: { roots: [], contentMaxBytes: 67108864, resourceTtlMs: 3600000 },
       registerElementType: (value: { name: string }) => elements.push(value.name),
       registerTool: (value: { name: string }) => tools.push(value.name),
+      provideCapability: vi.fn(),
       consumeCapability: (name: string) => ({
         get: () => (name === 'agentcanvas.image-sources' ? imageSources : resources)
       })
@@ -46,6 +47,9 @@ describe('filesystem images plugin', () => {
     await plugin.activate(host);
     expect(elements).toEqual(['image']);
     expect(tools).toEqual(['place', 'list-roots']);
+    expect(host.provideCapability).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'agentcanvas.filesystem-image-admission', version: '1.0.0' })
+    );
     expect(imageSources.registerProvider).toHaveBeenCalledWith(
       expect.objectContaining({ provider: 'agentcanvas.filesystem-images' })
     );

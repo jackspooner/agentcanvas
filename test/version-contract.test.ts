@@ -9,7 +9,7 @@ describe('public version contract', () => {
     expect(AGENTCANVAS_VERSION).toBe(packageJson.version);
   });
 
-  it('advertises the additive extension validation host API', () => {
-    expect(AGENTCANVAS_HOST_API_VERSION).toBe('1.3.0');
+  it('advertises the managed extension service host API', () => {
+    expect(AGENTCANVAS_HOST_API_VERSION).toBe('1.4.0');
   });
 });

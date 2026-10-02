@@ -103,6 +103,17 @@ export class FileSystemImageSourceResolver {
     return Object.freeze([...this.roots.keys()].sort().map((id) => Object.freeze({ id })));
   }
 
+  async fromPath(absolutePath: string, rootId: string, signal: AbortSignal): Promise<FileSystemImageSource> {
+    signal.throwIfAborted();
+    const root = this.roots.get(rootId);
+    if (!root || !path.isAbsolute(absolutePath)) throw new Error('filesystem image file is not admitted');
+    const canonicalPath = await fs.realpath(absolutePath);
+    if (!containedBy(root, canonicalPath)) throw new Error('filesystem image file is outside its configured root');
+    const source = this.validateSource({ rootId, path: path.relative(root, canonicalPath).split(path.sep).join('/') });
+    await this.resolve(source, signal);
+    return source;
+  }
+
   validateSource(value: unknown): FileSystemImageSource {
     if (!value || typeof value !== 'object' || Array.isArray(value))
       throw new Error('filesystem image source is invalid');

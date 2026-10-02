@@ -92,6 +92,9 @@ export function CanvasView({
   }, [canvas.id, canvas.revision]);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [viewportError, setViewportError] = useState<string | null>(null);
+  const reportHistoryReconcileError = useCallback((error: unknown) => {
+    setMoveError(`Canvas history reconciliation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }, []);
   const viewportNode = useRef<HTMLDivElement | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const autoFittedCanvas = useRef<string | null>(null);
@@ -106,7 +109,13 @@ export function CanvasView({
     lastAgentViewport.current = null;
     autoFittedCanvas.current = null;
   }, [canvas.id]);
-  const history = useCanvasHistory({ canvas, readOnly, onCanvasOperations, onMacroExecute });
+  const history = useCanvasHistory({
+    canvas,
+    readOnly,
+    onCanvasOperations,
+    onMacroExecute,
+    onReconcileError: reportHistoryReconcileError
+  });
   const { commitHistory } = history;
   const overlays = useMemo(() => new DomRendererOverlayService(), []);
   const elements = useMemo(() => new Map(canvas.elements.map((element) => [element.id, element])), [canvas.elements]);

@@ -19,10 +19,12 @@ export function createPluginCanvasOperations(
   store: V2SqliteCanvasStore,
   pluginId: string,
   declaredPermissions: readonly PluginPermission[],
-  registry: FrozenPluginRegistry
+  registry: FrozenPluginRegistry,
+  signal?: AbortSignal
 ): PluginCanvasOperations {
   const permissions = new Set(declaredPermissions);
   const requirePermission = (permission: PluginPermission): void => {
+    signal?.throwIfAborted();
     if (!permissions.has(permission)) {
       throw new CanvasError('plugin_permission_denied', `${pluginId} did not declare ${permission}`, 'permission', 403);
     }

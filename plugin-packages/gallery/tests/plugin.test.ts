@@ -45,6 +45,7 @@ async function registrations(): Promise<{
   const host = {
     registerElementType: (value: ElementTypeDescriptor) => elements.push(value),
     registerTool: (value: PluginToolDescriptor) => tools.push(value),
+    provideCapability: vi.fn(),
     consumeCapability: () => ({ get: sources })
   } as unknown as ServerPluginHost;
   await plugin.activate(host);

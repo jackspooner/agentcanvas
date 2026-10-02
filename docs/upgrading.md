@@ -5,6 +5,16 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## 0.3.0-alpha.5 — optional MediaTools bindings
+
+Rebuild the packages and catalog, replace Gallery and Filesystem Images with
+0.1.1 while stopped, then explicitly install MediaTools 0.1.0 if needed. Configure
+its MCP endpoint, existing output directory and filesystem root ID; provision
+`AGENT_CANVAS_MEDIATOOLS_TOKEN` privately and restart when idle. The standard
+defaults do not enable it. No database or Gallery schema migration is required.
+See [release notes](release-notes-v0.3.0-alpha.5.md) and
+[setup](../plugin-packages/mediatools/README.md).
+
 ## Unreleased live viewer viewports
 
 The browser now reports measured viewport geometry for visible direct, shared,

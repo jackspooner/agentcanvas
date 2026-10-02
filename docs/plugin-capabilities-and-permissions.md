@@ -35,7 +35,27 @@ The host image-source registry supports multiple provider adapters behind one si
 
 Source extensions register a provider ID, strict reference validator, and resolver that returns an opaque image resource handle. Consumers validate and resolve the envelope without importing provider code. Provider IDs are extension IDs, duplicate registration fails startup, and non-image MIME types are rejected.
 
-`agentcanvas.assets2` and `agentcanvas.filesystem-images` are the current first-party providers. A missing provider does not invalidate a previously stored Gallery envelope; runtime resolution reports an explicit diagnostic until the provider returns.
+`agentcanvas.assets2`, `agentcanvas.filesystem-images`, and the optional
+`agentcanvas.mediatools` pending-job provider are first-party adapters. A missing
+provider preserves previously stored Gallery envelopes and reports a diagnostic.
+
+Providers may throw the SDK's `ImageSourceNotReadyError` with `queued`, `running`,
+or `failed`, a safe viewer message, code, and retryability. Gallery projects the
+state into runtime diagnostics and browser/snapshot placeholders. This adds no
+persisted Gallery schema fields and no dependency on a particular job service.
+
+### Gallery authoring and filesystem admission
+
+`agentcanvas.gallery-authoring@1.0.0` exposes creation, append, item reads, and
+conditional source replacement. Gallery performs writes through its own scoped
+canvas operations, checks the expected source and current revision, and preserves
+other item fields, settings and geometry. Consumers receive no arbitrary-element
+mutation permission.
+
+`agentcanvas.filesystem-image-admission@1.0.0` converts an absolute collected file
+path and configured root ID into a canonical image-source reference. Filesystem
+Images applies its existing real-path containment, regular-file, format and size
+checks; it does not create implicit roots or copy bytes into AgentCanvas.
 
 ### Optional plugin capability: `agentcanvas.assets@1.0.0`
 

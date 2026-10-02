@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, '..');
 const sourceRoot = join(root, 'plugin-packages');
 const catalogRoot = join(root, 'dist', 'plugin-catalog');
 const glbPluginId = 'agentcanvas.glb-viewer';
+const mediaToolsPluginId = 'agentcanvas.mediatools';
 const requiredRootArtifacts = ['agentcanvas.plugin.json', 'README.md', 'LICENSE'];
 
 async function visibleDirectories(directory) {
@@ -135,6 +136,16 @@ if (!glbPackage.dependencies?.['@google/model-viewer']) {
 const bundledDependencies = await productionDependencyClosure('@google/model-viewer', glbPackageJson);
 await assertThirdPartyNotice(glbSource, bundledDependencies);
 
+const mediaToolsSource = sourceById.get(mediaToolsPluginId);
+if (!mediaToolsSource) throw new Error(`Missing source plugin ${mediaToolsPluginId}`);
+await assertPluginArtifacts(mediaToolsSource, true);
+const mediaToolsPackageJson = join(mediaToolsSource, 'package.json');
+const mediaToolsPackage = await readJson(mediaToolsPackageJson);
+if (!mediaToolsPackage.dependencies?.['media-tools-mcp']) {
+  throw new Error('MediaTools extension no longer declares media-tools-mcp; update third-party verification ownership');
+}
+execFileSync(process.execPath, [join(mediaToolsSource, 'scripts', 'build.mjs'), '--check-notices'], { stdio: 'inherit' });
+
 const catalogDirectories = await visibleDirectories(catalogRoot);
 execFileSync(process.execPath, [join(sourceRoot, 'diagrams', 'scripts', 'generate-notices.mjs'), '--check'], { stdio: 'inherit' });
 const catalogIds = new Set();
@@ -150,6 +161,11 @@ for (const directory of catalogDirectories) {
     await assertPluginArtifacts(directory, true);
     if (await readFile(join(directory, 'THIRD_PARTY_NOTICES.md'), 'utf8') !== await readFile(join(sourceRoot, 'diagrams', 'THIRD_PARTY_NOTICES.md'), 'utf8'))
       throw new Error('Catalog Diagrams notices differ from source notices. Rebuild the catalog.');
+  }
+  if (manifest.id === mediaToolsPluginId) {
+    await assertPluginArtifacts(directory, true);
+    if (await readFile(join(directory, 'THIRD_PARTY_NOTICES.md'), 'utf8') !== await readFile(join(mediaToolsSource, 'THIRD_PARTY_NOTICES.md'), 'utf8'))
+      throw new Error('Catalog MediaTools notices differ from source notices. Rebuild the catalog.');
   }
 }
 for (const pluginId of sourceById.keys()) {
