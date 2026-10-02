@@ -23,7 +23,7 @@ if (process.platform === 'win32') {
 
 // Bootstrap the existing dependency owner without requiring an installed npm package.
 const materializerRepository = 'https://github.com/jackspooner/workspace2-internal-deps.git';
-const materializerCommit = 'f5f2b53cfc0300da646427ee03953dcd5829bf3b';
+const materializerCommit = '64e9ae122fd764c655df2fcf5513c022842780fe';
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'agentcanvas-internal-deps-'));
 const checkout = path.join(temporaryRoot, 'materializer');
 try {

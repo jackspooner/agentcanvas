@@ -389,8 +389,8 @@ test('combines, navigates, undoes, redoes, and unpacks Markdown cards as one car
   await page.getByRole('combobox', { name: 'Extension commands' }).selectOption({
     label: 'Unpack Markdown carousel'
   });
-  expect(await persistedElement(page, firstId)).toMatchObject(firstBefore);
-  expect(await persistedElement(page, secondId)).toMatchObject(secondBefore);
+  expect(await persistedElement(page, firstId)).toMatchObject({ ...firstBefore });
+  expect(await persistedElement(page, secondId)).toMatchObject({ ...secondBefore });
 });
 
 test('keeps a 500-element canvas responsive with visible-element culling', async ({ page }) => {

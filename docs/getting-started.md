@@ -36,6 +36,8 @@ which needs only Node.js and Git. It reads `.cutlery/internal-deps.toml`, fetche
 each dependency at its exact `resolvedCommit`, runs its declared build command,
 and prepares `.cutlery/deps/` before running `npm ci`. It does not update pins.
 The materializer revision is pinned in `scripts/internal-dependencies.mjs`.
+On Windows, it removes duplicate child-process `PATH` entries so nested npm
+builds retain command lookup without changing the machine's environment.
 
 Use `npm run deps:materialize` to prepare dependencies without reinstalling npm
 packages. `npm run check:internal-deps` verifies pins, expected build outputs,

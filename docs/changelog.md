@@ -1,5 +1,12 @@
 # Change history
 
+## Unreleased — setup and build checks
+
+- Pin the dependency runner's Windows child `PATH` fix so nested npm builds
+  resolve their tools without exceeding the shell's environment limit.
+- Keep Markdown carousel restoration assertions compatible with Playwright's
+  object matcher types while retaining every persisted field check.
+
 ## 0.3.0-alpha.5 — MediaTools image bindings
 
 - Optional MediaTools 0.1.0 attaches existing jobs to Gallery slots and converts
