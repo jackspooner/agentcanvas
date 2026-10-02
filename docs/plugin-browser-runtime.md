@@ -31,6 +31,11 @@ fails that renderer. `RendererContext.lifecycle.active` reports whether the
 surface is mounted, connected, intersecting the visible browser viewport, and
 in a visible document. `reducedMotion` is the host's current media preference.
 
+Media loads that remain valid across updates use the lifetime signal together
+with their own resource-specific abort controller. Keep `update` responsive;
+cancel the load when its source changes, and reject obsolete completions before
+writing to the DOM. Gallery follows this pattern for images retained during polling.
+
 `RendererContext.frames` is a stable renderer-lifetime scheduler:
 
 ```ts

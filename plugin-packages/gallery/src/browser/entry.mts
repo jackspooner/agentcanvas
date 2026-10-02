@@ -4,7 +4,7 @@ import type {
   JsonObject,
   RendererContext
 } from '@agentcanvas/plugin-sdk';
-import { fitToObjectFit, galleryData, type GalleryData, type GalleryItem } from '../contracts.js';
+import { fitToObjectFit, type GalleryData, type GalleryItem, galleryData } from '../contracts.js';
 
 interface RuntimeGalleryItem {
   id: string;
@@ -111,6 +111,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
       let focused = false;
       let disposed = false;
       let requestVersion = 0;
+      let activeResourceKey: string | null = null;
 
       const revoke = () => {
         request?.abort();
@@ -142,47 +143,62 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         frame.replaceChildren(placeholder, previous, next, footer);
       };
 
-      const loadActive = async () => {
-        revoke();
+      const loadActive = () => {
         syncChrome();
-        showPlaceholder();
         const item = activeItem();
         const runtime = runtimeItems(context.runtime).find((candidate) => candidate.id === item.id);
         placeholder.textContent = runtime?.message ?? 'Image unavailable';
         const url = safeResourceUrl(runtime?.contentUrl);
-        if (!runtime?.contentHandle || !url || !runtime.mimeType?.toLowerCase().startsWith('image/')) return;
+        const canLoad = Boolean(runtime?.contentHandle && url && runtime.mimeType?.toLowerCase().startsWith('image/'));
+        const resourceKey = canLoad
+          ? JSON.stringify([item.id, item.source, runtime?.contentHandle, url, runtime?.mimeType?.toLowerCase()])
+          : null;
+        if (resourceKey === activeResourceKey) return;
+
+        revoke();
+        activeResourceKey = resourceKey;
+        showPlaceholder();
+        if (!canLoad || !runtime || !url) return;
         const version = requestVersion;
         request = new AbortController();
-        const signal = AbortSignal.any([request.signal, context.signal]);
-        try {
-          const response = await fetch(url, {
-            headers: { accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif' },
-            credentials: 'same-origin',
-            signal
-          });
-          if (!response.ok) throw new Error(`Gallery image request failed with HTTP ${response.status}`);
-          const mimeType = String(response.headers.get('content-type') ?? runtime.mimeType)
-            .split(';')[0]
-            .trim()
-            .toLowerCase();
-          if (!mimeType.startsWith('image/')) throw new Error('Gallery resource did not return an image');
-          const blob = await response.blob();
-          if (disposed || signal.aborted || version !== requestVersion) return;
-          objectUrl = URL.createObjectURL(blob);
-          image.src = objectUrl;
-          frame.replaceChildren(image, previous, next, footer);
-        } catch {
-          if (disposed || signal.aborted || version !== requestVersion) return;
-          context.reportDiagnostic({
-            code: 'gallery_image_content_failed',
-            severity: 'warning',
-            message: `Gallery image ${item.id} could not be loaded.`,
-            retryable: true,
-            pluginId: 'agentcanvas.gallery',
-            elementId: context.element.id
-          });
-          showPlaceholder();
-        }
+        const signal = AbortSignal.any([request.signal, context.lifecycle.signal]);
+        const load = async () => {
+          try {
+            const response = await fetch(url, {
+              headers: { accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif' },
+              credentials: 'same-origin',
+              signal
+            });
+            if (!response.ok) throw new Error(`Gallery image request failed with HTTP ${response.status}`);
+            const mimeType = String(response.headers.get('content-type') ?? runtime.mimeType)
+              .split(';')[0]
+              .trim()
+              .toLowerCase();
+            if (!mimeType.startsWith('image/')) throw new Error('Gallery resource did not return an image');
+            const blob = await response.blob();
+            if (disposed || signal.aborted || version !== requestVersion) return;
+            objectUrl = URL.createObjectURL(blob);
+            image.src = objectUrl;
+            frame.replaceChildren(image, previous, next, footer);
+          } catch {
+            if (disposed || signal.aborted || version !== requestVersion) return;
+            activeResourceKey = null;
+            context.reportDiagnostic({
+              code: 'gallery_image_content_failed',
+              severity: 'warning',
+              message: `Gallery image ${item.id} could not be loaded.`,
+              retryable: true,
+              pluginId: 'agentcanvas.gallery',
+              elementId: context.element.id
+            });
+            showPlaceholder();
+          } finally {
+            if (version === requestVersion) {
+              request = null;
+            }
+          }
+        };
+        void load();
       };
 
       const restartTimer = () => {
@@ -271,7 +287,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         frame.style.setProperty('--gallery-surface', colors.surface);
         frame.style.setProperty('--gallery-muted', colors.textMuted);
         frame.style.setProperty('--gallery-font', typography.bodyFont);
-        await loadActive();
+        loadActive();
         restartTimer();
       };
 

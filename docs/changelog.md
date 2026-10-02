@@ -11,6 +11,8 @@
   not-ready image states for matching runtime, browser and snapshot placeholders.
 - External revisions preserve unrelated undo/redo and prune conflicting dependencies.
   Standard default activation and persisted element schemas remain unchanged.
+- Gallery keeps active image downloads and loaded content through unchanged runtime
+  refreshes, while source changes, navigation and disposal still cancel obsolete work.
 
 ## Unreleased — MCP canvas bounds and fixed-frame enforcement
 

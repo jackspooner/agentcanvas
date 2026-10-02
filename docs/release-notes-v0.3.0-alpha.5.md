@@ -5,6 +5,8 @@ frames or carousel slots. Queued, running and failed jobs display safe placehold
 completion converts only the matching slot to a normal filesystem image reference.
 Geometry, captions, ordering and carousel settings survive. The extension never
 submits generation and does not join the standard default activation set.
+Gallery retains downloads and loaded images across unchanged runtime refreshes,
+so polling cannot repeatedly cancel the completed image's download.
 
 Binding intents and collected outputs persist in namespaced SQLite KV. Restart
 reconciliation, publication retries, source ownership checks and revision checks

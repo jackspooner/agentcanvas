@@ -26,7 +26,11 @@ function context(
       contentUrl: '/api/v1/resources/second-handle/content',
       mimeType: 'image/png'
     }
-  ]
+  ],
+  signal = new AbortController().signal,
+  lifecycleSignal = new AbortController().signal,
+  firstAlt = 'First image',
+  firstSourceKey = 'first'
 ): RendererContext {
   return {
     element: {
@@ -39,7 +43,7 @@ function context(
       height: 260,
       data: {
         items: [
-          { id: 'first', source: { provider: 'example.images', reference: { key: 'first' } }, alt: 'First image' },
+          { id: 'first', source: { provider: 'example.images', reference: { key: firstSourceKey } }, alt: firstAlt },
           { id: 'second', source: { provider: 'example.images', reference: { key: 'second' } }, alt: 'Second image' }
         ],
         presentation: 'carousel',
@@ -54,8 +58,8 @@ function context(
     runtime: { items: runtimeItems },
     readOnly: false,
     selected: false,
-    signal: new AbortController().signal,
-    lifecycle: { signal: new AbortController().signal, active: true, reducedMotion: false },
+    signal,
+    lifecycle: { signal: lifecycleSignal, active: true, reducedMotion: false },
     frames: { subscribe: () => () => {} },
     theme: DEFAULT_CANVAS_THEME,
     geometry: { getElementFrame: () => null, resolveAnchor: () => null },
@@ -82,6 +86,114 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('gallery browser lifecycle', () => {
+  it('keeps one in-flight request through identical updates and syncs updated alt text', async () => {
+    let resolveResponse!: (response: Response) => void;
+    let fetchSignal!: AbortSignal;
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      fetchSignal = init?.signal as AbortSignal;
+      return new Promise((resolve) => {
+        resolveResponse = resolve;
+      });
+    });
+    const lifecycleSignal = new AbortController().signal;
+    let updateController = new AbortController();
+    const rendererContext = context(undefined, updateController.signal, lifecycleSignal);
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, rendererContext);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    for (let index = 0; index < 3; index += 1) {
+      updateController.abort();
+      updateController = new AbortController();
+      await mounted.update(context(undefined, updateController.signal, lifecycleSignal, `Updated image ${index}`));
+    }
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetchSignal.aborted).toBe(false);
+    resolveResponse(
+      new Response(new Blob(['image'], { type: 'image/png' }), {
+        status: 200,
+        headers: { 'content-type': 'image/png' }
+      })
+    );
+    await vi.waitFor(() => expect(root.querySelector('img')?.alt).toBe('Updated image 2'));
+    const imageSource = root.querySelector('img')?.getAttribute('src');
+    await mounted.update(context(undefined, new AbortController().signal, lifecycleSignal));
+    expect(root.querySelector('img')?.getAttribute('src')).toBe(imageSource);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetchSignal.aborted).toBe(false);
+    await mounted.dispose();
+  });
+
+  it('aborts the previous resource request when its identity changes', async () => {
+    const pending: Array<{ signal: AbortSignal; resolve: (response: Response) => void }> = [];
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      const signal = init?.signal as AbortSignal;
+      return new Promise((resolve, reject) => {
+        pending.push({ signal, resolve });
+        signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+      });
+    });
+    const lifecycleSignal = new AbortController().signal;
+    const rendererContext = context(undefined, new AbortController().signal, lifecycleSignal);
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, rendererContext);
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+
+    const updatedBase = context(
+      [
+        {
+          id: 'first',
+          contentHandle: 'replacement-handle',
+          contentUrl: '/api/v1/resources/replacement-handle/content',
+          mimeType: 'image/png'
+        }
+      ],
+      new AbortController().signal,
+      lifecycleSignal,
+      'First image',
+      'replacement'
+    );
+    await mounted.update(updatedBase);
+    await vi.waitFor(() => expect(pending).toHaveLength(2));
+    expect(pending[0].signal.aborted).toBe(true);
+    pending[1].resolve(
+      new Response(new Blob(['replacement'], { type: 'image/png' }), {
+        status: 200,
+        headers: { 'content-type': 'image/png' }
+      })
+    );
+    await vi.waitFor(() => expect(root.querySelector('img')?.alt).toBe('First image'));
+    await mounted.dispose();
+  });
+
+  it('retries a failed resource request on the next update', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(new Blob(['image'], { type: 'image/png' }), {
+          status: 200,
+          headers: { 'content-type': 'image/png' }
+        })
+      );
+    const rendererContext = context();
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, rendererContext);
+    await vi.waitFor(() =>
+      expect(rendererContext.reportDiagnostic).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'gallery_image_content_failed',
+          retryable: true
+        })
+      )
+    );
+
+    await mounted.update(context(undefined, new AbortController().signal, rendererContext.lifecycle.signal));
+    await vi.waitFor(() => expect(root.querySelector('img')?.alt).toBe('First image'));
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await mounted.dispose();
+  });
+
   it('navigates locally with accessible controls and revokes fetched resources', async () => {
     const rendererContext = context();
     const root = document.createElement('div').attachShadow({ mode: 'open' });
