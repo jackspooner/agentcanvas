@@ -6116,7 +6116,7 @@
   "info": {
     "description": "Standard AgentCanvas distribution contract. Runtime OpenAPI reflects the exact active extension set.",
     "title": "AgentCanvas API",
-    "version": "0.3.0-alpha.5"
+    "version": "0.3.0-alpha.6"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -7496,6 +7496,265 @@
       }
     },
     "/api/v1/canvases/{canvasId}": {
+      "delete": {
+        "operationId": "canvas_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "canvasId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "canvasId": "canvas_example",
+                  "deleted": true,
+                  "ok": true
+                },
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "canvasId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "const": true
+                    },
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "canvasId",
+                    "deleted"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Deleted canvas"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "validation_error": {
+                    "value": {
+                      "category": "validation",
+                      "code": "validation_error",
+                      "detail": "The request does not satisfy the declared contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 400,
+                      "title": "Request validation failed",
+                      "type": "urn:workspace2:problem:validation_error"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Invalid expected revision",
+            "x-error-codes": [
+              {
+                "category": "validation",
+                "code": "validation_error",
+                "description": "The request does not satisfy the declared contract.",
+                "retryable": false,
+                "status": 400,
+                "title": "Request validation failed"
+              }
+            ]
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "not_found": {
+                    "value": {
+                      "category": "not_found",
+                      "code": "not_found",
+                      "detail": "The requested resource does not exist.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 404,
+                      "title": "Resource not found",
+                      "type": "urn:workspace2:problem:not_found"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Canvas is missing or already deleted",
+            "x-error-codes": [
+              {
+                "category": "not_found",
+                "code": "not_found",
+                "description": "The requested resource does not exist.",
+                "retryable": false,
+                "status": 404,
+                "title": "Resource not found"
+              }
+            ]
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "revision_conflict": {
+                    "value": {
+                      "category": "conflict",
+                      "code": "revision_conflict",
+                      "detail": "The canvas revision changed.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": true,
+                      "status": 409,
+                      "title": "Canvas revision conflict",
+                      "type": "urn:workspace2:problem:revision_conflict"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Canvas revision changed",
+            "x-error-codes": [
+              {
+                "category": "conflict",
+                "code": "revision_conflict",
+                "description": "The canvas revision changed.",
+                "retryable": true,
+                "status": 409,
+                "title": "Canvas revision conflict"
+              }
+            ]
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "examples": {
+                  "internal_error": {
+                    "value": {
+                      "category": "internal",
+                      "code": "internal_error",
+                      "detail": "AgentCanvas could not complete the request.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Internal server error",
+                      "type": "urn:workspace2:problem:internal_error"
+                    }
+                  },
+                  "macro_execution_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "macro_execution_invalid",
+                      "detail": "Macro execution failed unexpectedly.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Macro execution failed",
+                      "type": "urn:workspace2:problem:macro_execution_invalid"
+                    }
+                  },
+                  "stored_canvas_invalid": {
+                    "value": {
+                      "category": "internal",
+                      "code": "stored_canvas_invalid",
+                      "detail": "Stored canvas data violates the canonical contract.",
+                      "instance": "/api/v1/example",
+                      "requestId": "req_example",
+                      "retryable": false,
+                      "status": 500,
+                      "title": "Stored canvas invalid",
+                      "type": "urn:workspace2:problem:stored_canvas_invalid"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "AgentCanvas failed to complete the request",
+            "x-error-codes": [
+              {
+                "category": "internal",
+                "code": "macro_execution_invalid",
+                "description": "Macro execution failed unexpectedly.",
+                "retryable": false,
+                "status": 500,
+                "title": "Macro execution failed"
+              },
+              {
+                "category": "internal",
+                "code": "stored_canvas_invalid",
+                "description": "Stored canvas data violates the canonical contract.",
+                "retryable": false,
+                "status": 500,
+                "title": "Stored canvas invalid"
+              },
+              {
+                "category": "internal",
+                "code": "internal_error",
+                "description": "AgentCanvas could not complete the request.",
+                "retryable": false,
+                "status": 500,
+                "title": "Internal server error"
+              }
+            ]
+          }
+        },
+        "summary": "Permanently delete a canvas",
+        "tags": [
+          "Canvases"
+        ],
+        "x-agent-notes": {
+          "consistency": {
+            "refresh": [
+              "Canvas lists, canvas reads, share links, viewports, and canvas macro catalogs. Open editors stop on not_found."
+            ]
+          },
+          "sideEffects": [
+            "Deletes the canvas, events, share links, retry receipts, saved viewports, invocation receipts, and canvas-scoped macros. External media is preserved."
+          ],
+          "useWhen": [
+            "Permanently remove one canvas after identifying its ID and current revision."
+          ],
+          "workflow": [
+            "Read the current canvas and pass its revision as expectedRevision. A retry returning not_found means the canvas is already absent."
+          ]
+        }
+      },
       "get": {
         "operationId": "canvasGet",
         "parameters": [

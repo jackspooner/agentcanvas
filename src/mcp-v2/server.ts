@@ -2,6 +2,8 @@ import {
   CANVAS_BOUNDS_SCHEMA,
   CANVAS_ELEMENT_SCHEMA,
   CANVAS_LIST_LIMIT_SCHEMA,
+  CANVAS_DELETE_RECEIPT_SCHEMA,
+  EXPECTED_REVISION_SCHEMA,
   CORE_REQUEST_SCHEMAS,
   VIEWER_ID_SCHEMA
 } from '../api-v2/schemas.js';
@@ -543,6 +545,20 @@ function coreTools(): readonly CoreJsonSchemaTool[] {
       },
       annotations: { readOnlyHint: true }
     },
+    {
+      name: 'canvas_delete',
+      title: 'Delete a canvas permanently',
+      description:
+        'Permanently remove a canvas, history, shares, viewports, retries and canvas macros; preserve external media. Read title/revision, pass expectedRevision, refresh lists. Stale revision: revision_conflict; absent: not_found. To keep the canvas, use canvas_clear.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['canvasId'],
+        properties: { canvasId: CANVAS_ID, expectedRevision: EXPECTED_REVISION_SCHEMA }
+      },
+      outputSchema: CANVAS_DELETE_RECEIPT_SCHEMA,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false }
+    },
     mutationTool(
       'canvas_rename',
       'Rename a canvas',
@@ -1008,6 +1024,7 @@ async function invokeCore(
   const store = runtime.store;
   const canvasId = input.canvasId as string;
   const expectedRevision = input.expectedRevision as number | undefined;
+  if (name === 'canvas_delete') return store.deleteCanvas(canvasId, expectedRevision);
   if (name === 'canvas_get_guidance') {
     const coreToolCount = coreTools().length + macroTools().length;
     const pluginToolCount = runtime.registry.plugins.reduce(
@@ -1277,6 +1294,7 @@ export function createMcpV2ToolCatalog(
 
 /** Declares the application failures a caller should handle for one normalized tool contract. */
 export function mcpErrorCodesForTool(tool: McpJsonSchemaTool): readonly AgentCanvasProblemCode[] {
+  if (tool.name === 'canvas_delete') return ['validation_error', 'internal_error', 'not_found', 'revision_conflict'];
   const codes = new Set<AgentCanvasProblemCode>(['validation_error', 'internal_error']);
   if (tool.source === 'plugin') {
     codes.add('plugin_unavailable');

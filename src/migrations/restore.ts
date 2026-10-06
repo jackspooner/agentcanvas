@@ -61,16 +61,16 @@ function assertInspectionMatchesManifest(
     inspection.canApply &&
     inspection.sourceVersion === 2 &&
     inspection.versions.physicalVersion === 3;
-  const isCreatedByRepairSource =
+  const isCanonicalMigrationSource =
     sourceVersion === 2 &&
     targetVersion === 2 &&
     inspection.sourceVersion === 2 &&
-    inspection.versions.physicalVersion === 4;
+    (inspection.versions.physicalVersion === 4 || inspection.versions.physicalVersion === 5);
   if (
     !isLegacyMigrationSource &&
     !isThemeMigrationSource &&
     !isMacroStorageMigrationSource &&
-    !isCreatedByRepairSource
+    !isCanonicalMigrationSource
   ) {
     const details =
       inspection.issues.map((issue) => issue.message).join('; ') || 'version state does not match manifest';

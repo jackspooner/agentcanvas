@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { PluginElementValidator } from '../src/plugin-runtime/elements';
 import { FrozenPluginRegistry } from '../src/plugin-runtime/registry';
 import { V2SqliteCanvasStore } from '../src/store/v2';
+import { MacroRuntime } from '../src/macros/runtime';
 import { TEST_CANVAS_THEME } from './fixtures/canvas-theme';
 
 const manifest: PluginManifest = {
@@ -62,6 +63,181 @@ function makeStore(): V2SqliteCanvasStore {
 }
 
 describe('v0.2 canonical store', () => {
+  it('permanently deletes owned state and canvas macros while preserving installation macros and other canvases', async () => {
+    const store = makeStore();
+    try {
+      const target = store.createCanvas({ title: 'Delete' });
+      const keep = store.createCanvas({ title: 'Keep' });
+      const macros = new MacroRuntime(store, store.elementValidator.registry);
+      const authoring = {
+        title: 'Card',
+        inputSchema: { type: 'object', additionalProperties: false },
+        elements: [
+          {
+            key: 'card',
+            type: 'fixture.cards/card',
+            schemaVersion: 1,
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 100,
+            data: { title: 'Macro' }
+          }
+        ]
+      };
+      const local = macros.create({ ...authoring, scope: 'canvas', canvasId: target.id });
+      macros.createVersion({ ...authoring, scope: 'canvas', canvasId: target.id, macroId: local.definition.id });
+      const installation = macros.create({ ...authoring, scope: 'installation' });
+      await macros.direct({
+        mode: 'direct',
+        canvasId: target.id,
+        macroId: local.definition.id,
+        macroVersion: 2,
+        anchor: { x: 0, y: 0 },
+        input: {},
+        expectedRevision: 1,
+        idempotencyKey: 'local-run'
+      });
+      await macros.direct({
+        mode: 'direct',
+        canvasId: target.id,
+        macroId: installation.definition.id,
+        macroVersion: 1,
+        anchor: { x: 200, y: 0 },
+        input: {},
+        expectedRevision: 2,
+        idempotencyKey: 'installation-run'
+      });
+      store.recordViewport(target.id, { centerX: 0, centerY: 0, zoom: 1, width: 800, height: 600 }, 'user');
+      store.recordViewport(target.id, { centerX: 1, centerY: 1, zoom: 1, width: 800, height: 600 }, 'agent');
+      const share = store.createShareLink(target.id, {});
+      await macros.direct({
+        mode: 'direct',
+        canvasId: keep.id,
+        macroId: installation.definition.id,
+        macroVersion: 1,
+        anchor: { x: 0, y: 0 },
+        input: {},
+        expectedRevision: 1,
+        idempotencyKey: 'keep-run'
+      });
+      store.createShareLink(keep.id, {});
+      store.recordViewport(keep.id, { centerX: 0, centerY: 0, zoom: 1, width: 800, height: 600 }, 'user');
+      const keepState = store.getCanvas(keep.id);
+      const retainedTables = [
+        'canvas_events',
+        'canvas_share_links',
+        'canvas_viewports',
+        'canvas_idempotency_keys',
+        'macro_invocations'
+      ];
+      const retainedRows = () =>
+        retainedTables.map((table) => store.db.prepare(`SELECT * FROM ${table} WHERE canvas_id=?`).all(keep.id));
+      const retainedBefore = retainedRows();
+      store.db.prepare("INSERT INTO plugin_kv VALUES ('provider','media','{\"assetId\":\"keep\"}','now')").run();
+      expect(() => store.db.prepare('DELETE FROM macro_versions WHERE macro_id=?').run(local.definition.id)).toThrow(
+        'immutable'
+      );
+      expect(() =>
+        store.db.prepare('DELETE FROM macro_versions WHERE macro_id=?').run(installation.definition.id)
+      ).toThrow('immutable');
+      expect(store.deleteCanvas(target.id, 3)).toEqual({ canvasId: target.id, deleted: true });
+      for (const table of [
+        'canvas_events',
+        'canvas_share_links',
+        'canvas_viewports',
+        'canvas_idempotency_keys',
+        'macro_invocations',
+        'macro_definitions'
+      ]) {
+        expect(store.db.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE canvas_id=?`).get(target.id)).toEqual({
+          count: 0
+        });
+      }
+      expect(
+        store.db.prepare('SELECT COUNT(*) AS count FROM macro_versions WHERE macro_id=?').get(local.definition.id)
+      ).toEqual({ count: 0 });
+      expect(macros.get(installation.definition.id, 1, keep.id).definition).toEqual(installation.definition);
+      expect(store.getCanvas(keep.id)).toEqual(keepState);
+      expect(retainedRows()).toEqual(retainedBefore);
+      expect(store.db.prepare('SELECT value_json FROM plugin_kv').get()).toEqual({ value_json: '{"assetId":"keep"}' });
+      expect(store.db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+      expect(store.db.prepare('PRAGMA defer_foreign_keys').get()).toEqual({ defer_foreign_keys: 0 });
+      expect(() => store.resolveShareToken(share.token)).toThrow();
+      expect(() => store.getCanvas(target.id)).toThrow('canvas not found');
+      expect(() => store.deleteCanvas(target.id)).toThrow('canvas not found');
+      expect(() => store.applyOperations(target.id, { operations: [{ op: 'clear' }] })).toThrow('canvas not found');
+      expect(() =>
+        macros.plan({
+          canvasId: target.id,
+          macroId: installation.definition.id,
+          macroVersion: 1,
+          anchor: { x: 0, y: 0 },
+          input: {}
+        })
+      ).toThrow();
+    } finally {
+      store.close();
+    }
+  });
+
+  it('rejects invalid and stale revisions without deleting anything', () => {
+    const store = makeStore();
+    try {
+      const canvas = store.createCanvas({ title: 'Keep' });
+      for (const expected of [0, -1, 1.5, NaN, Infinity])
+        expect(() => store.deleteCanvas(canvas.id, expected)).toThrow('positive integer');
+      expect(() => store.deleteCanvas(canvas.id, 2)).toThrow('expected revision');
+      expect(store.getCanvas(canvas.id)).toEqual(canvas);
+      expect(() => store.deleteCanvas('missing')).toThrow('canvas not found');
+      expect(store.deleteCanvas(canvas.id)).toEqual({ canvasId: canvas.id, deleted: true });
+    } finally {
+      store.close();
+    }
+  });
+
+  it.each(['parent', 'foreign-key'])('rolls back every deletion on %s failure', (failure) => {
+    const store = makeStore();
+    try {
+      const canvas = store.createCanvas({ title: 'Rollback' });
+      const macros = new MacroRuntime(store, store.elementValidator.registry);
+      macros.create({
+        title: 'Scoped',
+        scope: 'canvas',
+        canvasId: canvas.id,
+        inputSchema: { type: 'object' },
+        elements: []
+      });
+      store.createShareLink(canvas.id, {});
+      store.applyOperations(canvas.id, { idempotencyKey: 'retry', operations: [{ op: 'clear' }] });
+      const tables = [
+        'canvases',
+        'canvas_events',
+        'canvas_share_links',
+        'canvas_idempotency_keys',
+        'macro_definitions',
+        'macro_versions'
+      ];
+      const snapshot = () => tables.map((table) => store.db.prepare(`SELECT * FROM ${table}`).all());
+      const before = snapshot();
+      if (failure === 'parent')
+        store.db.exec(
+          "CREATE TRIGGER fail_delete BEFORE DELETE ON canvases BEGIN SELECT RAISE(ABORT, 'forced deletion failure'); END;"
+        );
+      else {
+        store.db.exec('CREATE TABLE retained_reference (canvas_id TEXT REFERENCES canvases(id));');
+        store.db.prepare('INSERT INTO retained_reference VALUES (?)').run(canvas.id);
+      }
+      expect(() => store.deleteCanvas(canvas.id, 2)).toThrow(
+        failure === 'parent' ? 'forced deletion failure' : 'FOREIGN KEY'
+      );
+      expect(snapshot()).toEqual(before);
+      expect(store.db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
+      expect(store.db.prepare('PRAGMA defer_foreign_keys').get()).toEqual({ defer_foreign_keys: 0 });
+    } finally {
+      store.close();
+    }
+  });
   it('enforces the rendered frame within fixed bounds and keeps rejected batches atomic', () => {
     const store = makeStore();
     try {

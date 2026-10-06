@@ -69,6 +69,16 @@ afterEach(() => {
 });
 
 describe('browser projection reconciliation', () => {
+  it('removes the stale editor when the canvas is deleted during polling', async () => {
+    const screen = await act(async () => render(<App />));
+    expect(screen.getByText('1')).toBeTruthy();
+    read = async () => Response.json({ code: 'not_found', detail: 'Canvas was deleted' }, { status: 404 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(screen.queryByText('1')).toBeNull();
+    expect(screen.getByText(/Canvas was deleted/)).toBeTruthy();
+  });
   it('reports direct, shared, and embedded visible views and replaces a hidden session', async () => {
     let visible = true;
     Object.defineProperty(document, 'visibilityState', {

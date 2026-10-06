@@ -79,7 +79,7 @@ The pre-alpha.2 flat `{ok:false, code, message, stage, retryable, correlationId}
 | Area | Routes |
 |---|---|
 | Health and identity | `GET /health`, `GET /whoami` |
-| Canvas documents | `GET/POST /api/v1/canvases`, `GET/PATCH /api/v1/canvases/{canvasId}`, `PATCH .../title`, `PATCH .../theme` |
+| Canvas documents | `GET/POST /api/v1/canvases`, `GET/PATCH/DELETE /api/v1/canvases/{canvasId}`, `PATCH .../title`, `PATCH .../theme` |
 | Elements | `POST /api/v1/canvases/{canvasId}/elements:batch` |
 | Viewports | `GET/POST .../viewport`, `POST .../viewport/focus`, `PUT/DELETE .../viewer-presence/{viewerId}` |
 | Sharing | `GET/POST .../share-links`, `DELETE .../share-links/{shareLinkId}`, `GET /api/v1/share/{token}` |
@@ -365,6 +365,29 @@ remote-resource loading.
 Plugins persist `allowScroll` or `allowClipping` intent when those options are
 used, so later audits can distinguish a deliberate compact frame from an
 accidental one.
+
+## Permanent canvas deletion
+
+`DELETE /api/v1/canvases/{canvasId}?expectedRevision=3` and
+`canvas_delete({canvasId,expectedRevision:3})` call the same atomic store
+operation. The optional expected revision must be a positive integer. Omitting
+it deletes the latest saved state; agents should pass the revision they read.
+
+HTTP returns `200 {ok:true,canvasId,deleted:true}`; MCP returns
+`{canvasId,deleted:true}`. Invalid revisions return `400 validation_error`,
+stale revisions return `409 revision_conflict`, and a missing/already-deleted
+canvas returns `404 not_found`. A retry returning not_found means it is absent.
+
+Deletion removes the document, events/history, shares, saved viewports, retry
+receipts, macro invocations, and canvas-scoped macros and their versions.
+Installation macros, external media, and extension-owned receipt state remain.
+Existing transient presence, embed sessions, plans and snapshot handles expire
+normally. Deleted targets cannot receive later saved mutations or macro runs;
+MediaTools bindings use their existing missing-target supersession recovery.
+
+Refresh canvas lists and verify absence with a read. The browser index polls
+and open editors stop on not_found. There is no undo/trash restore or inspection
+receipt for deletion; canvas_inspect is not applicable afterward.
 
 ## Concurrency and retry guidance
 

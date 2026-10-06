@@ -48,6 +48,7 @@ Type or schema-version changes require migration or delete plus upsert.
 | `canvas_list` | `canvas_list` |
 | `canvas_get` | `canvas_get` |
 | none | `canvas_get_url` returns the direct browser URL for an existing canvas |
+| `DELETE /api/v1/canvases/{canvasId}` | `canvas_delete` |
 | none | `canvas_get_guidance`, `canvas_inspect` |
 | rename | `canvas_rename` |
 | none | `canvas_set_bounds`; `canvas_create` also accepts optional `bounds` |

@@ -3,6 +3,8 @@ import { EMBED_SESSION_CREATE_REQUEST_SCHEMA, EMBED_SESSION_LIMITS } from '../em
 import { codesForStatus, problemResponse } from './problem-contract.js';
 import {
   CANVAS_LIST_LIMIT_SCHEMA,
+  CANVAS_DELETE_RECEIPT_SCHEMA,
+  EXPECTED_REVISION_SCHEMA,
   CORE_REQUEST_SCHEMAS,
   CONFIGURATION_RESPONSE_SCHEMA,
   VIEWER_ID_SCHEMA
@@ -480,6 +482,41 @@ export function coreOpenApiPaths(): Record<string, JsonObject> {
       }
     },
     '/api/v1/canvases/{canvasId}': {
+      delete: {
+        operationId: 'canvas_delete',
+        summary: 'Permanently delete a canvas',
+        tags: ['Canvases'],
+        parameters: [canvasId, { name: 'expectedRevision', in: 'query', schema: EXPECTED_REVISION_SCHEMA }],
+        responses: {
+          200: response(
+            'Deleted canvas',
+            {
+              ...CANVAS_DELETE_RECEIPT_SCHEMA,
+              required: ['ok', 'canvasId', 'deleted'],
+              properties: { ...(CANVAS_DELETE_RECEIPT_SCHEMA.properties as JsonObject), ok: { const: true } }
+            },
+            { ok: true, canvasId: 'canvas_example', deleted: true }
+          ),
+          400: problemResponse('Invalid expected revision', ['validation_error']),
+          404: problemResponse('Canvas is missing or already deleted', ['not_found']),
+          409: problemResponse('Canvas revision changed', ['revision_conflict']),
+          500: errorResponses[500]
+        },
+        'x-agent-notes': {
+          useWhen: ['Permanently remove one canvas after identifying its ID and current revision.'],
+          sideEffects: [
+            'Deletes the canvas, events, share links, retry receipts, saved viewports, invocation receipts, and canvas-scoped macros. External media is preserved.'
+          ],
+          consistency: {
+            refresh: [
+              'Canvas lists, canvas reads, share links, viewports, and canvas macro catalogs. Open editors stop on not_found.'
+            ]
+          },
+          workflow: [
+            'Read the current canvas and pass its revision as expectedRevision. A retry returning not_found means the canvas is already absent.'
+          ]
+        }
+      },
       get: {
         operationId: 'canvasGet',
         summary: 'Get a canonical canvas plus runtime projection',

@@ -5,6 +5,7 @@ import { backup, DatabaseSync } from 'node:sqlite';
 import type { CanvasElement, ElementSchemaMigration } from '@agentcanvas/plugin-sdk';
 import { CanvasError } from '../errors.js';
 import { PluginElementValidator, type FrozenPluginRegistry } from '../plugin-runtime/index.js';
+import { PHYSICAL_SCHEMA_VERSION } from '../store/v2-schema.js';
 import { inspectDatabaseVersion } from '../store/version.js';
 import { createBackupManifest, verifyBackupManifest, writeBackupManifest } from './backup.js';
 import type { MigrationCounts } from './types.js';
@@ -54,10 +55,12 @@ export function inspectPluginSchemaMigrations(
   registry: FrozenPluginRegistry
 ): PluginSchemaInspection {
   const state = inspectDatabaseVersion(db);
-  if (state.kind !== 'v2' || state.physicalVersion !== 4)
+  if (state.kind !== 'v2' || state.physicalVersion !== PHYSICAL_SCHEMA_VERSION)
     return {
       pending: [],
-      blockers: [`plugin schema inspection requires physical/document version 4/2, found ${state.kind}`]
+      blockers: [
+        `plugin schema inspection requires physical/document version ${PHYSICAL_SCHEMA_VERSION}/2, found ${state.kind}`
+      ]
     };
   const pending: PendingPluginSchemaMigration[] = [];
   const blockers: string[] = [];
@@ -173,8 +176,10 @@ export async function applyPluginSchemaMigrations(input: {
     const inspection = inspectPluginSchemaMigrations(db, input.registry);
     if (inspection.blockers.length) throw new Error(inspection.blockers.join('; '));
     const state = inspectDatabaseVersion(db);
-    if (state.kind !== 'v2' || state.physicalVersion !== 4)
-      throw new Error(`plugin schema migration requires physical/document version 4/2, found ${state.kind}`);
+    if (state.kind !== 'v2' || state.physicalVersion !== PHYSICAL_SCHEMA_VERSION)
+      throw new Error(
+        `plugin schema migration requires physical/document version ${PHYSICAL_SCHEMA_VERSION}/2, found ${state.kind}`
+      );
     if (!inspection.pending.length) throw new Error('no installed-plugin schema migrations are pending');
     const before = counts(db);
     await backup(db, backupPath);

@@ -110,7 +110,7 @@ export interface MigrationInspectionReport {
   generatedAt: string;
   sourceVersion: 1 | 2 | null;
   targetVersion: 2;
-  targetPhysicalVersion: 4;
+  targetPhysicalVersion: 5;
   versions: DatabaseVersionState;
   checks: DatabaseCheckResult;
   counts: MigrationCounts;

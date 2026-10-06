@@ -9,6 +9,7 @@ export const AGENTCANVAS_AGENT_GUIDANCE: JsonObject = Object.freeze({
     'Use canvas_list_viewers to read recently reported viewports of visible browser tabs; sessions are anonymous and expire after 30 seconds without a report.',
     'canvas_create accepts optional unlimited or fixed bounds and returns a compact receipt with the direct browser URL. Use canvas_set_bounds to change them later; a fixed size must contain every existing element frame. Give the URL to the user when appropriate; use canvas_get_url to recover it later. A direct URL does not create a public share link or bypass the host access controls.',
     'Plan element frames before composing. Mutation receipts contain only the resulting revision and diagnostic severity counts. Call canvas_inspect when any count is nonzero and repair unintended warnings immediately. Use canvas_get after a write only when the full persisted document is genuinely needed; finish with canvas_inspect and no later mutation.',
+    'Use canvas_delete only for authorized permanent deletion. Read the title and revision first, pass expectedRevision, then verify absence with canvas_list and a not_found read. It removes saved history, shares, viewports, retries and canvas-scoped macros while preserving external media; use canvas_clear to keep the canvas. Deletion receipts have no inspectionSummary, and canvas_inspect is not applicable after deletion.',
     'Use rendered browser evidence for appearance and remote-image claims when browser access exists.'
   ],
   layout: [

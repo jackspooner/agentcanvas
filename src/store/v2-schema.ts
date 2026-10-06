@@ -1,5 +1,14 @@
-export const PHYSICAL_SCHEMA_VERSION = 4;
+export const PHYSICAL_SCHEMA_VERSION = 5;
 export const DOCUMENT_SCHEMA_VERSION = 2;
+
+export const MACRO_VERSION_DELETE_TRIGGER_SQL = `
+CREATE TRIGGER IF NOT EXISTS macro_versions_immutable_delete
+BEFORE DELETE ON macro_versions
+WHEN EXISTS (SELECT 1 FROM macro_definitions WHERE id = OLD.macro_id)
+BEGIN
+  SELECT RAISE(ABORT, 'macro version records are immutable');
+END;
+`;
 
 export const MACRO_STORAGE_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS macro_definitions (
@@ -56,11 +65,7 @@ BEGIN
   SELECT RAISE(ABORT, 'macro version records are immutable');
 END;
 
-CREATE TRIGGER IF NOT EXISTS macro_versions_immutable_delete
-BEFORE DELETE ON macro_versions
-BEGIN
-  SELECT RAISE(ABORT, 'macro version records are immutable');
-END;
+${MACRO_VERSION_DELETE_TRIGGER_SQL}
 `;
 
 export const V2_SCHEMA_SQL = `

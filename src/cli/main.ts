@@ -6,6 +6,7 @@ import {
   applyMigration,
   applyCanvasThemeSchemaMigration,
   applyMacroStorageSchemaMigration,
+  applyCanvasDeletionSchemaMigration,
   applyPluginSchemaMigrations,
   inspectMigrationDatabase,
   LEGACY_TYPE_DEFINITIONS,
@@ -80,19 +81,30 @@ export async function applyMigrationCli(input: {
   } finally {
     db.close();
   }
+  if (state.kind === 'v2' && state.physicalVersion === 4) {
+    return applyCanvasDeletionSchemaMigration({ ...input, toolVersion: AGENTCANVAS_VERSION });
+  }
   if (state.kind === 'v2' && state.physicalVersion === 3) {
-    return applyMacroStorageSchemaMigration({
+    const preceding = await applyMacroStorageSchemaMigration({
       databasePath: input.databasePath,
       ...(input.backupDir ? { backupDir: input.backupDir } : {}),
       toolVersion: AGENTCANVAS_VERSION
     });
+    return {
+      ...(await applyCanvasDeletionSchemaMigration({ ...input, toolVersion: AGENTCANVAS_VERSION })),
+      precedingMigrations: [preceding]
+    };
   }
   if (state.kind === 'v2-theme-migration-required') {
-    return applyCanvasThemeSchemaMigration({
+    const preceding = await applyCanvasThemeSchemaMigration({
       databasePath: input.databasePath,
       ...(input.backupDir ? { backupDir: input.backupDir } : {}),
       toolVersion: AGENTCANVAS_VERSION
     });
+    return {
+      ...(await applyCanvasDeletionSchemaMigration({ ...input, toolVersion: AGENTCANVAS_VERSION })),
+      precedingMigrations: [preceding]
+    };
   }
 
   const registry = await loadOfflineRegistry(input.pluginsPath);
@@ -105,13 +117,17 @@ export async function applyMigrationCli(input: {
     });
   }
   const validator = new PluginElementValidator(registry);
-  return applyMigration({
+  const preceding = await applyMigration({
     databasePath: input.databasePath,
     backupDir: input.backupDir,
     importers: migrationImporters(registry),
     validateElement: (element) => validator.normalizeForWrite(element),
     toolVersion: AGENTCANVAS_VERSION
   });
+  return {
+    ...(await applyCanvasDeletionSchemaMigration({ ...input, toolVersion: AGENTCANVAS_VERSION })),
+    precedingMigrations: [preceding]
+  };
 }
 
 async function run(): Promise<number> {

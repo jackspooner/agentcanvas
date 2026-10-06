@@ -6,6 +6,7 @@ export * from './plugin-schema';
 export * from './repair-created-by';
 export * from './restore';
 export * from './schema4';
+export * from './schema5';
 export * from './theme-schema';
 export * from './types';
 export * from './v1-schema';

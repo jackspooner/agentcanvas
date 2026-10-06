@@ -62,11 +62,12 @@ The broker returns a flat opaque handle containing `handle`, `url`, `mimeType`, 
 
 ## Database versions
 
-- Empty database: initialized transactionally at physical/document version 4/2.
+- Empty database: initialized transactionally at physical/document version 5/2.
 - v0.1 database: startup fails with `database_migration_required`.
 - physical/document version 2/2: startup requires the offline physical schema 4 migration.
 - physical/document version 3/2: startup requires the offline macro-storage schema 4 migration.
-- exact physical/document version 4/2: opens normally.
+- physical/document version 4/2: startup requires offline schema 5 migration.
+- exact physical/document version 5/2: opens normally.
 - newer or contradictory version metadata: startup fails explicitly.
 
-See [physical schema 4 migration](physical-schema-4-migration.md) and [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).
+Older migration paths continue from schema 4 to 5. See [schema 5 upgrade](upgrading.md#030-alpha6-permanent-canvas-deletion-physical-schema-5), [physical schema 4 migration](physical-schema-4-migration.md) and [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md).

@@ -20,7 +20,7 @@ use the optional filesystem-images extension for administrator-controlled local
 files. Remote image loads can disclose a viewer's network request to the image
 host; set `allowImages: false` for untrusted Markdown when that matters.
 
-An empty database is initialized at physical schema 4 / document schema 2. Existing v0.1 or physical/document 2/2 or 3/2 databases require the offline migration described in [Upgrading](upgrading.md) before the current host starts.
+An empty database is initialized at physical schema 5 / document schema 2. Existing v0.1 or physical/document 2/2, 3/2 or 4/2 databases require the offline migration described in [Upgrading](upgrading.md) before the current host starts.
 
 ## Install dependencies
 
@@ -161,9 +161,9 @@ Start a compatible [Assets-2](https://github.com/jackspooner/assets2) service, s
 
 ## Existing databases
 
-- An empty database is initialized transactionally at physical/document version 4/2.
-- An exact physical/document 4/2 database opens normally.
-- A physical/document 2/2 or 3/2 database requires the offline physical schema 4 migration.
+- An empty database is initialized transactionally at physical/document version 5/2.
+- An exact physical/document 5/2 database opens normally.
+- A physical/document 2/2, 3/2 or 4/2 database requires the offline migration to physical schema 5.
 - A v0.1 database does not migrate during startup; use the [offline migration guide](v0.1-to-v0.2-migration.md).
 - A newer or contradictory database fails explicitly.
 

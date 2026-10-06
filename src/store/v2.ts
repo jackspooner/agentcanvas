@@ -285,6 +285,33 @@ export class V2SqliteCanvasStore {
     return readAgentCanvasConfiguration(this.db, this.config.defaultCanvasSize);
   }
 
+  deleteCanvas(canvasId: string, expectedRevision?: number): { canvasId: string; deleted: true } {
+    if (expectedRevision !== undefined && (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1)) {
+      throw new CanvasError('validation_error', 'expectedRevision must be a positive integer', 'validation', 400);
+    }
+    return this.metadataTransaction(() => {
+      const canvas = this.db.prepare('SELECT revision FROM canvases WHERE id=?').get(canvasId) as
+        | { revision: number }
+        | undefined;
+      if (!canvas) throw new CanvasError('not_found', `canvas not found: ${canvasId}`, 'not_found', 404);
+      checkRevision(expectedRevision, canvas.revision);
+      const macros = this.db
+        .prepare('SELECT id FROM macro_definitions WHERE canvas_id=?')
+        .all(canvasId) as unknown as Array<{ id: string }>;
+      // Versions remain immutable while their parent exists; validate deferred references at commit.
+      this.db.exec('PRAGMA defer_foreign_keys = ON;');
+      this.db.prepare('DELETE FROM macro_invocations WHERE canvas_id=?').run(canvasId);
+      this.db.prepare('DELETE FROM macro_definitions WHERE canvas_id=?').run(canvasId);
+      const deleteVersions = this.db.prepare('DELETE FROM macro_versions WHERE macro_id=?');
+      for (const macro of macros) deleteVersions.run(macro.id);
+      for (const table of ['canvas_events', 'canvas_share_links', 'canvas_idempotency_keys', 'canvas_viewports']) {
+        this.db.prepare(`DELETE FROM ${table} WHERE canvas_id=?`).run(canvasId);
+      }
+      this.db.prepare('DELETE FROM canvases WHERE id=?').run(canvasId);
+      return { canvasId, deleted: true as const };
+    });
+  }
+
   updateConfiguration(input: UpdateAgentCanvasConfigurationInput | Record<string, unknown>): AgentCanvasConfiguration {
     return writeAgentCanvasConfiguration(this.db, normalizeConfigurationUpdate(input), this.config.defaultCanvasSize);
   }
@@ -365,7 +392,7 @@ export class V2SqliteCanvasStore {
     });
   }
 
-  private metadataTransaction(update: () => V2CanvasRecord): V2CanvasRecord {
+  private metadataTransaction<T>(update: () => T): T {
     this.db.exec('BEGIN IMMEDIATE;');
     try {
       const canvas = update();

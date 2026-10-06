@@ -75,6 +75,73 @@ afterEach(() => {
 });
 
 describe('v0.2 assembled runtime', () => {
+  it.each([
+    'lean',
+    'full'
+  ] as const)('deletes canvases through HTTP and %s MCP with matching errors and schemas', async (profile) => {
+    const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
+    const app = createV2App(runtime);
+    const mcp = createMcpV2Server(
+      { ...runtime, publicBaseUrl: runtime.config.publicBaseUrl, diagnostics: () => [] },
+      profile
+    );
+    const client = new Client({ name: 'deletion-test', version: '1.0.0' });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    try {
+      await Promise.all([mcp.server.connect(serverTransport), client.connect(clientTransport)]);
+      const tool = (await client.listTools()).tools.find((item) => item.name === 'canvas_delete');
+      expect(tool?.annotations).toEqual({
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false
+      });
+      const httpCanvas = runtime.store.createCanvas({ title: 'HTTP delete' });
+      for (const expected of ['0', '-1', '1.5', 'invalid', 'Infinity', '']) {
+        const response = await app.request(`/api/v1/canvases/${httpCanvas.id}?expectedRevision=${expected}`, {
+          method: 'DELETE'
+        });
+        expect(response.status).toBe(400);
+        expect((await response.json()).code).toBe('validation_error');
+      }
+      const stale = await app.request(`/api/v1/canvases/${httpCanvas.id}?expectedRevision=2`, { method: 'DELETE' });
+      expect(stale.status).toBe(409);
+      expect((await stale.json()).code).toBe('revision_conflict');
+      const deleted = await app.request(`/api/v1/canvases/${httpCanvas.id}?expectedRevision=1`, { method: 'DELETE' });
+      expect(deleted.status).toBe(200);
+      expect(await deleted.json()).toEqual({ ok: true, canvasId: httpCanvas.id, deleted: true });
+      expect((await app.request(`/api/v1/canvases/${httpCanvas.id}`)).status).toBe(404);
+      expect((await app.request(`/api/v1/canvases/${httpCanvas.id}`, { method: 'DELETE' })).status).toBe(404);
+      const canvas = runtime.store.createCanvas({ title: 'MCP delete' });
+      const invalid = await client.callTool({
+        name: 'canvas_delete',
+        arguments: { canvasId: canvas.id, expectedRevision: 0 }
+      });
+      expect(invalid.isError).toBe(true);
+      expect(invalid.structuredContent).toMatchObject({ problem: { code: 'validation_error', status: 400 } });
+      const conflict = await client.callTool({
+        name: 'canvas_delete',
+        arguments: { canvasId: canvas.id, expectedRevision: 2 }
+      });
+      expect(conflict.structuredContent).toMatchObject({ problem: { code: 'revision_conflict', status: 409 } });
+      const result = await client.callTool({
+        name: 'canvas_delete',
+        arguments: { canvasId: canvas.id, expectedRevision: 1 }
+      });
+      expect(result.isError).not.toBe(true);
+      expect(result.structuredContent).toEqual({ canvasId: canvas.id, deleted: true });
+      const again = await client.callTool({ name: 'canvas_delete', arguments: { canvasId: canvas.id } });
+      expect(again.isError).toBe(true);
+      expect(again.structuredContent).toMatchObject({ problem: { code: 'not_found', status: 404 } });
+      const path = runtime.openapi.paths as Record<string, Record<string, { operationId: string }>>;
+      expect(path['/api/v1/canvases/{canvasId}'].delete.operationId).toBe('canvas_delete');
+      expect(runtime.store.listCanvases()).toEqual([]);
+    } finally {
+      await client.close();
+      await mcp.server.close();
+      runtime.dispose();
+    }
+  });
   it('sets fixed bounds through MCP and rejects out-of-bounds HTTP and MCP writes', async () => {
     const runtime = await createV2Runtime({ pluginsRoot: fixturePlugins(), databasePath: ':memory:' });
     const app = createV2App(runtime);
@@ -581,7 +648,7 @@ describe('v0.2 assembled runtime', () => {
       schemaVersion: 1,
       layout: expect.arrayContaining([expect.stringContaining('do not auto-grow after creation')]),
       truth: expect.arrayContaining([expect.stringContaining('persisted data only')]),
-      mcpCatalog: { coreToolCount: 31, pluginToolCount: 0, totalToolCount: 31 }
+      mcpCatalog: { coreToolCount: 32, pluginToolCount: 0, totalToolCount: 32 }
     });
     const invalidMcp = await client.callTool({ name: 'canvas_get', arguments: {} });
     expect(invalidMcp.isError).toBe(true);

@@ -1,6 +1,6 @@
 # AgentCanvas
 
-AgentCanvas v0.3.0-alpha.2 is a local-first visual workspace and MCP server for
+AgentCanvas v0.3.0-alpha.6 is a local-first visual workspace and MCP server for
 canvases built by people and agents. This alpha includes the v0.3 editor
 foundation: polished pan, zoom, selection, marquee, multi-move, resize,
 clipboard, undo/redo, grid snapping, and a shared command service.
@@ -58,7 +58,7 @@ model.
 ## Requirements
 
 - Node.js 24 or newer, npm 11 or newer, and Git with HTTPS access to GitHub.
-- A new database, which AgentCanvas initializes at physical schema 4 / document schema 2, or an existing supported database upgraded with the offline CLI before startup.
+- A new database, which AgentCanvas initializes at physical schema 5 / document schema 2, or an existing supported database upgraded with the offline CLI before startup.
 
 No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
 Markdown documents render HTTP(S) and same-origin relative image URLs by default;

@@ -99,9 +99,10 @@ Both sources deliver browser and snapshot bytes through opaque content handles. 
 
 ## Persistence
 
-V0.3 uses physical schema version 4 and document version 2. Physical version 4
+V0.3 uses physical schema version 5 and document version 2. Physical version 4
 adds first-class `theme_json` and host-owned macro storage without changing
-element document envelopes. Tables cover canvases, events, share links,
+element document envelopes. Physical version 5 permits removal of macro versions
+only after their owning definition is removed during atomic canvas deletion. Tables cover canvases, events, share links,
 document-versioned idempotency, viewports, configuration, installation
 metadata, host migration runs, plugin migration runs, plugin KV, macro
 definitions, immutable macro versions, and macro invocations.

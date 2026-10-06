@@ -42,6 +42,33 @@ remote media loaded, or the user's requested result is complete.
    diagnostics do not prove that result.
 6. Report the canvas ID, what was verified, and any remaining limitation.
 
+## Permanent canvas deletion
+
+Use `canvas_delete` only when the user authorizes removing whole canvases.
+It permanently removes the document, events/history, share links, saved
+viewports, retry receipts, macro invocations and canvas-scoped macros. External
+assets/files and installation macros remain with their owners. Use
+`canvas_clear` to keep the canvas and remove its elements instead.
+
+1. Discover the live `canvas_delete` descriptor. Identify exact IDs with
+   `canvas_list` and verify each target title and revision before deletion.
+   Do not decide from element contents when the user requested name matching.
+2. Call `canvas_delete({canvasId:"canvas_example",expectedRevision:3})` using
+   the revision just read. HTTP parity is
+   `DELETE /api/v1/canvases/canvas_example?expectedRevision=3`.
+3. A successful MCP receipt is `{canvasId,deleted:true}`. HTTP also returns
+   `ok:true`. Stale revisions return `revision_conflict`; re-read the target
+   before deciding whether it still matches the authorized scope. Missing or
+   already-deleted targets return `not_found` and are already absent.
+4. Verify with a refreshed list and a `not_found` read. Deletion returns no
+   inspection summary; do not call `canvas_inspect` on a deleted canvas.
+   Report deleted IDs and any skipped/changed targets.
+
+Transient presence, embed sessions, plans and previously issued snapshot
+handles retain their existing expiry. Store-backed reads/execution fail once
+the canvas is deleted. MediaTools attachments to a missing target become
+superseded; deletion does not cancel or resubmit generation.
+
 ## Macro workflow
 
 Macros are host-owned, declarative creation definitions. Use only the public

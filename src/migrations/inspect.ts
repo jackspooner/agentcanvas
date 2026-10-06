@@ -71,6 +71,13 @@ export function intendedMigrationBackupPath(databasePath: string, now = new Date
   return path.join(parsed.dir, `${parsed.name}.v0.1-backup-${backupTimestamp(now)}${parsed.ext || '.sqlite'}`);
 }
 
+export function intendedCanvasDeletionBackupPath(databasePath: string, now = new Date()): string {
+  return path.join(
+    path.dirname(path.resolve(databasePath)),
+    `${path.basename(databasePath)}.canvas-deletion-${backupTimestamp(now)}.bak`
+  );
+}
+
 export function intendedMacroStorageBackupPath(databasePath: string, now = new Date()): string {
   const parsed = path.parse(path.resolve(databasePath));
   return path.join(parsed.dir, `${parsed.name}.macro-storage-${backupTimestamp(now)}${parsed.ext || '.sqlite'}.bak`);
@@ -238,11 +245,13 @@ export function inspectMigrationDatabase(
           ? intendedCanvasThemeSchemaBackupPath(absolutePath, undefined, options.now ?? new Date())
           : databaseVersion.kind === 'v2' && databaseVersion.physicalVersion === 3
             ? intendedMacroStorageBackupPath(absolutePath, options.now ?? new Date())
-            : intendedMigrationBackupPath(absolutePath, options.now)),
+            : databaseVersion.kind === 'v2' && databaseVersion.physicalVersion === 4
+              ? intendedCanvasDeletionBackupPath(absolutePath, options.now ?? new Date())
+              : intendedMigrationBackupPath(absolutePath, options.now)),
       generatedAt,
       sourceVersion,
       targetVersion: 2,
-      targetPhysicalVersion: 4,
+      targetPhysicalVersion: 5,
       versions,
       checks: { integrity, foreignKeyViolations },
       counts: {
@@ -260,7 +269,7 @@ export function inspectMigrationDatabase(
       canApply:
         (sourceVersion === 1 ||
           databaseVersion.kind === 'v2-theme-migration-required' ||
-          (databaseVersion.kind === 'v2' && databaseVersion.physicalVersion === 3)) &&
+          (databaseVersion.kind === 'v2' && databaseVersion.physicalVersion < 5)) &&
         !issues.some((issue) => issue.severity === 'blocker')
     };
   } finally {

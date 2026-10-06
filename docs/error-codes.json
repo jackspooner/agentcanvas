@@ -259,6 +259,7 @@
         "canvasSnapshot",
         "canvasUpdateBounds",
         "canvasUpdateConfiguration",
+        "canvas_delete",
         "embedSessionCreate"
       ]
     },
@@ -528,6 +529,7 @@
         "canvasSnapshot",
         "canvasUpdateBounds",
         "canvasUpdateConfiguration",
+        "canvas_delete",
         "embedSessionCreate",
         "macroArchive",
         "macroCreate",
@@ -1101,6 +1103,7 @@
         "canvasSnapshot",
         "canvasUpdateBounds",
         "canvasUpdateConfiguration",
+        "canvas_delete",
         "embedSessionCreate",
         "embedSessionResolve",
         "embedSessionRevoke"
@@ -1338,7 +1341,8 @@
         "canvasSetTheme",
         "canvasSnapshot",
         "canvasUpdateBounds",
-        "canvasUpdateConfiguration"
+        "canvasUpdateConfiguration",
+        "canvas_delete"
       ]
     },
     {
@@ -1362,6 +1366,7 @@
         "canvasSnapshot",
         "canvasUpdateBounds",
         "canvasUpdateConfiguration",
+        "canvas_delete",
         "embedSessionCreate"
       ]
     },
@@ -1429,6 +1434,7 @@
         "canvasSnapshot",
         "canvasUpdateBounds",
         "canvasUpdateConfiguration",
+        "canvas_delete",
         "embedSessionCreate"
       ]
     },

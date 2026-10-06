@@ -173,7 +173,11 @@ describe('offline migration apply/verify/restore', () => {
     migrated.close();
 
     expect(
-      verifyMigrationDatabase({ databasePath: fixture.databasePath, validateElement: validateFixtureElement })
+      verifyMigrationDatabase({
+        targetPhysicalVersion: 4,
+        databasePath: fixture.databasePath,
+        validateElement: validateFixtureElement
+      })
     ).toMatchObject({ ok: true, errors: [] });
 
     const restored = await restoreMigration({
@@ -182,7 +186,9 @@ describe('offline migration apply/verify/restore', () => {
       now: new Date('2026-07-13T11:00:00.000Z')
     });
     expect(restored.failedDatabasePath).not.toBeNull();
-    expect(verifyMigrationDatabase({ databasePath: restored.failedDatabasePath as string })).toMatchObject({
+    expect(
+      verifyMigrationDatabase({ targetPhysicalVersion: 4, databasePath: restored.failedDatabasePath as string })
+    ).toMatchObject({
       ok: true
     });
 
@@ -273,6 +279,8 @@ describe('offline migration apply/verify/restore', () => {
         now: new Date('2026-07-13T15:00:00.000Z')
       })
     ).rejects.toThrow('backup manifest verification failed');
-    expect(verifyMigrationDatabase({ databasePath: fixture.databasePath })).toMatchObject({ ok: true });
+    expect(verifyMigrationDatabase({ targetPhysicalVersion: 4, databasePath: fixture.databasePath })).toMatchObject({
+      ok: true
+    });
   });
 });

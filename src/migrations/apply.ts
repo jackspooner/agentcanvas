@@ -405,6 +405,7 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
 
     assertPreserved(before, preservationFingerprints(db));
     const transactionalVerification = verifyMigrationConnection(db, {
+      targetPhysicalVersion: 4,
       expectations,
       validateElement: input.validateElement
     });
@@ -421,6 +422,7 @@ export async function applyMigration(input: ApplyMigrationInput): Promise<ApplyM
     databaseClosed = true;
 
     const verification = verifyMigrationDatabase({
+      targetPhysicalVersion: 4,
       databasePath,
       expectations,
       validateElement: input.validateElement

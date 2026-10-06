@@ -94,7 +94,7 @@ describe('canvas theme physical schema migration', () => {
       )
     ).toMatchObject({ targetPhysicalVersion: 4 });
     migrated.close();
-    expect(verifyMigrationDatabase({ databasePath })).toMatchObject({ ok: true, errors: [] });
+    expect(verifyMigrationDatabase({ targetPhysicalVersion: 4, databasePath })).toMatchObject({ ok: true, errors: [] });
 
     const restored = await restoreMigration({
       databasePath,
@@ -107,7 +107,9 @@ describe('canvas theme physical schema migration', () => {
       restoredDocumentVersion: 2
     });
     expect(restored.failedDatabasePath).not.toBeNull();
-    expect(verifyMigrationDatabase({ databasePath: restored.failedDatabasePath as string })).toMatchObject({
+    expect(
+      verifyMigrationDatabase({ targetPhysicalVersion: 4, databasePath: restored.failedDatabasePath as string })
+    ).toMatchObject({
       ok: true,
       errors: []
     });

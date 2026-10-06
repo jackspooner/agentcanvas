@@ -2189,6 +2189,75 @@
   },
   {
     "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Permanently remove a canvas, history, shares, viewports, retries and canvas macros; preserve external media. Read title/revision, pass expectedRevision, refresh lists. Stale revision: revision_conflict; absent: not_found. To keep the canvas, use canvas_clear.",
+    "errorCodes": [
+      "validation_error",
+      "internal_error",
+      "not_found",
+      "revision_conflict"
+    ],
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "canvasId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "expectedRevision": {
+          "maximum": 9007199254740991,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "canvasId"
+      ],
+      "type": "object"
+    },
+    "name": "canvas_delete",
+    "outputSchema": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "canvasId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "deleted": {
+              "const": true
+            }
+          },
+          "required": [
+            "canvasId",
+            "deleted"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "problem": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "problem"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object"
+    },
+    "title": "Delete a canvas permanently"
+  },
+  {
+    "annotations": {
       "destructiveHint": false,
       "idempotentHint": false,
       "openWorldHint": false,

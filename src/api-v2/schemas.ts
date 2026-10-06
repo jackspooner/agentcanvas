@@ -4,6 +4,15 @@ import { DIAGNOSTICS_CONFIGURATION_SCHEMA } from '../configuration.js';
 
 export const CANVAS_LIST_LIMIT_SCHEMA: JsonObject = { type: 'integer', ...CANVAS_LIST_LIMITS };
 
+export const CANVAS_DELETE_RECEIPT_SCHEMA: JsonObject = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['canvasId', 'deleted'],
+  properties: { canvasId: { type: 'string', minLength: 1 }, deleted: { const: true } }
+};
+
+export const EXPECTED_REVISION_SCHEMA: JsonObject = { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER };
+
 const nullableNumber: JsonObject = { type: ['number', 'null'] };
 const nullableBoolean: JsonObject = { type: ['boolean', 'null'] };
 

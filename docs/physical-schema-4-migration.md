@@ -1,5 +1,7 @@
 # Physical schema 4 migration
 
+The current CLI continues these schema-4 milestones through the verified offline 4→5 migration; see [Upgrading](upgrading.md#030-alpha6-permanent-canvas-deletion-physical-schema-5).
+
 Physical schema 4 adds host-owned macro definition, immutable version, and
 invocation storage. The document schema remains version 2. This is an offline
 database operation: stop AgentCanvas before `apply`, `verify` during cutover, or

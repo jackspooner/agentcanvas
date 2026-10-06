@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { PHYSICAL_SCHEMA_VERSION } from '../store/v2-schema.js';
+import { PHYSICAL_SCHEMA_VERSION, MACRO_VERSION_DELETE_TRIGGER_SQL } from '../store/v2-schema.js';
 import { LEGACY_TYPE_DEFINITIONS, RUNTIME_ONLY_LEGACY_FIELDS } from './legacy';
 import type { CanonicalElement, MigrationCounts, MigrationVerificationSummary, TypeMappingCount } from './types';
 
@@ -269,13 +269,31 @@ function ledgerExpectations(db: DatabaseSync): { expectations?: MigrationVerific
 /** Verifies an already-open database. The caller may use this before COMMIT so failed checks remain rollbackable. */
 export function verifyMigrationConnection(
   db: DatabaseSync,
-  options: { expectations?: MigrationVerificationExpectations; validateElement?: CanonicalElementValidator } = {}
+  options: {
+    expectations?: MigrationVerificationExpectations;
+    validateElement?: CanonicalElementValidator;
+    targetPhysicalVersion?: number;
+  } = {}
 ): MigrationVerificationReport {
   const errors: string[] = [];
   checkSchema(db, errors);
+  const targetPhysicalVersion = options.targetPhysicalVersion ?? PHYSICAL_SCHEMA_VERSION;
+  if (targetPhysicalVersion === 5) {
+    const trigger = db
+      .prepare("SELECT sql FROM sqlite_master WHERE type='trigger' AND name='macro_versions_immutable_delete'")
+      .get() as { sql: string } | undefined;
+    const normalizedSql = (sql: string) =>
+      sql
+        .replace(/IF NOT EXISTS\s+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/;$/, '');
+    if (!trigger || normalizedSql(trigger.sql) !== normalizedSql(MACRO_VERSION_DELETE_TRIGGER_SQL))
+      errors.push('macro version deletion guard is missing or outdated');
+  }
   const physicalVersion = Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version);
-  if (physicalVersion !== PHYSICAL_SCHEMA_VERSION) {
-    errors.push(`physical database version must be ${PHYSICAL_SCHEMA_VERSION}, found ${physicalVersion}`);
+  if (physicalVersion !== targetPhysicalVersion) {
+    errors.push(`physical database version must be ${targetPhysicalVersion}, found ${physicalVersion}`);
   }
 
   const integrity = (db.prepare('PRAGMA integrity_check').all() as unknown as Array<Record<string, string>>).map(
@@ -342,8 +360,8 @@ export function verifyMigrationConnection(
     const row = db
       .prepare('SELECT physical_version, document_version FROM agent_canvas_installation_metadata WHERE id = 1')
       .get() as { physical_version: number; document_version: number } | undefined;
-    if (!row || row.physical_version !== PHYSICAL_SCHEMA_VERSION || row.document_version !== 2) {
-      errors.push(`installation metadata does not declare physical/document version ${PHYSICAL_SCHEMA_VERSION}/2`);
+    if (!row || row.physical_version !== targetPhysicalVersion || row.document_version !== 2) {
+      errors.push(`installation metadata does not declare physical/document version ${targetPhysicalVersion}/2`);
     }
   }
   if (hasTable(db, 'agent_canvas_migration_runs') && tableCount(db, 'agent_canvas_migration_runs') < 1) {
@@ -357,7 +375,7 @@ export function verifyMigrationConnection(
       sourceVersion: expectations?.sourceVersion ?? 1,
       targetVersion: 2,
       sourcePhysicalVersion: expectations?.sourcePhysicalVersion,
-      targetPhysicalVersion: PHYSICAL_SCHEMA_VERSION,
+      targetPhysicalVersion,
       countsBefore: expectations?.countsBefore ?? countsAfter,
       countsAfter,
       mappedElementCounts: expectations?.mappedElementCounts ?? mappedCountsFromCanonical(typeCounts),
@@ -374,6 +392,7 @@ export function verifyMigrationConnection(
 /** Opens an exact v0.2 database read-only and verifies schema, canonical documents, ledgers, and SQLite integrity. */
 export function verifyMigrationDatabase(input: {
   databasePath: string;
+  targetPhysicalVersion?: number;
   expectations?: MigrationVerificationExpectations;
   validateElement?: CanonicalElementValidator;
 }): MigrationVerificationReport {
@@ -383,6 +402,7 @@ export function verifyMigrationDatabase(input: {
   try {
     const ledger = input.expectations ? {} : ledgerExpectations(db);
     const report = verifyMigrationConnection(db, {
+      targetPhysicalVersion: input.targetPhysicalVersion,
       ...(input.expectations
         ? { expectations: input.expectations }
         : ledger.expectations

@@ -220,7 +220,7 @@ export function App() {
         void poll().catch((cause) => {
           if (cancelled) return;
           const message = `Canvas refresh failed: ${cause instanceof Error ? cause.message : String(cause)}`;
-          if (embedMode) setError(message);
+          if (embedMode || (cause instanceof Error && 'code' in cause && cause.code === 'not_found')) setError(message);
           else setWarning(message);
         }),
       indexMode ? 5_000 : 1_500

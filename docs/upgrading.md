@@ -5,6 +5,36 @@ manager. Commands run from the AgentCanvas repository root. If a supervisor is
 used, substitute its normal stop and start operations where this guide says to
 stop or start the process.
 
+## 0.3.0-alpha.6 — permanent canvas deletion (physical schema 5)
+
+This release adds HTTP DELETE and MCP `canvas_delete`. Existing databases
+require an offline physical 4→5 migration; document schema stays at version 2.
+The migration changes only the macro-version deletion guard: versions remain
+immutable while their owning definition exists, and canvas deletion removes
+its definitions and versions in one transaction with deferred foreign-key
+checks. Installation macros and external media are preserved.
+
+Stop AgentCanvas through its existing supervisor before applying the upgrade.
+Build the updated checkout and run:
+
+```powershell
+npm run migrate -- inspect --database <database-path>
+npm run migrate -- apply --database <database-path>
+npm run migrate -- verify --database <database-path>
+```
+
+Apply creates and verifies a SQLite backup plus manifest, checks preserved data
+and foreign keys, and records the migration in the ledger. Physical 2/3 and
+v0.1 databases first follow their existing migration to 4, then advance to 5;
+the CLI reports preceding migration receipts and retains every backup. Startup
+refuses schema 4 until the offline upgrade is complete.
+
+Restart using the same database, environment and extensions; verify /health,
+/whoami, /openapi.json and MCP tools/list before deleting existing canvases.
+For rollback, stop the host, restore the appropriate retained backup using the
+existing migrate restore command, and run the matching prior checkout. Restoring
+a backup also restores canvases deleted since that backup was taken.
+
 ## 0.3.0-alpha.5 — optional MediaTools bindings
 
 Rebuild the packages and catalog, replace Gallery and Filesystem Images with

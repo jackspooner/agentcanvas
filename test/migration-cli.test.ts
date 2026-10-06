@@ -64,10 +64,10 @@ describe('migration CLI dispatch', () => {
       pluginsPath: path.join(path.dirname(databasePath), 'missing-plugins')
     });
     const migration = result as { backupPath: string; manifestPath: string };
-    expect(migration.backupPath).toContain('.macro-storage-');
+    expect(migration.backupPath).toContain('.canvas-deletion-');
     expect(verifyBackupManifest(readBackupManifest(migration.manifestPath))).toMatchObject({ ok: true, errors: [] });
     const db = new DatabaseSync(databasePath, { readOnly: true });
-    expect(inspectDatabaseVersion(db)).toEqual({ kind: 'v2', physicalVersion: 4, documentVersion: 2 });
+    expect(inspectDatabaseVersion(db)).toEqual({ kind: 'v2', physicalVersion: 5, documentVersion: 2 });
     db.close();
   });
 

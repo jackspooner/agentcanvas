@@ -1,6 +1,6 @@
 {
   "name": "agent-canvas",
-  "version": "0.3.0-alpha.5",
+  "version": "0.3.0-alpha.6",
   "description": "Clone-and-run local web canvas and MCP server for agent-created boards.",
   "private": true,
   "bin": {

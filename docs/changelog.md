@@ -1,5 +1,14 @@
 # Change history
 
+## 0.3.0-alpha.6 — permanent canvas deletion
+
+- Add revision-aware HTTP DELETE and MCP canvas_delete with atomic cleanup of
+  documents, history, shares, saved viewports, retries and canvas-scoped macros.
+- Offline schema 5 migration preserves data and live macro-version immutability;
+  earlier migrations chain to the current schema with verified backups.
+- Open editors stop on a missing canvas. External media and installation macros
+  remain unchanged. See [upgrade guidance](upgrading.md#030-alpha6-permanent-canvas-deletion-physical-schema-5).
+
 ## Unreleased — setup and build checks
 
 - Pin the dependency runner's Windows child `PATH` fix so nested npm builds

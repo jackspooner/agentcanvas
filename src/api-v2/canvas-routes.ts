@@ -74,6 +74,11 @@ export function registerCanvasRoutes(app: Hono, runtime: V2Runtime): void {
   app.patch('/api/v1/canvases/:canvasId', async (c) =>
     c.json({ ok: true, canvas: store.updateCanvasBounds(c.req.param('canvasId'), await readCoreJson(c, 'bounds')) })
   );
+  app.delete('/api/v1/canvases/:canvasId', (c) => {
+    const expected = c.req.query('expectedRevision');
+    const receipt = store.deleteCanvas(c.req.param('canvasId'), expected === undefined ? undefined : Number(expected));
+    return c.json({ ok: true, ...receipt });
+  });
   app.patch('/api/v1/canvases/:canvasId/title', async (c) =>
     c.json({ ok: true, canvas: store.renameCanvas(c.req.param('canvasId'), await readCoreJson(c, 'title')) })
   );
