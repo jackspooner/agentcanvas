@@ -60,7 +60,7 @@ model.
 - Node.js 24 or newer, npm 11 or newer, and Git with HTTPS access to GitHub.
 - A new database, which AgentCanvas initializes at physical schema 5 / document schema 2, or an existing supported database upgraded with the offline CLI before startup.
 
-No media service is required. Local files and [Assets-2](https://github.com/jackspooner/assets2) are independently installable image-source extensions.
+No media service is required. Image-source extensions are independently installable.
 Markdown documents render HTTP(S) and same-origin relative image URLs by default;
 set `allowImages: false` on an individual Markdown document to keep only its
 alt text. Use the filesystem-images extension for administrator-controlled
@@ -109,7 +109,7 @@ curl http://127.0.0.1:23003/whoami
 curl http://127.0.0.1:23003/openapi.json
 ```
 
-`/health` reports AgentCanvas core readiness. When the optional Assets-2 extension is installed, its current readiness is reported under `dependencies.assets` without making the core host unavailable.
+`/health` reports AgentCanvas core readiness and optional extension diagnostics.
 
 For a long-running installation, run AgentCanvas from the repository root under
 any supervisor that can set the working directory,
@@ -171,10 +171,9 @@ Default materialization activates:
 - `agentcanvas.markdown`
 - `agentcanvas.table`
 
-The catalog also builds these optional plugins without activating them by default:
+The catalog also builds optional plugins without activating them by default, including:
 
 - `agentcanvas.filesystem-images`
-- `agentcanvas.assets2`
 - `agentcanvas.gallery`
 - `agentcanvas.image-overlays`
 - `agentcanvas.video`
@@ -228,7 +227,7 @@ Gallery items use a stable provider envelope. For example, an allowlisted filesy
 }
 ```
 
-Assets-2 items use `provider: "agentcanvas.assets2"` with the normal durable asset reference under `reference`. Agent tools are exposed as `agentcanvas_gallery__create`, `agentcanvas_gallery__append_items`, `agentcanvas_gallery__remove_item`, `agentcanvas_gallery__reorder_items`, `agentcanvas_gallery__set_cover`, and `agentcanvas_gallery__update_settings`. Slide navigation is browser-local; the persisted `initialIndex` controls the initial slide and deterministic snapshot cover.
+Agent tools are exposed as `agentcanvas_gallery__create`, `agentcanvas_gallery__append_items`, `agentcanvas_gallery__remove_item`, `agentcanvas_gallery__reorder_items`, `agentcanvas_gallery__set_cover`, and `agentcanvas_gallery__update_settings`. Slide navigation is browser-local; the persisted `initialIndex` controls the initial slide and deterministic snapshot cover.
 
 ## Extension authoring
 
@@ -417,25 +416,31 @@ when receipt counts are nonzero or a final diagnostic audit is required.
 
 ### Agent guidance
 
-The repository bundles an operational skill at
-[`skills/agentcanvas/SKILL.md`](skills/agentcanvas/SKILL.md). It is optional for
-the runtime but recommended for agents: it covers runtime discovery, layout,
-frame sizing, diagrams, images, and evidence-based reporting. See [Agent
-readiness](docs/agent-readiness.md) for Hermes installation, eight broad
-acceptance objectives, and the verification rubric.
+The repository owns four optional agent skills with distinct scopes:
 
-For a first-time-user product tour, use the bundled
-[`skills/agentcanvas-demonstration/SKILL.md`](skills/agentcanvas-demonstration/SKILL.md)
-skill. It creates a guided showcase using the capabilities active in the
-default installation and can include user-supplied or web-found images.
+- [AgentCanvas](skills/agentcanvas/SKILL.md): runtime discovery and mutations.
+- [Inspection](skills/agentcanvas-inspection/SKILL.md): source evidence,
+  persisted versus rendered verification, and final QA.
+- [Layout](skills/agentcanvas-layout/SKILL.md): frame geometry, explicit themes,
+  typography, and readable composition.
+- [Demonstration](skills/agentcanvas-demonstration/SKILL.md): a guided product-tour
+  narrative adapted to the active installation.
 
-For Hermes, connect the resident MCP endpoint and install the published skill:
+Load the owner sections relevant to the task. Read-only inspection does not
+require layout or demonstration guidance. See [Agent readiness](docs/agent-readiness.md)
+for installation, eight acceptance objectives, and the verification rubric.
+
+For Hermes, connect the resident MCP endpoint:
 
 ```bash
 hermes mcp add agentcanvas --url http://127.0.0.1:23003/mcp
 hermes mcp test agentcanvas
-hermes skills install https://raw.githubusercontent.com/jackspooner/agentcanvas/main/skills/agentcanvas/SKILL.md --category software-development --yes
 ```
+
+Make the repository’s `skills/` folder available through the shared skill
+discovery setup described by `shared-agent-skills`. Preserve the sibling
+packages so scoped links resolve; installing only the base file omits its
+layout and inspection owners.
 
 Start a new agent session after installing or updating the skill. Restart or
 reconnect the MCP client after AgentCanvas tool schemas or active extensions
@@ -463,16 +468,6 @@ The stdio MCP bridge uses `AGENT_CANVAS_BASE_URL` when set and otherwise connect
 
 ```text
 AGENT_CANVAS_BASE_URL=http://127.0.0.1:23003
-```
-
-The optional Assets-2 extension owns these settings when installed:
-
-```text
-ASSETS_BASE_URL=http://127.0.0.1:23000
-AGENT_CANVAS_ASSET_FETCH_TIMEOUT_MS=10000
-AGENT_CANVAS_ASSET_METADATA_MAX_BYTES=1048576
-AGENT_CANVAS_ASSET_PREVIEW_MAX_BYTES=8388608
-AGENT_CANVAS_ASSET_PROXY_MAX_BYTES=268435456
 ```
 
 Plugin secrets belong only in environment variables declared by that plugin manifest. `plugin.config.json` is validated strictly and may not contain secrets or implicit defaults.

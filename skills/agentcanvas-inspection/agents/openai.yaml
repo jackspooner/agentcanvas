@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentCanvas Inspection"
+  short_description: "Inspect AgentCanvas nodes and bbox data."
+  default_prompt: "Use $agentcanvas-inspection to inspect an AgentCanvas share, find the authoritative canvas element, and return exact bbox or node metadata."
