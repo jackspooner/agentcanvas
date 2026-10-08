@@ -98,6 +98,18 @@ not start a service, and needs no production database or `.env`. Configure
 Git credentials locally if a pinned repository requires them; never put them
 in the repository. Run [verification](#verification) separately.
 
+If a nested legacy yt-dlp pin is unavailable in the recovered Linux wrapper,
+set `WORKSPACE2_LINUX_YTDLP_COMMIT` to an explicitly verified recovery commit
+available in `<root>/dependencies/yt-dlp`, using the dependency owner's
+documented compatibility configuration. Keep that value fixed across setup
+and verification; setup never chooses a newer revision or rewrites the pins.
+Node and npm must be available on `PATH` with the versions listed above;
+the system default Node may differ from the configured service runtime.
+
+`npm run test:setup:verification` checks dependency failure handling without
+network access. `npm run test:setup` exercises a clean installation and missing
+build outputs; it uses the same dependency configuration and Git access as setup.
+
 On Windows, start the already-prepared checkout in the background with:
 
 ```powershell

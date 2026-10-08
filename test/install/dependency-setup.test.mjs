@@ -29,6 +29,17 @@ test('clean setup loads the pinned dependency and verification rejects incomplet
       timeout: 240_000,
       stdio: 'pipe'
     });
+    const pinnedFiles = ['package-lock.json', '.cutlery/internal-deps.toml'];
+    const prepared = pinnedFiles.map((file) => fs.readFileSync(path.join(root, file)));
+    execFileSync(process.execPath, [process.env.npm_execpath, 'run', 'setup:worktree'], {
+      cwd: root,
+      timeout: 240_000,
+      stdio: 'pipe'
+    });
+    for (let index = 0; index < pinnedFiles.length; index += 1) {
+      assert.deepEqual(fs.readFileSync(path.join(root, pinnedFiles[index])), prepared[index]);
+      assert.deepEqual(prepared[index], fs.readFileSync(path.join(source, pinnedFiles[index])));
+    }
     const builtEntry = path.join(root, '.cutlery/deps/workspace2-api-contracts/dist/index.js');
     fs.unlinkSync(builtEntry);
     const verification = spawnSync(process.execPath, ['scripts/internal-dependencies.mjs', 'verify'], {

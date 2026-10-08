@@ -25,6 +25,18 @@ if (process.platform === 'win32') {
 // Keep the pinned bootstrap for installations without an explicit owner path.
 const configuredCli = process.env.WORKSPACE2_INTERNAL_DEPS_CLI ||
   (process.env.WORKSPACE2_LINUX_ROOT && path.join(process.env.WORKSPACE2_LINUX_ROOT, 'infrastructure', 'Workspace2InternalDeps', 'src', 'cli.mjs'));
+if (process.platform === 'linux' && !configuredCli) {
+  throw new Error('Set WORKSPACE2_LINUX_ROOT to the Workspace2 installation root, or WORKSPACE2_INTERNAL_DEPS_CLI to its absolute owner CLI path. Linux legacy pins require the installed compatibility mapping.');
+}
+
+function reportVerification(result) {
+  if (result?.ok !== true || result.skipped || !Array.isArray(result.verified) ||
+      result.verified.length === 0 || result.verified.some((item) => item?.ok !== true)) {
+    throw new Error(`Internal dependency verification failed: ${JSON.stringify(result)}`);
+  }
+  console.log(`Verified ${result.verified.length} pinned internal dependency package(s).`);
+}
+
 if (configuredCli) {
   if (!path.isAbsolute(configuredCli) || !fs.existsSync(configuredCli)) {
     throw new Error('Set WORKSPACE2_INTERNAL_DEPS_CLI to an existing absolute Workspace2InternalDeps CLI path.');
@@ -33,10 +45,7 @@ if (configuredCli) {
     execFileSync(process.execPath, [configuredCli, 'materialize', '--repo', root], { stdio: 'inherit' });
   }
   const result = JSON.parse(execFileSync(process.execPath, [configuredCli, 'verify', '--repo', root], { encoding: 'utf8' }));
-  if (!result.ok || result.skipped || !result.verified?.length) {
-    throw new Error(`Internal dependency verification failed: ${JSON.stringify(result)}`);
-  }
-  console.log(`Verified ${result.verified.length} pinned internal dependency package(s).`);
+  reportVerification(result);
 } else {
 // Bootstrap the existing dependency owner without requiring an installed npm package.
 const materializerRepository = 'https://github.com/jackspooner/workspace2-internal-deps.git';
@@ -62,10 +71,7 @@ try {
     await materializeRepoDependencies(root);
   }
   const result = await verifyRepoDependencies(root);
-  if (!result.ok || result.skipped || !result.verified.length) {
-    throw new Error(`Internal dependency verification failed: ${JSON.stringify(result)}`);
-  }
-  console.log(`Verified ${result.verified.length} pinned internal dependency package(s).`);
+  reportVerification(result);
 } finally {
   if (path.dirname(temporaryRoot) !== path.resolve(os.tmpdir())) throw new Error('Unexpected temporary directory');
   fs.rmSync(temporaryRoot, { recursive: true, force: true });

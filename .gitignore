@@ -10,6 +10,8 @@ coverage/
 .cutlery/*
 !.cutlery/internal-deps.toml
 .codex/
+.agents/
+.claude/
 screenshots/
 exports/
 generated-exports/
