@@ -86,6 +86,18 @@ verifies the installed package can load. Run it after cloning or updating pins.
 `npm ci` alone requires `.cutlery/deps/` to have already been prepared.
 See [dependency setup](docs/getting-started.md#install-dependencies) for details.
 
+For a fresh linked worktree, run `npm run setup:worktree` with Node.js 24+,
+npm 11+, Git, and access to the pinned GitHub repositories. On Linux with
+legacy Windows dependency pins, first set `WORKSPACE2_LINUX_ROOT` to your
+Workspace2 installation root; its `infrastructure/Workspace2InternalDeps/src/cli.mjs`
+must support Linux compatibility mapping. `WORKSPACE2_INTERNAL_DEPS_CLI` can
+select an explicit absolute owner CLI path. Keep the Linux root set for nested
+legacy build commands. The command materializes and verifies committed pins,
+installs the lockfile, and checks dependency imports. It is repeatable, does
+not start a service, and needs no production database or `.env`. Configure
+Git credentials locally if a pinned repository requires them; never put them
+in the repository. Run [verification](#verification) separately.
+
 On Windows, start the already-prepared checkout in the background with:
 
 ```powershell

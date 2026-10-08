@@ -21,6 +21,23 @@ if (process.platform === 'win32') {
   process.env.GIT_CONFIG_COUNT = String(index + 1);
 }
 
+// Linux migrations use the installed owner's supported compatibility mapping.
+// Keep the pinned bootstrap for installations without an explicit owner path.
+const configuredCli = process.env.WORKSPACE2_INTERNAL_DEPS_CLI ||
+  (process.env.WORKSPACE2_LINUX_ROOT && path.join(process.env.WORKSPACE2_LINUX_ROOT, 'infrastructure', 'Workspace2InternalDeps', 'src', 'cli.mjs'));
+if (configuredCli) {
+  if (!path.isAbsolute(configuredCli) || !fs.existsSync(configuredCli)) {
+    throw new Error('Set WORKSPACE2_INTERNAL_DEPS_CLI to an existing absolute Workspace2InternalDeps CLI path.');
+  }
+  if (action === 'materialize') {
+    execFileSync(process.execPath, [configuredCli, 'materialize', '--repo', root], { stdio: 'inherit' });
+  }
+  const result = JSON.parse(execFileSync(process.execPath, [configuredCli, 'verify', '--repo', root], { encoding: 'utf8' }));
+  if (!result.ok || result.skipped || !result.verified?.length) {
+    throw new Error(`Internal dependency verification failed: ${JSON.stringify(result)}`);
+  }
+  console.log(`Verified ${result.verified.length} pinned internal dependency package(s).`);
+} else {
 // Bootstrap the existing dependency owner without requiring an installed npm package.
 const materializerRepository = 'https://github.com/jackspooner/workspace2-internal-deps.git';
 const materializerCommit = '64e9ae122fd764c655df2fcf5513c022842780fe';
@@ -52,4 +69,6 @@ try {
 } finally {
   if (path.dirname(temporaryRoot) !== path.resolve(os.tmpdir())) throw new Error('Unexpected temporary directory');
   fs.rmSync(temporaryRoot, { recursive: true, force: true });
+}
+
 }

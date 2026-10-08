@@ -1,5 +1,9 @@
 # AgentCanvas Agent Guide
 
+## Worktree setup
+
+Run `npm run setup:worktree` in a fresh linked worktree with Node.js 24+, npm 11+, and GitHub access. It restores committed dependency pins and lockfiles, verifies outputs/imports, and starts no service or database. On Linux, configure `WORKSPACE2_LINUX_ROOT` for the installed Workspace2InternalDeps compatibility mapping; optionally set its absolute CLI path with `WORKSPACE2_INTERNAL_DEPS_CLI`. See [developer onboarding](README.md#quick-start) for prerequisites and configuration. Run `npm run check:docs` and `git diff --check` for guidance edits; use the [full verification commands](README.md#verification) for runtime changes.
+
 ## Assets-2 usage
 
 - `agentcanvas.assets2` is an optional image-source extension. AgentCanvas stores the durable reference envelope; Assets-2 owns media identity and bytes.
