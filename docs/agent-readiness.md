@@ -1,11 +1,11 @@
 # Agent readiness
 
-AgentCanvas includes an operational skill at
-[`skills/agentcanvas/SKILL.md`](../skills/agentcanvas/SKILL.md). It teaches an
-agent how to discover the active runtime, compose in world coordinates, size
-frames, use literal labels, and separate persisted facts from rendered facts.
-MCP tools remain usable without the skill, but clients that support skills
-should install or load it, especially when using smaller models.
+AgentCanvas includes [runtime discovery and mutation guidance](../skills/agentcanvas/SKILL.md),
+[inspection and evidence rules](../skills/agentcanvas-inspection/SKILL.md),
+[layout guidance](../skills/agentcanvas-layout/SKILL.md), and a
+[demonstration narrative](../skills/agentcanvas-demonstration/SKILL.md).
+MCP tools remain usable without skills. Clients that support skills should
+make these packages available together and load only the relevant owner sections.
 
 ## Eight acceptance objectives
 
@@ -80,8 +80,12 @@ With AgentCanvas running on its default loopback endpoint:
 ```bash
 hermes mcp add agentcanvas --url http://127.0.0.1:23003/mcp
 hermes mcp test agentcanvas
-hermes skills install https://raw.githubusercontent.com/jackspooner/agentcanvas/main/skills/agentcanvas/SKILL.md --category software-development --yes
 ```
+
+Make the repository’s `skills/` folder available through the shared skill
+discovery setup described by `shared-agent-skills`. Preserve the sibling
+packages so scoped links resolve; installing only the base file omits its
+layout and inspection owners.
 
 `/mcp` is the lean default. Use `/mcp/full` only when the client requires every
 active named extension tool; lean clients can discover and invoke omitted tools

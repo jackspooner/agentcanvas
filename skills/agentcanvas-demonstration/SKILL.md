@@ -10,9 +10,12 @@ should feel like a small product tour, not a random test board: clear hierarchy,
 spacious layout, a few contrasting element types, and a truthful handoff that
 explains what was persisted and what was visually checked.
 
-Use the `agentcanvas` skill for the underlying canvas mutation, inspection,
-diagnostic, coordinate, and truth-discipline rules. This skill adds the
-demonstration narrative and default-install selection logic.
+This guide owns the tour narrative and capability selection. Use the base
+[discovery](../agentcanvas/SKILL.md#runtime-discovery) and
+[mutation](../agentcanvas/SKILL.md#canvas-mutations) sections for operations,
+[layout](../agentcanvas-layout/SKILL.md) for composition, and
+[inspection QA](../agentcanvas-inspection/SKILL.md#final-qa) for evidence.
+Read the scoped sections needed for the tour, without reloading their callers.
 
 ## Demonstration promise
 
@@ -28,46 +31,33 @@ Show the new user these capabilities when the active runtime supports them:
 7. Host-owned macros when the generic macro tools are present: create or use a
    tiny versioned definition, preview it, then execute it as one atomic action.
 
-Do not claim that a capability is available because it exists in documentation
-or source folders. First call `canvas_get_guidance` and `canvas_list_plugins`,
-then adapt to the returned active registry. A default install normally includes
-the core canvas plus the standard Markdown, primitives, table, overlay, video,
-GLB, and image-source extensions, but the runtime response is authoritative.
+Adapt this promise to the active runtime established through base discovery.
+Optional extensions may be absent even when their source is installed.
 
 ## Walkthrough workflow
 
 ### 1. Discover and set expectations
 
-- Read `canvas_get_guidance` if available.
-- Call `canvas_list_plugins` and record active element types, tools, and
-  diagnostics capabilities.
+- Use [runtime discovery](../agentcanvas/SKILL.md#runtime-discovery) to select
+  the element types and capabilities the tour can actually demonstrate.
 - Start a new canvas unless the user supplied an existing canvas to tour.
 - Ask the user for two to four images they would like displayed, or ask for a
   visual theme if they do not have specific images. If they provide local files,
-  URLs, or asset references, use those references according to the active
-  runtime contract. If they do not provide images or prefer the agent to choose,
-  use the available web/image search tools to find a small, coherent set of
+  URLs, or image-source references advertised by the active runtime, use them
+  according to that runtime contract. If they do not provide images or prefer
+  the agent to choose, use the available web/image search tools to find a small,
+  coherent set of
   suitable image URLs. Do not silently invent image sources.
 - Explain internally that this is a demonstration board and that generated copy
   is illustrative, not product documentation or researched fact.
 
 ### 2. Compose the board
 
-Use a dark, high-contrast semantic theme unless the user requests another style.
-For a fresh unlimited canvas, compose around the origin with roughly these
-regions:
-
-```text
-Title:       x=-620, y=-390, width=1220, height=90
-Core canvas: x=-620, y=-220, width=380, height=360
-Rich cards:  x=-200, y=-220, width=380, height=360
-Structured:  x=220,  y=-220, width=380, height=360
-Workflow:    x=-620, y=190,  width=1220, height=260
-```
-
-Keep at least 32 world pixels between unrelated frames. Adjust frames to the
-actual content and returned minimum-height diagnostics; these coordinates are
-only a starting composition.
+Apply the [layout guide](../agentcanvas-layout/SKILL.md): an explicit theme,
+readable typography, and a 16:9 area centered on the origin for an unlimited
+canvas. Plan a title, three teaching regions (core canvas, rich cards, structured
+data), and a workflow strip. Fit their frames to content using the layout
+owner’s sizing rules; add an image region when suitable sources are available.
 
 Create the following content, adapting element types to the active registry:
 
@@ -91,27 +81,16 @@ Create the following content, adapting element types to the active registry:
 - Footer or callout: `The agent can create it. The person can see it. Both can
   inspect what is actually there.`
 
-Prefer core text and shapes when a richer extension is absent. Do not make the
-demo depend on Assets-2 or a media provider. For web-found images, preserve the
-source URL and mention that the Markdown card is a remote reference, not a
-copied durable asset; do not use suspicious, inaccessible, or private URLs.
+Prefer core text and shapes when a richer extension is absent. For web-found
+images, preserve the source URL and mention that the Markdown card is a remote
+reference, not a copied durable asset; do not use suspicious, inaccessible, or private URLs.
 Respect the image search tool's licensing/source information and avoid claiming
 ownership or permanence. If no suitable image can be found, continue with a
 text-only demonstration and say so.
 
-### Image verification
-
-An image element persisted in the canvas does not prove that the image loaded.
-When the demonstration contains images:
-
-1. Read the mutation diagnostics and confirm the Markdown element contains the
-   intended image reference without exposing binary data or data URLs.
-2. Open the returned canvas URL in the available browser surface and visually
-   confirm each selected image is present, not broken, clipped, or obscured.
-3. If an image fails, replace it with a working selected URL or remove that card;
-   never report a broken remote image as demonstrated capability.
-4. Record the visual check in the final handoff and distinguish `rendered and
-   visible` from merely `persisted as Markdown`.
+Image cards make image-display verification part of this tour's promise.
+Apply the inspection owner’s [image evidence requirements](../agentcanvas-inspection/SKILL.md#persisted-and-rendered-evidence)
+and record the result in the handoff.
 
 ### 3. Optional macro moment
 
@@ -121,31 +100,19 @@ canvas. Discover the exact schemas before constructing requests. The macro
 should create one or two plainly labeled demonstration elements, for example a
 `Macro-created card`, with no external calls or sensitive inputs.
 
-- Create or select an exact immutable macro version.
-- Plan it with an explicit anchor and typed input.
-- Show the plan's preview/effect summary in the agent narration; do not claim
-  the preview is persisted.
-- Execute with the returned plan ID, current `expectedRevision`, and a bounded
-  idempotency key.
-- Re-read the canvas and inspect diagnostics after execution.
+Follow the base [macro workflow](../agentcanvas/SKILL.md#macro-workflow).
+Narrate the plan's preview/effect summary, then show the persisted result after
+execution so the user can understand the distinction.
 
 Skip this section if the tools are unavailable or if the user asked for a
 minimal tour. Report the omission rather than inventing a macro result.
 
 ### 4. Verify like a product demo
 
-After every mutation, read returned diagnostics and inspection summaries and fix
-unintended warnings immediately. At the end:
-
-1. Call `canvas_get` and verify the expected element types, labels, frames,
-   theme, revision, and any macro-created elements.
-2. Call `canvas_inspect` when available and resolve unintended diagnostics.
-3. If a browser/canvas URL is available, use it for the user-facing handoff.
-   Persisted state proves storage, not visual readability; perform a browser
-   check when the user explicitly asked to see the result or when visual
-   appearance is part of the demonstration promise.
-4. Make `canvas_get` followed by `canvas_inspect` the final canvas operations;
-   do not mutate after final QA.
+Apply [final QA](../agentcanvas-inspection/SKILL.md#final-qa) to the promised
+capabilities, including the persisted theme and any macro-created elements.
+Rendered appearance is part of a visual tour; follow the inspection owner’s
+browser/image evidence requirements and report any unavailable check.
 
 ## Handoff
 
@@ -158,5 +125,4 @@ Keep the final response short and concrete:
 - Call out limitations, such as skipped optional extensions or an unperformed
   browser visual check.
 
-Never say "everything works" from a successful mutation alone. Say exactly what
-the final `canvas_get`, `canvas_inspect`, and any browser check established.
+Keep handoff claims within the inspection evidence collected for this tour.
