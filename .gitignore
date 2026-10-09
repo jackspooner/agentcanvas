@@ -9,6 +9,7 @@ coverage/
 .vite/
 .cutlery/*
 !.cutlery/internal-deps.toml
+!.cutlery/devtask.json
 .codex/
 .agents/
 .claude/

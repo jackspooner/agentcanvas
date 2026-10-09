@@ -31,7 +31,7 @@
     "workspace"
   ],
   "scripts": {
-    "setup:worktree": "npm run setup",
+    "setup:worktree": "node scripts/setup-worktree.mjs",
     "setup": "npm run deps:materialize && npm ci && npm run check:internal-deps",
     "deps:materialize": "node scripts/internal-dependencies.mjs materialize",
     "check:internal-deps": "node scripts/internal-dependencies.mjs verify && node --input-type=module -e \"import '@workspace2/api-contracts'\"",

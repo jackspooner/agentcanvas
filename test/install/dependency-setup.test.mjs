@@ -23,6 +23,10 @@ test('clean setup loads the pinned dependency and verification rejects incomplet
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(path.join(source, file), target);
     }
+    // DevTasks binds preparation receipts to committed Git inputs, as in a linked checkout.
+    execFileSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: root });
+    execFileSync('git', ['add', '.'], { cwd: root });
+    execFileSync('git', ['-c', 'user.name=Setup fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'Fixture inputs'], { cwd: root });
     assert.equal(fs.existsSync(path.join(root, '.cutlery/deps')), false);
     execFileSync(process.execPath, [process.env.npm_execpath, 'run', 'setup'], {
       cwd: root,

@@ -139,3 +139,13 @@ paths or bytes are returned. Collect before the current 24-hour job-history
 expiry. Collected references survive expiry. Verify delivery using the inspection
 owner's [image-job binding checks](../agentcanvas-inspection/SKILL.md#image-job-bindings).
 Operator setup is in [MediaTools extension](../../plugin-packages/mediatools/README.md).
+
+## Development preparation
+
+Owner work uses `npm run setup:worktree` with the installed shared DevTasks CLI.
+Its adapter preserves native pinned materialization, locked workspace installation
+and import readiness. `-- --legacy` invokes `npm run setup` for rollback. Verification
+retains package/application/external-plugin fixtures, isolated Playwright, contract/docs
+and format/lint checks, with packages before plugin distributions/catalogs. Keep Linux
+root/yt-dlp mappings consistent with the dependency owner. Setup starts no canvas service
+or database; browser fixtures use ports 23173–23175 and temporary state.

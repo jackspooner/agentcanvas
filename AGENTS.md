@@ -2,7 +2,33 @@
 
 ## Worktree setup
 
-Run `npm run setup:worktree` in a fresh linked worktree with Node.js 24+, npm 11+, and GitHub access. It restores committed dependency pins and lockfiles, verifies outputs/imports, and starts no service or database. On Linux, configure `WORKSPACE2_LINUX_ROOT` for the installed Workspace2InternalDeps compatibility mapping; optionally set its absolute CLI path with `WORKSPACE2_INTERNAL_DEPS_CLI`. See [developer onboarding](README.md#quick-start) for prerequisites and configuration. Run `npm run check:docs` and `git diff --check` for guidance edits; use the [full verification commands](README.md#verification) for runtime changes.
+Run `npm run setup:worktree` in a fresh linked worktree with the installed shared
+DevTasks CLI, Node.js 24+, npm 11+, Git and access to pinned repositories. The
+[adapter](.cutlery/devtask.json) preserves the native no-argument setup: pinned
+materialization/verification, locked workspace installation and dependency imports.
+Preparation evidence is checkout-local under ignored `.cutlery/devtask/`; units
+reuse only matching inputs/tool versions/prerequisites with readiness checks.
+`npm run setup:worktree -- --legacy` invokes the original `npm run setup` rollback.
+The committed `.npmrc` sets `install-links=true`: npm copies local pinned packages
+instead of adding nested install state to InternalDeps snapshots. Lock normalization
+preserves all original registry versions/integrities and internal commit pins.
+
+Linux requires the installed InternalDeps compatibility mapping through
+`WORKSPACE2_LINUX_ROOT`; `WORKSPACE2_INTERNAL_DEPS_CLI` can select its absolute CLI.
+Keep `WORKSPACE2_LINUX_YTDLP_COMMIT` fixed when configured, consistently with the
+DevTasks host owner. Compatible runtime version differences are checked by builds.
+Setup starts no service/database and never advances pins.
+
+Verification retains the README suite: format/lint, package/application/external
+plugin tests, isolated Playwright fixtures, web and plugin builds, plugin validation,
+OpenAPI/MCP/shared contracts, docs and dependency failure-handling checks. The docs
+scope prepares builds needed by contracts; it defers indexing. Packages build before
+plugins, then the distribution catalog; the external fixture resolves public workspace
+packages and retains its check/test/pack/verification sequence. Browser tests need the
+matching Playwright Chromium installation and ports 23173–23175; they use temporary
+state, never production databases. Run `npm run test:setup` separately for the network
+installation proof. Before graph use, ensure this exact checkout with
+`embeddings:false` and read the repository-local GitNexus workflow skill.
 
 ## Plugin architecture
 

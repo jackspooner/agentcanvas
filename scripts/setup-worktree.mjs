@@ -1,0 +1,11 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const args = process.argv.slice(2);
+const legacy = args[0] === '--legacy';
+if (legacy) args.shift();
+const command = legacy ? (process.platform === 'win32' ? 'npm.cmd' : 'npm') : (process.platform === 'win32' ? 'devtask.cmd' : 'devtask');
+const result = spawnSync(command, legacy ? ['run', 'setup', ...args] : ['setup', '--repo', root, '--scope', 'full', ...args], { cwd: root, stdio: 'inherit', env: process.env });
+if (result.error) console.error(`Worktree setup failed: ${result.error.message}. Install the shared devtask CLI or use npm run setup:worktree -- --legacy for the native fallback.`);
+process.exitCode = result.status ?? 1;

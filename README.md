@@ -86,17 +86,27 @@ verifies the installed package can load. Run it after cloning or updating pins.
 `npm ci` alone requires `.cutlery/deps/` to have already been prepared.
 See [dependency setup](docs/getting-started.md#install-dependencies) for details.
 
-For a fresh linked worktree, run `npm run setup:worktree` with Node.js 24+,
-npm 11+, Git, and access to the pinned GitHub repositories. On Linux with
-legacy Windows dependency pins, first set `WORKSPACE2_LINUX_ROOT` to your
-Workspace2 installation root; its `infrastructure/Workspace2InternalDeps/src/cli.mjs`
-must support Linux compatibility mapping. `WORKSPACE2_INTERNAL_DEPS_CLI` can
-select an explicit absolute owner CLI path. Keep the Linux root set for nested
-legacy build commands. The command materializes and verifies committed pins,
-installs the lockfile, and checks dependency imports. It is repeatable, does
-not start a service, and needs no production database or `.env`. Configure
-Git credentials locally if a pinned repository requires them; never put them
-in the repository. Run [verification](#verification) separately.
+For a fresh linked worktree, run `npm run setup:worktree` with the installed shared
+DevTasks CLI, Node.js 24+, npm 11+, Git and access to the pinned GitHub repositories.
+The [.cutlery/devtask.json adapter](.cutlery/devtask.json) retains native setup's
+pinned materialization/verification, locked workspace install and import readiness.
+Matching unit evidence/readiness reuses preparation; changed inputs and missing outputs
+rerun affected units. Receipts are ignored under `.cutlery/devtask/`.
+`npm run setup:worktree -- --legacy` retains the original `npm run setup` rollback.
+The committed `.npmrc` sets `install-links=true`: npm copies local pinned packages
+instead of adding nested install state to InternalDeps snapshots. Lock normalization
+preserves all original registry versions/integrities and internal commit pins.
+
+On Linux set `WORKSPACE2_LINUX_ROOT` for the installed dependency compatibility
+mapping; `WORKSPACE2_INTERNAL_DEPS_CLI` can select its absolute owner CLI. Keep
+these mappings consistent with the DevTasks host configuration for nested commands.
+Neither path starts services/databases or advances pins; no production `.env` is needed.
+Run [verification](#verification) separately. The adapter preserves the complete suite,
+including public external-plugin fixtures, and builds workspace packages before plugins
+and their catalog. Docs preparation includes contract prerequisites and defers indexing.
+The top-bar controls retain their full width so they cannot overflow left over the canvas bounds selector.
+Browser fixtures use temporary state and ports 23173–23175; install the matching
+Playwright Chromium separately when absent.
 
 If a nested legacy yt-dlp pin is unavailable in the recovered Linux wrapper,
 set `WORKSPACE2_LINUX_YTDLP_COMMIT` to an explicitly verified recovery commit
