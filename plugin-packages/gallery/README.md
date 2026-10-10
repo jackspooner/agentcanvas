@@ -12,3 +12,7 @@ The extension can remain installed when a referenced provider is unavailable. Th
 The installable distribution is built into `dist/plugin-catalog/agentcanvas.gallery` by `npm run plugins:build`. It is optional and is not activated by `plugins:materialize -- --defaults`.
 
 Agent tools create galleries, append or remove items, reorder items, choose the deterministic cover image, and update presentation settings. A gallery must contain from 1 through 50 images. Autoplay defaults off and pauses for focus, pointer hover, and reduced-motion preferences.
+
+Gallery settings are also editable from the canvas: every gallery node shows a `Settings` affordance that opens an autoplay, interval, fit, controls and indicators panel. The panel commits through the extension's own `apply-settings` browser command, so the change is one undoable canvas revision instead of a browser-local edit.
+
+Autoplay keeps its remaining dwell time across renderer updates that do not change the gallery itself (host refreshes, theme, selection, viewport). Only a settings or item change, a pause-state change, or an explicit navigation restarts the interval.

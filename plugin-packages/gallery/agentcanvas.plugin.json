@@ -31,6 +31,7 @@
         "snapshot": "supported"
       }
     ],
+    "commands": ["apply-settings"],
     "tools": ["create", "append-items", "remove-item", "reorder-items", "set-cover", "update-settings"],
     "procedures": [],
     "migrations": []

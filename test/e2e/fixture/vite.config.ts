@@ -104,7 +104,9 @@ function catalog() {
               ? ['toggle-status']
               : id === 'agentcanvas.markdown'
                 ? ['combine-as-carousel', 'unpack-carousel']
-                : []
+                : id === 'agentcanvas.gallery'
+                  ? ['apply-settings']
+                  : []
         },
         diagnostics: []
       };

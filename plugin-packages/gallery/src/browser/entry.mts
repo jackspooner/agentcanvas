@@ -1,10 +1,11 @@
 import type {
   AgentCanvasBrowserPlugin,
+  BrowserCommandContext,
   BrowserElementRenderer,
   JsonObject,
   RendererContext
 } from '@agentcanvas/plugin-sdk';
-import { fitToObjectFit, type GalleryData, type GalleryItem, galleryData } from '../contracts.js';
+import { fitToObjectFit, type GalleryData, type GalleryFit, type GalleryItem, galleryData } from '../contracts.js';
 
 interface RuntimeGalleryItem {
   id: string;
@@ -13,6 +14,10 @@ interface RuntimeGalleryItem {
   mimeType?: string;
   message?: string;
 }
+
+const GALLERY_ELEMENT_TYPE = 'agentcanvas.gallery/gallery';
+const MINIMUM_INTERVAL_MS = 2_000;
+const MAXIMUM_INTERVAL_MS = 60_000;
 
 const styles = `
   :host{display:block;width:100%;height:100%;box-sizing:border-box;color:var(--gallery-color,#0f172a);font:13px/1.35 var(--gallery-font,system-ui,sans-serif)}
@@ -56,11 +61,194 @@ function safeResourceUrl(value: string | undefined): string | null {
   return url.href;
 }
 
+function clampInterval(value: number): number {
+  return Math.min(MAXIMUM_INTERVAL_MS, Math.max(MINIMUM_INTERVAL_MS, Math.round(value)));
+}
+
+function isGalleryFit(value: unknown): value is GalleryFit {
+  return value === 'contain' || value === 'cover' || value === 'stretch' || value === 'original';
+}
+
+/** Committed settings patch for one gallery element. */
+function settingsPatch(input: JsonObject | undefined): Partial<GalleryData> {
+  const patch: Partial<GalleryData> = {};
+  if (typeof input?.autoplay === 'boolean') patch.autoplay = input.autoplay;
+  if (typeof input?.intervalMs === 'number' && Number.isFinite(input.intervalMs)) {
+    patch.intervalMs = clampInterval(input.intervalMs);
+  }
+  if (isGalleryFit(input?.fit)) patch.fit = input.fit;
+  if (typeof input?.showControls === 'boolean') patch.showControls = input.showControls;
+  if (typeof input?.showIndicators === 'boolean') patch.showIndicators = input.showIndicators;
+  return patch;
+}
+
+async function applySettings(context: BrowserCommandContext, input?: JsonObject): Promise<void> {
+  const elementId =
+    typeof input?.elementId === 'string'
+      ? input.elementId
+      : context.selection.find((element) => element.type === GALLERY_ELEMENT_TYPE)?.id;
+  if (!elementId) throw new Error('Select a gallery first.');
+  const current = context.getElement?.(elementId);
+  if (!current || current.element.type !== GALLERY_ELEMENT_TYPE) throw new Error('Select a gallery first.');
+  const patch = settingsPatch(input);
+  if (Object.keys(patch).length === 0) throw new Error('At least one gallery setting is required.');
+  const data: GalleryData = { ...galleryData(current.element.data), ...patch };
+  await context.transact(
+    'Update gallery settings',
+    [{ op: 'replaceElementData', elementId, data: data as unknown as JsonObject }],
+    { expectedRevision: current.revision }
+  );
+}
+
+async function dispatch(context: RendererContext, name: string, input?: JsonObject): Promise<void> {
+  if (!context.executeCommand) throw new Error('Gallery settings require host renderer commands.');
+  const okay = await context.executeCommand(`agentcanvas.gallery.${name}`, input);
+  if (!okay) throw new Error('The gallery command is unavailable.');
+}
+
+function labelledRow(label: string, control: HTMLElement): HTMLLabelElement {
+  const row = document.createElement('label');
+  row.style.cssText = 'display:grid;grid-template-columns:max-content 1fr;align-items:center;gap:10px;padding:6px 0';
+  const text = document.createElement('span');
+  text.textContent = label;
+  row.append(text, control);
+  return row;
+}
+
+function checkbox(checked: boolean, disabled: boolean): HTMLInputElement {
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.disabled = disabled;
+  input.dataset.agentcanvasInteractive = '';
+  input.style.cssText = 'justify-self:start;width:18px;height:18px';
+  return input;
+}
+
+/** Element-owned settings panel: the editor affordance for gallery autoplay. */
+function settingsPanel(context: RendererContext, close: () => void): HTMLElement {
+  const data = galleryData(context.element.data);
+  const locked = context.readOnly || Boolean(context.element.locked);
+  const panel = document.createElement('section');
+  panel.dataset.agentcanvasInteractive = '';
+  panel.style.cssText =
+    'box-sizing:border-box;width:min(460px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;border:1px solid #cbd5e1;border-radius:12px;background:#fff;padding:18px;color:#0f172a;font:13px/1.4 system-ui,sans-serif;box-shadow:0 20px 50px rgba(15,23,42,.25)';
+  const heading = document.createElement('h2');
+  heading.textContent = 'Gallery settings';
+  heading.style.cssText = 'margin:0 44px 10px 0;font-size:16px';
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.textContent = 'Close';
+  closeButton.dataset.agentcanvasInteractive = '';
+  closeButton.style.cssText = 'float:right;border:1px solid #cbd5e1;border-radius:6px;background:#fff;padding:5px 8px';
+  closeButton.addEventListener('click', close);
+
+  const autoplay = checkbox(data.autoplay, locked);
+  const showControls = checkbox(data.showControls, locked);
+  const showIndicators = checkbox(data.showIndicators, locked);
+  const interval = document.createElement('input');
+  interval.type = 'number';
+  interval.min = String(MINIMUM_INTERVAL_MS / 1_000);
+  interval.max = String(MAXIMUM_INTERVAL_MS / 1_000);
+  interval.step = '0.5';
+  interval.value = String(data.intervalMs / 1_000);
+  interval.disabled = locked;
+  interval.dataset.agentcanvasInteractive = '';
+  interval.style.cssText = 'justify-self:start;width:110px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px';
+  const fit = document.createElement('select');
+  fit.disabled = locked;
+  fit.dataset.agentcanvasInteractive = '';
+  fit.style.cssText = 'justify-self:start;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px';
+  for (const option of ['contain', 'cover', 'stretch', 'original'] as const) {
+    const item = document.createElement('option');
+    item.value = option;
+    item.textContent = option;
+    item.selected = option === data.fit;
+    fit.append(item);
+  }
+
+  const detail = document.createElement('p');
+  detail.style.cssText = 'margin:10px 0 0;color:#64748b';
+  detail.textContent = `${data.items.length} image${data.items.length === 1 ? '' : 's'}`;
+
+  const apply = document.createElement('button');
+  apply.type = 'button';
+  apply.textContent = 'Apply';
+  apply.dataset.agentcanvasInteractive = '';
+  apply.disabled = locked;
+  apply.style.cssText =
+    'margin-top:14px;border:1px solid #2563eb;border-radius:6px;background:#2563eb;color:#fff;padding:7px 12px;font-weight:600';
+  const status = document.createElement('p');
+  status.setAttribute('role', 'status');
+  status.style.cssText = 'margin:10px 0 0;color:#b91c1c';
+  if (locked) status.textContent = 'This canvas is read-only.';
+
+  apply.addEventListener('click', () => {
+    apply.disabled = true;
+    status.textContent = '';
+    const seconds = Number(interval.value);
+    void dispatch(context, 'apply-settings', {
+      autoplay: autoplay.checked,
+      intervalMs: Number.isFinite(seconds) ? Math.round(seconds * 1_000) : data.intervalMs,
+      fit: fit.value,
+      showControls: showControls.checked,
+      showIndicators: showIndicators.checked
+    })
+      .then(() => close())
+      .catch((error: unknown) => {
+        apply.disabled = false;
+        status.textContent = error instanceof Error ? error.message : 'Gallery settings could not be applied.';
+      });
+  });
+
+  panel.append(
+    closeButton,
+    heading,
+    labelledRow('Autoplay', autoplay),
+    labelledRow('Seconds per image', interval),
+    labelledRow('Fit', fit),
+    labelledRow('Show controls', showControls),
+    labelledRow('Show indicators', showIndicators),
+    detail,
+    apply,
+    status
+  );
+  return panel;
+}
+
+async function openGallerySettings(context: RendererContext): Promise<void> {
+  const overlay = context.overlays.open(
+    settingsPanel(context, () => overlay.close()),
+    {
+      modal: true,
+      label: 'Gallery settings'
+    }
+  );
+  context.signal.addEventListener('abort', () => overlay.close(), { once: true });
+}
+
+export function registerGalleryCommands(host: {
+  registerCommand?(command: {
+    name: string;
+    title: string;
+    isEnabled?(context: BrowserCommandContext): boolean;
+    execute(context: BrowserCommandContext, input?: JsonObject): void | Promise<void>;
+  }): void;
+}): void {
+  host.registerCommand?.({
+    name: 'apply-settings',
+    title: 'Update gallery settings',
+    isEnabled: (context) => !context.readOnly,
+    execute: applySettings
+  });
+}
+
 export function createGalleryRenderer(): BrowserElementRenderer {
   return {
-    type: 'agentcanvas.gallery/gallery',
+    type: GALLERY_ELEMENT_TYPE,
     schemaVersions: [1],
     placement: 'node',
+    details: { open: openGallerySettings, label: 'Settings' },
     mount(root, initial) {
       const style = document.createElement('style');
       style.textContent = styles;
@@ -106,7 +294,9 @@ export function createGalleryRenderer(): BrowserElementRenderer {
       let activeItemId: string | null = data.items[activeIndex]?.id ?? null;
       let objectUrl: string | null = null;
       let request: AbortController | null = null;
-      let timer: ReturnType<typeof setInterval> | null = null;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let autoplaySignature: string | null = null;
+      let autoplayDeadline = 0;
       let hovered = false;
       let focused = false;
       let disposed = false;
@@ -201,15 +391,53 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         void load();
       };
 
-      const restartTimer = () => {
-        if (timer) clearInterval(timer);
+      const clearTimer = () => {
+        if (timer) clearTimeout(timer);
         timer = null;
-        if (!data.autoplay || data.items.length < 2 || hovered || focused || context.lifecycle.reducedMotion) return;
-        timer = setInterval(() => {
-          activeIndex = (activeIndex + 1) % data.items.length;
-          activeItemId = data.items[activeIndex].id;
-          void loadActive();
-        }, data.intervalMs);
+      };
+
+      const autoplayPaused = () =>
+        !data.autoplay || data.items.length < 2 || hovered || focused || context.lifecycle.reducedMotion;
+
+      const autoplaySignatureFor = () =>
+        JSON.stringify([
+          data.autoplay,
+          data.intervalMs,
+          data.items.map((item) => item.id),
+          hovered,
+          focused,
+          context.lifecycle.reducedMotion
+        ]);
+
+      // Autoplay keeps its remaining dwell time across unrelated renderer updates
+      // (host refresh, theme, selection, viewport): only a real settings, items or
+      // pause-state change, and an explicit navigation, restart the countdown.
+      // Restarting on every update made the interval unreachable whenever the host
+      // rendered its elements more often than intervalMs.
+      const restartTimer = (restart = false) => {
+        const signature = autoplaySignatureFor();
+        const now = Date.now();
+        if (autoplayPaused()) {
+          clearTimer();
+          autoplaySignature = signature;
+          autoplayDeadline = 0;
+          return;
+        }
+        if (restart || signature !== autoplaySignature || now >= autoplayDeadline) {
+          autoplayDeadline = now + data.intervalMs;
+        }
+        autoplaySignature = signature;
+        clearTimer();
+        timer = setTimeout(
+          () => {
+            timer = null;
+            activeIndex = (activeIndex + 1) % data.items.length;
+            activeItemId = data.items[activeIndex].id;
+            void loadActive();
+            restartTimer(true);
+          },
+          Math.max(0, autoplayDeadline - Date.now())
+        );
       };
 
       const move = (delta: number) => {
@@ -217,7 +445,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         activeIndex = (activeIndex + delta + data.items.length) % data.items.length;
         activeItemId = data.items[activeIndex].id;
         void loadActive();
-        restartTimer();
+        restartTimer(true);
       };
 
       const onPrevious = () => move(-1);
@@ -297,7 +525,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
         dispose() {
           if (disposed) return;
           disposed = true;
-          if (timer) clearInterval(timer);
+          clearTimer();
           previous.removeEventListener('click', onPrevious);
           next.removeEventListener('click', onNext);
           frame.removeEventListener('keydown', onKeyDown);
@@ -315,6 +543,7 @@ export function createGalleryRenderer(): BrowserElementRenderer {
 
 const plugin: AgentCanvasBrowserPlugin = {
   activate(host) {
+    registerGalleryCommands(host);
     host.registerRenderer(createGalleryRenderer());
   }
 };

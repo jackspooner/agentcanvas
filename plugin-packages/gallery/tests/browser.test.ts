@@ -1,7 +1,12 @@
-import type { RendererContext } from '@agentcanvas/plugin-sdk';
+import type {
+  BrowserCommandContext,
+  BrowserCommandDescriptor,
+  JsonObject,
+  RendererContext
+} from '@agentcanvas/plugin-sdk';
 import { DEFAULT_CANVAS_THEME } from '@agentcanvas/plugin-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createGalleryRenderer } from '../src/browser/entry.mjs';
+import { createGalleryRenderer, registerGalleryCommands } from '../src/browser/entry.mjs';
 
 type RuntimeItem = {
   id: string;
@@ -248,5 +253,129 @@ describe('gallery browser lifecycle', () => {
     expect(root.querySelector('.indicator')?.textContent).toBe('2 / 2');
 
     await mounted.dispose();
+  });
+
+  function autoplayContext(intervalMs = 4_000, lifecycleSignal = new AbortController().signal): RendererContext {
+    const base = context(undefined, new AbortController().signal, lifecycleSignal);
+    return {
+      ...base,
+      element: { ...base.element, data: { ...base.element.data, autoplay: true, intervalMs } }
+    };
+  }
+
+  it('keeps autoplay advancing while unrelated renderer updates arrive faster than the interval', async () => {
+    vi.useFakeTimers();
+    const lifecycleSignal = new AbortController().signal;
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, autoplayContext(4_000, lifecycleSignal));
+    await vi.advanceTimersByTimeAsync(0);
+    const indicator = () => root.querySelector('.indicator')?.textContent;
+    expect(indicator()).toBe('1 / 2');
+
+    // The host re-renders every element on its 1.5s canvas refresh poll.
+    for (let elapsed = 0; elapsed < 7_500; elapsed += 1_500) {
+      await mounted.update(autoplayContext(4_000, lifecycleSignal));
+      await vi.advanceTimersByTimeAsync(1_500);
+    }
+
+    expect(indicator()).toBe('2 / 2');
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(indicator()).toBe('1 / 2');
+    await mounted.dispose();
+  });
+
+  it('pauses autoplay while hovered and starts a full dwell after leaving', async () => {
+    vi.useFakeTimers();
+    const root = document.createElement('div').attachShadow({ mode: 'open' });
+    const mounted = createGalleryRenderer().mount(root, autoplayContext(4_000));
+    await vi.advanceTimersByTimeAsync(0);
+    const frame = root.querySelector('figure');
+    await vi.advanceTimersByTimeAsync(2_000);
+    frame?.dispatchEvent(new Event('pointerenter'));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(root.querySelector('.indicator')?.textContent).toBe('1 / 2');
+
+    frame?.dispatchEvent(new Event('pointerleave'));
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(root.querySelector('.indicator')?.textContent).toBe('2 / 2');
+    await mounted.dispose();
+  });
+
+  it('registers its own settings command and commits a clamped settings patch', async () => {
+    const registered: BrowserCommandDescriptor[] = [];
+    registerGalleryCommands({ registerCommand: (command) => registered.push(command) });
+    expect(registered.map((command) => command.name)).toEqual(['apply-settings']);
+
+    const transact = vi.fn(async () => {});
+    const element = context().element;
+    const commandContext = {
+      pluginId: 'agentcanvas.gallery',
+      readOnly: false,
+      selection: [],
+      viewport: { centerX: 0, centerY: 0, zoom: 1 },
+      signal: new AbortController().signal,
+      overlays: { open: () => ({ update() {}, close() {} }) },
+      executeCommand: async () => true,
+      getElement: () => ({ element, revision: 7 }),
+      reveal: () => {},
+      transact,
+      reportDiagnostic: vi.fn()
+    } as unknown as BrowserCommandContext;
+
+    await registered[0].execute(commandContext, { elementId: 'gallery', autoplay: true, intervalMs: 900 });
+
+    expect(transact).toHaveBeenCalledWith(
+      'Update gallery settings',
+      [
+        {
+          op: 'replaceElementData',
+          elementId: 'gallery',
+          data: expect.objectContaining({
+            autoplay: true,
+            intervalMs: 2_000,
+            fit: 'contain',
+            showControls: true,
+            showIndicators: true
+          })
+        }
+      ],
+      { expectedRevision: 7 }
+    );
+  });
+
+  it('opens a settings panel that applies autoplay changes through the element command', async () => {
+    const opened: HTMLElement[] = [];
+    const dispatched: Array<{ id: string; input?: JsonObject }> = [];
+    const rendererContext = {
+      ...autoplayContext(),
+      overlays: {
+        open: (content: Node) => {
+          opened.push(content as HTMLElement);
+          return { update() {}, close() {} };
+        }
+      },
+      executeCommand: async (id: string, input?: JsonObject) => {
+        dispatched.push({ id, input });
+        return true;
+      }
+    } as unknown as RendererContext;
+
+    const renderer = createGalleryRenderer();
+    await renderer.details?.open(rendererContext);
+
+    const panel = opened[0];
+    expect(panel.querySelector('h2')?.textContent).toBe('Gallery settings');
+    const autoplay = panel.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(autoplay?.checked).toBe(true);
+    const apply = Array.from(panel.querySelectorAll('button')).find((button) => button.textContent === 'Apply');
+    expect(apply).toBeDefined();
+
+    if (autoplay) autoplay.checked = false;
+    apply?.click();
+    await vi.waitFor(() => expect(dispatched).toHaveLength(1));
+    expect(dispatched[0].id).toBe('agentcanvas.gallery.apply-settings');
+    expect(dispatched[0].input).toEqual(
+      expect.objectContaining({ autoplay: false, intervalMs: 4_000, fit: 'contain', showControls: true })
+    );
   });
 });
