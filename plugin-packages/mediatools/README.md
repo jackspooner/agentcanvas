@@ -83,9 +83,12 @@ Filesystem Images root, so canvases persist only its root ID and relative path.
 
 Statuses are `attaching`, `queued`, `running`, `collected`, `completed`,
 `failed`, and `superseded`. A failed binding includes a safe error code and
-message; invalid, expired, or failed jobs and outputs rejected by the configured
+message; invalid, expired, cancelled, or failed jobs and outputs rejected by the configured
 filesystem root are terminal. A superseded binding means its target changed or
 disappeared before attachment completed.
+
+A cancelled upstream image job becomes a terminal failed binding with code
+`mediatools_job_cancelled`. It stops polling without collecting or resubmitting.
 
 ## Verification
 
@@ -97,3 +100,5 @@ npm run plugins:verify
 
 Third-party licenses for the bundled MediaTools client dependency closure are
 included in `THIRD_PARTY_NOTICES.md`.
+When a published dependency omits its license text, exact-version upstream
+copies and their provenance are maintained in [licenses/](licenses/README.md).

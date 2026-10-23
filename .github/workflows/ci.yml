@@ -41,12 +41,28 @@ jobs:
           npm --version
 
       - name: Install dependencies
-        run: npm run setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE2_PACKAGES_TOKEN }}
+          GIT_CONFIG_COUNT: 2
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: '!f() { printf "%s\n" "username=x-access-token" "password=$GITHUB_TOKEN"; }; f'
+          GIT_CONFIG_KEY_1: url.https://github.com/.insteadOf
+          GIT_CONFIG_VALUE_1: ssh://git@github.com/
+        run: |
+          test -n "$GITHUB_TOKEN" || { echo 'Set WORKSPACE2_PACKAGES_TOKEN with read access to the pinned packages'; exit 1; }
+          npm run setup
 
       - name: Build public packages for the external fixture
         run: npm run build:packages
 
       - name: Verify clean dependency setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE2_PACKAGES_TOKEN }}
+          GIT_CONFIG_COUNT: 2
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: '!f() { printf "%s\n" "username=x-access-token" "password=$GITHUB_TOKEN"; }; f'
+          GIT_CONFIG_KEY_1: url.https://github.com/.insteadOf
+          GIT_CONFIG_VALUE_1: ssh://git@github.com/
         run: npm run test:setup
 
       - name: Install packed SDK and testkit into the external fixture
@@ -139,7 +155,16 @@ jobs:
         run: npm install --global npm@11
 
       - name: Install dependencies
-        run: npm run setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE2_PACKAGES_TOKEN }}
+          GIT_CONFIG_COUNT: 2
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: '!f() { printf "%s\n" "username=x-access-token" "password=$GITHUB_TOKEN"; }; f'
+          GIT_CONFIG_KEY_1: url.https://github.com/.insteadOf
+          GIT_CONFIG_VALUE_1: ssh://git@github.com/
+        run: |
+          test -n "$GITHUB_TOKEN" || { echo 'Set WORKSPACE2_PACKAGES_TOKEN with read access to the pinned packages'; exit 1; }
+          npm run setup
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

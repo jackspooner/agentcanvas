@@ -129,10 +129,11 @@ frame geometry and item order.
 
 Read `get-binding` or bounded `list-bindings` through the read-only dispatcher.
 Queued/running are expected pending states; collection and conversion continue
-across restarts. A transient outage remains retryable. Failed/expired jobs,
+across restarts. A transient outage remains retryable. Failed, cancelled or expired jobs,
 missing output indexes and rejected files are terminal; inspect the safe error
 and bind a different job using a new binding ID. Removed/rebound slots supersede
 the old binding. Do not resubmit generation to recover collection uncertainty.
+Cancelled image jobs stop polling with binding error `mediatools_job_cancelled`.
 
 Complete outputs become normal filesystem source references; no absolute output
 paths or bytes are returned. Collect before the current 24-hour job-history
@@ -142,10 +143,12 @@ Operator setup is in [MediaTools extension](../../plugin-packages/mediatools/REA
 
 ## Development preparation
 
-Owner work uses `npm run setup:worktree` with the installed shared DevTasks CLI.
-Its adapter preserves native pinned materialization, locked workspace installation
-and import readiness. `-- --legacy` invokes `npm run setup` for rollback. Verification
-retains package/application/external-plugin fixtures, isolated Playwright, contract/docs
-and format/lint checks, with packages before plugin distributions/catalogs. Keep Linux
-root/yt-dlp mappings consistent with the dependency owner. Setup starts no canvas service
-or database; browser fixtures use ports 23173–23175 and temporary state.
+Owner setup uses `npm run setup:worktree` for locked workspace installation and
+full-commit private Git dependencies. Verification retains package/application/external-plugin
+fixtures, isolated Playwright, contract/docs and format/lint checks, with packages
+before plugin distributions/catalogs. Setup starts no canvas service or database;
+browser fixtures use ports 23173–23175 and temporary state. See README for commands.
+
+For the existing Linux service, use the [systemd deployment procedure](../../docs/deployment.md#existing-linux-systemd-deployment).
+It covers idle checks, state backup, native setup/build, explicit replacement of
+changed active extensions, configuration preservation and health verification.
