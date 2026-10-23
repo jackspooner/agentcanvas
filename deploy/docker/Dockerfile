@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:24-bookworm-slim AS build
 
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
@@ -6,7 +7,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 WORKDIR /build
 COPY . .
 
-RUN npm run setup \
+RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN,required=true \
+    GIT_CONFIG_COUNT=2 \
+    GIT_CONFIG_KEY_0=credential.helper \
+    GIT_CONFIG_VALUE_0='!f() { printf "%s\n" "username=x-access-token" "password=$GITHUB_TOKEN"; }; f' \
+    GIT_CONFIG_KEY_1=url.https://github.com/.insteadOf \
+    GIT_CONFIG_VALUE_1=ssh://git@github.com/ \
+    npm run setup \
     && npm run plugins:build \
     && npm run plugins:materialize -- --defaults \
     && npm run build
@@ -19,7 +26,6 @@ ENV AGENT_CANVAS_DB=/var/lib/agentcanvas/agent-canvas.sqlite
 
 COPY --from=build --chown=node:node /build/package.json /build/package-lock.json ./
 COPY --from=build --chown=node:node /build/node_modules ./node_modules
-COPY --from=build --chown=node:node /build/.cutlery/deps ./.cutlery/deps
 COPY --from=build --chown=node:node /build/packages ./packages
 COPY --from=build --chown=node:node /build/plugins ./plugins
 COPY --from=build --chown=node:node /build/dist ./dist

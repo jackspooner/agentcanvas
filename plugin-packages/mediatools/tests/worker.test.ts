@@ -104,6 +104,20 @@ const imageInput = (overrides: Partial<BindInput> = {}): BindInput => ({
 });
 
 describe('MediaTools binding worker', () => {
+  it('stops polling a cancelled job and keeps its binding as a terminal failure', async () => {
+    const f = fixture({ status: 'cancelled', files: [] });
+    await f.worker().bind(imageInput(), f.controller.signal);
+    await f.worker().tick();
+    expect(await f.worker().get('bind1')).toMatchObject({
+      status: 'failed',
+      error: { code: 'mediatools_job_cancelled' }
+    });
+    await f.worker().tick();
+    expect(f.client.imageJob).toHaveBeenCalledTimes(1);
+    expect(f.files.fromPath).not.toHaveBeenCalled();
+    expect(f.gallery.replaceSource).not.toHaveBeenCalled();
+  });
+
   it('reserves a default image frame, tracks running state, and attaches the selected output', async () => {
     const f = fixture({ status: 'running', files: [] });
     const bound = await f

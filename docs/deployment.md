@@ -4,12 +4,59 @@ AgentCanvas can run directly from a checkout. These optional helpers provide
 repeatable long-running service setups without requiring a particular private
 process manager.
 
+## Existing Linux systemd deployment
+
+Inspect `systemctl --user cat agentcanvas.service` for the canonical checkout,
+Node executable and private environment file. Prepare the tested, published
+commit using that Node version and existing Git credentials. Before stopping
+the service, check active MediaTools bindings and connected authoring clients;
+wait for active work to finish. Preserve the SQLite database, active extension
+configuration and private environment file. With writers stopped, use SQLite's
+backup operation and verify the backup with `PRAGMA integrity_check`.
+
+From the service-defined checkout, after those checks and backups:
+
+```sh
+systemctl --user stop agentcanvas.service
+git merge --ff-only TESTED_COMMIT
+npm run setup:worktree
+npm run plugins:build
+npm run build
+```
+
+Stop on a failed setup or build. For each changed active extension, preserve its
+`plugin.config.json`, then replace its distribution through the offline CLI:
+
+```sh
+npm run plugins:disable -- agentcanvas.mediatools
+npm run plugins:install -- dist/plugin-catalog/agentcanvas.mediatools
+```
+
+The disable command returns the preserved directory under `plugins-disabled/`.
+Restore its deployment-specific configuration into the new active directory,
+then verify the active extensions with `npm run plugins:verify`.
+`plugins:materialize -- --defaults` does not refresh an installed extension at
+the same version. Keep unrelated active extensions and their configuration.
+
+```sh
+systemctl --user start agentcanvas.service
+curl --fail http://127.0.0.1:23003/health
+curl --fail http://127.0.0.1:23003/whoami
+```
+
+Verify the active extension catalog and retained canvases after startup. Record
+the deployed commit and any protected local modifications. Recovery uses the
+previous tested source and preserved extension distributions with the service
+stopped; retain current durable state rather than restoring an older database
+over subsequent user work.
+
 ## Linux with Docker Compose
 
 Prerequisites:
 
 - Docker Engine with the Compose plugin (`docker compose`).
 - Build-time network access to GitHub, npm, and Debian package repositories.
+- `GITHUB_TOKEN` in the invoking environment, with read access to the pinned private package repositories. Compose passes it only as a BuildKit build secret; it is not copied into the image or runtime environment. Do not put it in a committed file.
 
 From the repository root:
 
@@ -22,8 +69,8 @@ curl http://127.0.0.1:23003/health
 The supplied `compose.yaml` builds the application, materializes the three
 default extensions, runs as the unprivileged `node` user, and stores the SQLite
 database in the named `agentcanvas-data` volume. The build prepares pinned
-internal dependencies with `npm run setup`; the runtime image retains
-`.cutlery/deps/` so npm package links remain valid. Git is installed only in
+Git dependencies with `npm run setup`; the runtime image retains the installed
+`node_modules` packages. Git is installed only in
 the build stage. Follow logs with:
 
 ```bash

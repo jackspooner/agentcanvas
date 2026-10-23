@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: deploy/docker/Dockerfile
+      secrets:
+        - github_token
     image: agentcanvas:local
     init: true
     restart: unless-stopped
@@ -38,3 +40,7 @@ services:
 
 volumes:
   agentcanvas-data:
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

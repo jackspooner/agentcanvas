@@ -30,34 +30,9 @@ Clone or enter the AgentCanvas repository and install its dependencies:
 npm run setup
 ```
 
-On Linux, configure `WORKSPACE2_LINUX_ROOT` and, optionally,
-`WORKSPACE2_INTERNAL_DEPS_CLI` as described in the root README's
-[worktree onboarding](../README.md#quick-start). Setup uses this installed
-owner's Linux compatibility mapping. An unavailable nested legacy yt-dlp pin
-requires the documented, explicitly chosen `WORKSPACE2_LINUX_YTDLP_COMMIT`
-recovery configuration; no pin is silently advanced.
+Setup uses native `npm ci` and full-commit Git dependencies. Authenticate Git for the private GitHub package repositories before installation; no dependency materializer or machine-specific path mapping is required. Shared package builds run through their normal prepare scripts. The committed npm lockfile is the reproducible installation input.
 
-Without a configured owner on other platforms, setup downloads a pinned revision of the existing
-[Workspace2 dependency materializer](https://github.com/jackspooner/workspace2-internal-deps),
-which needs only Node.js and Git. It reads `.cutlery/internal-deps.toml`, fetches
-each dependency at its exact `resolvedCommit`, runs its declared build command,
-and prepares `.cutlery/deps/` before running `npm ci`. It does not update pins.
-The materializer revision is pinned in `scripts/internal-dependencies.mjs`.
-On Windows, it removes duplicate child-process `PATH` entries so nested npm
-builds retain command lookup without changing the machine's environment.
-
-Use `npm run deps:materialize` to prepare dependencies without reinstalling npm
-packages. `npm run check:internal-deps` verifies pins, expected build outputs,
-and the installed API-contract package import; it does not rebuild dependencies.
-Both commands use the configured owner or the pinned bootstrap. Download, build, or
-verification failures stop setup. Keep `.cutlery/internal-deps.toml` in Git;
-`.cutlery/deps/` and `.cutlery/cache/` remain generated and ignored.
-
-`npm run test:setup` exercises setup in a fresh temporary copy and confirms
-verification rejects missing build output. This network-dependent check also
-runs in CI, separately from the application tests.
-`npm run test:setup:verification` separately checks malformed results and
-exit-zero `ok:false` failures without network access.
+`npm run test:setup` exercises installation in a fresh temporary copy, checks required package imports and confirms a second setup preserves the lockfile. It is network-dependent and separate from application tests.
 
 Copy `.env.example` to `.env` and check at least these values:
 

@@ -80,45 +80,14 @@ npm run build
 npm run dev
 ```
 
-`npm run setup` fetches the pinned Workspace2 dependency materializer, builds the
-internal packages listed in `.cutlery/internal-deps.toml`, then runs `npm ci` and
-verifies the installed package can load. Run it after cloning or updating pins.
-`npm ci` alone requires `.cutlery/deps/` to have already been prepared.
-See [dependency setup](docs/getting-started.md#install-dependencies) for details.
+`npm run setup` and `npm run setup:worktree` install the committed npm lockfile, including full-commit Git packages. Requirements are Node.js 24+, npm 11+, Git and authenticated access to the private dependency repositories. Setup changes checkout-local dependencies only; it never starts services or databases. Ordinary `npm ci` uses the same dependency declarations.
 
-For a fresh linked worktree, run `npm run setup:worktree` with the installed shared
-DevTasks CLI, Node.js 24+, npm 11+, Git and access to the pinned GitHub repositories.
-The [.cutlery/devtask.json adapter](.cutlery/devtask.json) retains native setup's
-pinned materialization/verification, locked workspace install and import readiness.
-Matching unit evidence/readiness reuses preparation; changed inputs and missing outputs
-rerun affected units. Receipts are ignored under `.cutlery/devtask/`.
-`npm run setup:worktree -- --legacy` retains the original `npm run setup` rollback.
-The committed `.npmrc` sets `install-links=true`: npm copies local pinned packages
-instead of adding nested install state to InternalDeps snapshots. Lock normalization
-preserves all original registry versions/integrities and internal commit pins.
+GitHub Actions requires the `WORKSPACE2_PACKAGES_TOKEN` repository secret with read access to those private package repositories. The workflow supplies it to Git only for dependency installation and the fresh-setup test. Fork pull requests without that secret cannot run these checks. Local installation uses the operator's existing Git credentials. Docker requirements are documented in [deployment](docs/deployment.md).
 
-On Linux set `WORKSPACE2_LINUX_ROOT` for the installed dependency compatibility
-mapping; `WORKSPACE2_INTERNAL_DEPS_CLI` can select its absolute owner CLI. Keep
-these mappings consistent with the DevTasks host configuration for nested commands.
-Neither path starts services/databases or advances pins; no production `.env` is needed.
-Run [verification](#verification) separately. The adapter preserves the complete suite,
-including public external-plugin fixtures, and builds workspace packages before plugins
-and their catalog. Docs preparation includes contract prerequisites and defers indexing.
-The top-bar controls retain their full width so they cannot overflow left over the canvas bounds selector.
-Browser fixtures use temporary state and ports 23173–23175; install the matching
-Playwright Chromium separately when absent.
+Run [verification](#verification) separately. Build workspace packages before plugin distributions and their catalog. Browser fixtures use temporary state and ports 23173–23175; prepare the matching Playwright Chromium separately. `npm run test:setup` proves fresh installation, required package imports and lockfile preservation on rerun.
 
-If a nested legacy yt-dlp pin is unavailable in the recovered Linux wrapper,
-set `WORKSPACE2_LINUX_YTDLP_COMMIT` to an explicitly verified recovery commit
-available in `<root>/dependencies/yt-dlp`, using the dependency owner's
-documented compatibility configuration. Keep that value fixed across setup
-and verification; setup never chooses a newer revision or rewrites the pins.
-Node and npm must be available on `PATH` with the versions listed above;
-the system default Node may differ from the configured service runtime.
-
-`npm run test:setup:verification` checks dependency failure handling without
-network access. `npm run test:setup` exercises a clean installation and missing
-build outputs; it uses the same dependency configuration and Git access as setup.
+The optional MediaTools extension accepts the pinned client's cancelled image-job state as a terminal failed binding (`mediatools_job_cancelled`), without polling further or resubmitting generation.
+The API-contracts npm override uses the same immutable package revision throughout the dependency tree, including its complete MIT license for bundled extension notices.
 
 On Windows, start the already-prepared checkout in the background with:
 
@@ -164,6 +133,9 @@ See [How extensions are loaded](docs/plugins.md) for the full discovery,
 activation, registry, trust, missing-extension, and capability model. The
 installation format and directory retain their plugin API v1 names for
 compatibility.
+
+The optional [Assets-2 extension](plugin-packages/assets2/README.md) connects to
+the separately installed [Assets-2 service](https://github.com/jackspooner/assets2).
 
 The runtime source of truth is folder presence:
 

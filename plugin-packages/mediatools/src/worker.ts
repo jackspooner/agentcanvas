@@ -297,6 +297,12 @@ export class BindingWorker {
                     'mediatools_job_failed',
                     'Image generation failed. Attach a different job to try again.'
                   );
+                } else if (job.status === 'cancelled') {
+                  await this.fail(
+                    record,
+                    'mediatools_job_cancelled',
+                    'Image generation was cancelled. Attach a different job to try again.'
+                  );
                 } else if (job.status === 'completed') {
                   const file = job.files[record.request.outputIndex ?? 0];
                   if (!file) {

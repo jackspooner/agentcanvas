@@ -1,8 +1,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const root = path.resolve(import.meta.dirname, '..');
-const firstPartyPackages = new Set(['media-tools-mcp', '@workspace2/media-contracts']);
+const firstPartyPackages = new Set([
+  'media-tools-mcp',
+  '@workspace2/media-contracts',
+  '@workspace2/media-io',
+  '@workspace2/router-clients',
+  '@workspace2/router-contracts'
+]);
+const licenseDirectory = path.join(root, 'licenses');
+const licenseFallbacks = JSON.parse(fs.readFileSync(path.join(licenseDirectory, 'manifest.json'), 'utf8'));
+
+function fallbackLicense(identity, declaredLicense) {
+  const fallback = licenseFallbacks[identity];
+  if (!fallback || fallback.declaredLicense !== declaredLicense) {
+    throw new Error(`No complete license text found for ${identity}`);
+  }
+  const text = fs.readFileSync(path.join(licenseDirectory, fallback.file), 'utf8');
+  if (createHash('sha256').update(text).digest('hex') !== fallback.sha256) {
+    throw new Error(`License fallback checksum mismatch for ${identity}`);
+  }
+  return `### Upstream license — ${fallback.textLicense}\n\nSource: ${fallback.source}\n\n${fallback.note}\n\n${text.trim()}`;
+}
 
 export async function generateNotices(packageJsonFiles, check = false) {
   const packages = new Map();
@@ -25,8 +46,9 @@ export async function generateNotices(packageJsonFiles, check = false) {
       const section = fs.existsSync(readme)
         ? fs.readFileSync(readme, 'utf8').match(/^## License\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m)?.[1]
         : undefined;
-      if (!section || !section.includes('Permission is hereby granted')) throw new Error(`No complete license text found for ${identity}`);
-      licenseText = `### README.md — License\n\n${section.trim()}`;
+      licenseText = section?.includes('Permission is hereby granted')
+        ? `### README.md — License\n\n${section.trim()}`
+        : fallbackLicense(identity, metadata.license);
     }
     packages.set(identity, {
       metadata,

@@ -73,11 +73,5 @@
   },
   "reports": {
     "errorCodes": "docs/error-codes.json"
-  },
-  "consumers": [
-    {
-      "name": "internal-dependency-pin",
-      "freshnessCommand": "npm run check:internal-deps"
-    }
-  ]
+  }
 }
