@@ -6,6 +6,8 @@ item. It does not submit image-generation jobs. It polls the supplied job, reads
 output from the configured MediaTools output directory, and admits that file
 through the Filesystem Images extension. Gallery changes go through the Gallery
 authoring capability.
+Optional MediaTools run timing is accepted by the pinned client. It does not
+replace owner job state or trigger retries when an estimate is unavailable.
 
 The extension contributes no element types. While a job is pending, its stable
 image reference stays on the target and reports a pending diagnostic. On

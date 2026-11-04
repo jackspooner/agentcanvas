@@ -8,7 +8,8 @@ const firstPartyPackages = new Set([
   '@workspace2/media-contracts',
   '@workspace2/media-io',
   '@workspace2/router-clients',
-  '@workspace2/router-contracts'
+  '@workspace2/router-contracts',
+  '@workspace2/runtime-contracts'
 ]);
 const licenseDirectory = path.join(root, 'licenses');
 const licenseFallbacks = JSON.parse(fs.readFileSync(path.join(licenseDirectory, 'manifest.json'), 'utf8'));

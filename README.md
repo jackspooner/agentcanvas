@@ -87,6 +87,9 @@ GitHub Actions requires the `WORKSPACE2_PACKAGES_TOKEN` repository secret with r
 Run [verification](#verification) separately. Build workspace packages before plugin distributions and their catalog. Browser fixtures use temporary state and ports 23173–23175; prepare the matching Playwright Chromium separately. `npm run test:setup` proves fresh installation, required package imports and lockfile preservation on rerun.
 
 The optional MediaTools extension accepts the pinned client's cancelled image-job state as a terminal failed binding (`mediatools_job_cancelled`), without polling further or resubmitting generation.
+Its client also accepts optional version-1 run timing. Binding progress still
+follows the owner job state; unavailable estimates do not change recovery or
+trigger another generation. Activation requires rebuilding the optional extension.
 The API-contracts npm override uses the same immutable package revision throughout the dependency tree, including its complete MIT license for bundled extension notices.
 
 On Windows, start the already-prepared checkout in the background with:

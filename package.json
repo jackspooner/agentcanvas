@@ -72,7 +72,7 @@
     "@agentcanvas/core": "0.2.1",
     "@agentcanvas/editor": "0.3.0-alpha.3",
     "@agentcanvas/plugin-sdk": "0.3.0-alpha.3",
-    "@workspace2/api-contracts": "git+https://github.com/jackspooner/workspace2-api-contracts.git#cb6cea4a4b21f50da798bf2c7c6f6f0a7efc4e56",
+    "@workspace2/api-contracts": "git+https://github.com/jackspooner/workspace2-api-contracts.git#c26991392ee71dfec495bb813300b700f92e9a67",
     "@hono/node-server": "^2.0.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.20.0",
@@ -82,7 +82,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "semver": "^7.8.5",
-    "media-tools-mcp": "git+https://github.com/jackspooner/MediaToolsMcp.git#d089a081065e04561539ea657fc392ea03ae4463"
+    "media-tools-mcp": "git+https://github.com/jackspooner/MediaToolsMcp.git#f2418d5bb25b4fb21d55c3493114315fa14a59ef"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.2",

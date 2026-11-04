@@ -1,5 +1,5 @@
 import type { ImageSourceReference, JsonObject } from '@agentcanvas/extension-sdk';
-import type { ImageJobOutput } from 'media-tools-mcp/client';
+import type { MediaToolsClient } from 'media-tools-mcp/client';
 
 export type BindingTarget =
   | { kind: 'image'; x: number; y: number; width?: number; height?: number; elementId?: string }
@@ -24,7 +24,7 @@ export interface BindingRecord {
   itemId: string;
   status: BindingStatus;
   expectedSource?: ImageSourceReference;
-  file?: ImageJobOutput['files'][number];
+  file?: Awaited<ReturnType<MediaToolsClient['imageJob']>>['files'][number];
   source?: ImageSourceReference;
   error?: { code: string; message: string; retryable: boolean };
   nextAttemptAt: number;
