@@ -158,5 +158,4 @@ Check current edits, database writers and extension activity before a disruptive
 change; preserve documents, plugin state and operator configuration. Verify
 health, loaded revision and document continuity after activation. If current
 activity prevents activation, report the exact target, blocker, passed checks and
-remaining deployment/acceptance work in the source chat. DeploymentQueue is
-retired; no enqueue or executor is required.
+remaining deployment/acceptance work in the source chat.
