@@ -153,10 +153,10 @@ For the existing Linux service, use the [systemd deployment procedure](../../doc
 It covers idle checks, state backup, native setup/build, explicit replacement of
 changed active extensions, configuration preservation and health verification.
 
-For already-authorized activation of a tested, pushed release that must wait,
-follow [Deployment Queue](https://github.com/jackspooner/deployment-queue/blob/main/skills/deployment-queue/SKILL.md)
-and use `deployment_enqueue` when discovered. Include the source chat ID, host
-and title; a self-contained handoff; exact targets; affected services and
-prerequisites; activation and rollback procedures; completed checks, remaining
-acceptance and authorization limits. Candidate readiness never supersedes the
-existing deployment procedure's current workload and maintenance gate evidence.
+Deploy authorized, tested and pushed changes directly through that procedure.
+Check current edits, database writers and extension activity before a disruptive
+change; preserve documents, plugin state and operator configuration. Verify
+health, loaded revision and document continuity after activation. If current
+activity prevents activation, report the exact target, blocker, passed checks and
+remaining deployment/acceptance work in the source chat. DeploymentQueue is
+retired; no enqueue or executor is required.

@@ -1,5 +1,10 @@
 # AgentCanvas
 
+Deployments use the [native service procedures](skills/agentcanvas/SKILL.md) directly.
+DeploymentQueue is retired and is not a deployment prerequisite. Check current
+activity, preserve existing jobs/configuration/records, and verify service health
+and the loaded revision after activation.
+
 AgentCanvas v0.3.0-alpha.6 is a local-first visual workspace and MCP server for
 canvases built by people and agents. This alpha includes the v0.3 editor
 foundation: polished pan, zoom, selection, marquee, multi-move, resize,
