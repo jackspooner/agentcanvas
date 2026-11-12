@@ -1,7 +1,9 @@
 # AgentCanvas
 
 AgentCanvas is a local-first visual workspace and MCP server for canvases built
-by people and AI agents. Current version: **0.3.0-alpha.6**.
+by people and AI agents. Use the browser editor for visual planning, documents
+and presentations, or let an agent edit the same canvas through MCP or HTTP.
+Current version: **0.3.0-alpha.6**.
 
 ## Functionality
 
@@ -21,7 +23,7 @@ by people and AI agents. Current version: **0.3.0-alpha.6**.
 - **Sharing and embedding:** read-only share links and scoped iframe sessions
   for host applications. See [Embedding](docs/embedding.md) and [HTTP and MCP](docs/http-and-mcp.md).
 - **Agent automation:** registry-derived HTTP/MCP tools, inspection, live viewer
-  viewports, and versioned creation [macros](docs/proposals/macros.md).
+  viewports, and versioned creation [macros](docs/http-and-mcp.md#macro-operations).
 - **Extensions:** SDK, testkit, scaffolder, browser commands, and snapshot
   renderers. See [Extension authoring](docs/plugin-authoring/README.md).
 
@@ -31,9 +33,13 @@ Diagrams, and MediaTools are optional. No media service is required.
 ## Get started
 
 Requires **Node.js 24+, npm 11+, Git, and authenticated access to the pinned
-private dependency repositories**. From a clone of this repository:
+private dependency repositories**, including Workspace2 API-contracts and
+MediaTools packages. A public clone alone is insufficient to install this
+version; your Git credentials must already have read access.
 
 ```bash
+git clone https://github.com/jackspooner/agentcanvas.git
+cd agentcanvas
 npm run setup
 npm run plugins:build
 npm run plugins:materialize -- --defaults
@@ -45,8 +51,22 @@ Open [localhost:23003](http://127.0.0.1:23003/). Follow
 [Getting started](docs/getting-started.md) for configuration and media sources,
 or [Upgrading](docs/upgrading.md) for an existing installation.
 
+Check readiness at `http://127.0.0.1:23003/health`. Setup prepares only
+checkout-local dependencies; it does not start services or databases. Existing
+databases require an offline upgrade before startup; stop the service and retain
+verified backups before migration or extension replacement. Missing optional
+extensions preserve stored content and report diagnostics.
+
+## Connect an agent or application
+
+The resident MCP endpoint is `http://127.0.0.1:23003/mcp`; `/mcp/full` includes
+all active named extension tools. `npm run mcp --silent` provides a stdio bridge
+to the running service. HTTP document APIs use `/api/v1`; discover the installed
+contract at `/openapi.json`. See the [HTTP/MCP guide](docs/http-and-mcp.md) for
+transport configuration, requests and recovery.
+
 AgentCanvas binds to loopback and has **no built-in authentication**. Keep it
-local or use an authenticated reverse proxy. Extensions are trusted code, not
+local or use an authenticated, TLS-terminating reverse proxy. Extensions are trusted code, not
 sandboxed. See [Security](SECURITY.md).
 
 ## Documentation

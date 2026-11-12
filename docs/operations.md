@@ -17,6 +17,11 @@ Only immediate non-hidden directories under `plugins/` are discovered. Discovery
 
 ## Process lifecycle
 
+For native service procedures, see the repository-owned
+[operating skill](../skills/agentcanvas/SKILL.md). Check current activity,
+preserve existing jobs/configuration/records, and verify health and the loaded
+revision after activation.
+
 AgentCanvas has no required process manager. After dependencies and the browser
 bundle are built, the process-manager-neutral runtime command is:
 
@@ -38,6 +43,15 @@ Use [Upgrading](upgrading.md) for the complete source-update sequence. Do not
 treat a source pull by itself as a deployed update: dependencies, built browser
 assets, extension distributions, migration state, and the running process must
 also be reconciled.
+
+## Environment
+
+Use [installation configuration](getting-started.md#configuration) for the host
+environment, active extension directory, MCP bridge and network-binding options.
+Plugin config is strictly validated and cannot contain secrets or implicit
+defaults; put secrets only in environment variables declared by that extension's
+manifest. The filesystem-images extension accepts administrator-configured roots
+in its installed config, never arbitrary absolute paths from documents or MCP.
 
 ## Build and inspect the catalog
 

@@ -220,13 +220,15 @@ npm run migrate -- apply --database <path> --backup-dir <path> --plugins <plugin
 npm run migrate -- verify --database <path> --plugins <plugins-path>
 ```
 
-Physical/document version 2/2 installations require the offline physical schema
-4 migration before this release can start. Physical/document version 3/2
-installations require the additive macro-storage step. The same `migrate apply`
-command creates and verifies a native SQLite backup and sidecar manifest,
-records preservation counts/fingerprints, adds the required host tables, and
-keeps document version 2 unchanged. A v0.1 database uses the legacy-import path
-and also targets physical/document 4/2.
+The current target is physical/document version 5/2. Physical 2/3 and v0.1
+databases first follow the schema-4 migration, then advance to schema 5;
+physical 4/2 databases need only the final step. The same `migrate apply`
+command creates and verifies native SQLite backups and sidecar manifests,
+records preservation counts/fingerprints and preceding migration receipts,
+and keeps document version 2 unchanged. Pending installed-extension migrations
+are applied through their owning extension. Removed `group` elements and
+unknown legacy fields/types remain migration blockers; inspect and resolve
+them before retrying.
 
 Retain the verified backup and sidecar manifest until an explicit retention
 decision. `migrate restore` verifies and accepts the backup produced by any

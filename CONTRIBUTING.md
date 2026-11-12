@@ -100,6 +100,10 @@ Explain the user-visible effect, contract or migration impact, tests added, and 
 
 ## Dependencies and generated contracts
 
+The API-contracts npm override pins the same immutable package revision across
+the dependency tree, including its complete MIT license for bundled extension
+notices.
+
 Prefer existing dependencies and public SDK helpers. New runtime dependencies need a concrete justification, compatible license review, and lockfile update. Never commit credentials or environment-specific sensitive values.
 
 When changing routes, procedures, tools, plugin contributions, schemas, capabilities, or environment variables, update every affected runtime contract, test, README/documentation surface, example, and generated artifact together.

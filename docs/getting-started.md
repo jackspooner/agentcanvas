@@ -8,7 +8,10 @@ v0.3.0-alpha.6 with its three default extensions.
 - Node.js 24 or newer.
 - npm 11 or newer.
 - Git with HTTPS access to GitHub.
-- Authenticated Git access to the pinned private dependency repositories.
+- Authenticated Git read access to the private dependency repositories pinned
+  in the npm lockfile, including `workspace2-api-contracts` and `MediaToolsMcp`.
+  Public source access alone is insufficient to install this version; arrange
+  repository access before running setup.
 
 AgentCanvas has no user-account layer. It binds to loopback by default.
 Extensions are trusted executable dependencies.
@@ -113,7 +116,8 @@ curl http://127.0.0.1:23003/openapi.json
 Expected signals:
 
 - `/health` returns HTTP 200. Optional provider status appears under `dependencies` only when that provider is installed.
-- `/whoami` reports `version: "0.3.0-alpha.6"`, `pluginApi: "1.4.0"`, and the active extension IDs.
+- `/whoami` reports the running source version, plugin API version and active
+  extension IDs; compare them with the checkout and installed distributions.
 - `/api/v1/plugins` contains sanitized plugin status without config values, environment values, secrets, or local paths.
 - `/` serves the built browser bundle from `/assets/...`.
 

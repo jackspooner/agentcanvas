@@ -186,6 +186,12 @@ no position limit.
 
 ## Macro operations
 
+Definitions have immutable integer versions and are installation-wide or scoped
+to one owning canvas. Archived definitions remain readable but cannot be
+planned or run. V1 creates elements only: no linked instances, expressions,
+loops, conditionals or external calls. `/whoami` reports capabilities, not saved
+macros as dynamic tools.
+
 Macros are host-owned declarative creation definitions. Create and version them
 through the generic HTTP/MCP macro operations only; selection authoring and
 extension planners are not v1 creation surfaces. Fetch definitions by exact
@@ -213,12 +219,22 @@ performs the same internal planning and validation before committing; it does
 not bypass those checks. Macro provenance retains exact-version and digest
 metadata, not raw invocation inputs.
 
+For retries of one logical macro execution, reuse the original bounded
+idempotency key; use a new key only for a new execution. Planning returns
+revision and input/plan digests and never stores raw invocation inputs. A plan
+is short-lived and is revalidated before its atomic commit.
+
 Definitions and invocation inputs are each limited to 256 KiB. A macro may
 generate at most 100 elements, and its result may not exceed 2,000 elements on
 the canvas. The table extension separately limits data to 50 columns, 500 rows,
 and 2,000 characters per cell. The
 [comparison-table example](examples/standard-comparison-table.macro.json) is
 documentation and proof input; it is not seeded into new installations.
+
+The browser runner shows the same exact-version plan's effect summary and
+translucent preview before confirmation. Successful runs refresh the canvas
+and create one undo/redo unit. Use `canvas_get` for the persisted document and
+`canvas_inspect` when receipt counts or a final diagnostic audit require it.
 
 ## Plugin procedures
 
@@ -247,6 +263,12 @@ Snapshot and export responses return metadata such as:
 ```
 
 Do not persist handles or treat them as durable asset identity. They are controlled runtime references. Agent-facing JSON never contains full base64 or data URLs.
+
+Provider-backed handles may explicitly opt into mutable metadata when the bytes
+behind a stable source identity can change. After each load, the broker refreshes
+byte length, SHA-256 and dimensions while still enforcing the registered MIME
+type, byte limit and content-response checks. Fixed registrations retain strict
+registration-time size and checksum validation.
 
 ## MCP transports
 
