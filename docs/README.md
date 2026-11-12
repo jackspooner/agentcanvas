@@ -1,16 +1,9 @@
 # AgentCanvas documentation
 
-## Current v0.3 work
-
-The [v0.3 specification set](specs/README.md) defines the polished editor,
-public extension SDK, delivery waves, and required acceptance evidence. The
-current main branch contains the editor foundation, shared command/history
-layer, command contributions, extension authoring facade, testkit, and
-extension-named scaffolder.
-
-AgentCanvas is a local-first visual workspace whose element behavior is
-supplied by automatically discovered, trusted extensions. The installed
-distribution format remains `agentcanvas.plugin/v1` for compatibility.
+Start with the [functionality overview](../README.md) or choose a guide below.
+AgentCanvas is a local-first visual workspace for people and agents, with
+optional trusted extensions for media and domain features. The installed
+extension format remains `agentcanvas.plugin/v1` for compatibility.
 
 The public distribution is the GitHub source repository. The root package remains marked private to prevent accidental npm publication. The SDK, testkit, and scaffolder are separate publication-ready packages, but their npm commands must not be treated as available until those packages are explicitly released. Media sources are optional extensions; start with [Getting started](getting-started.md) for the standalone setup and image-source choices.
 
@@ -30,11 +23,14 @@ The public distribution is the GitHub source repository. The root package remain
 | Understand how extensions load | [How extensions load](plugins.md) |
 | Understand persisted data | [Data contracts](data-contracts.md) |
 | Create or apply a canvas theme | [Canvas themes](canvas-themes.md) |
+| Work with Markdown cards or card carousels | [Markdown extension](../plugin-packages/markdown/README.md) |
+| Present images in a gallery | [Gallery extension](../plugin-packages/gallery/README.md) |
 | Create editable ERDs or Mermaid diagrams | [Diagrams extension](../plugin-packages/diagrams/README.md) |
 | Attach an existing image job to a frame or carousel | [MediaTools extension](../plugin-packages/mediatools/README.md) |
 | Create an extension | [Extension authoring](plugin-authoring/README.md) |
 | Follow a complete extension example | [Build your first extension](plugin-authoring/tutorial.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |
+| Develop or verify a checkout | [Contributing](../CONTRIBUTING.md) |
 | Migrate a v0.1 database | [v0.1 to v0.2 migration](v0.1-to-v0.2-migration.md) |
 | Migrate physical schema 2 or 3 to schema 4 | [Physical schema 4 migration](physical-schema-4-migration.md) |
 
@@ -82,15 +78,19 @@ Runtime `GET /openapi.json` is authoritative for the exact active plugin set. Th
 - [Plugin architecture and migration](plugin-architecture-and-migration.md)
 - [Data contracts](data-contracts.md)
 - [Canvas themes](canvas-themes.md)
-- [Functionality and first-party plugin inventory](plugin-functionality-inventory.md)
+- [v0.3 specifications and delivery design](specs/README.md)
+- [Historical v0.2 functionality inventory](plugin-functionality-inventory.md)
 - [HTTP/MCP v0.1 to v0.2 mapping](http-mcp-v0.2-mapping.md)
 
 ## History
 
+- [Change history, including v0.3.0-alpha.6](changelog.md)
 - [v0.2.0 release notes](release-notes-v0.2.0.md)
 - [v0.3.0 alpha implementation notes](release-notes-v0.3.0-alpha.1.md)
 - [v0.3.0-alpha.2 API contract migration](release-notes-v0.3.0-alpha.2.md)
 - [v0.3.0-alpha.3 Diagrams and host API 1.2](release-notes-v0.3.0-alpha.3.md)
+- [v0.3.0-alpha.4 content sizing and validation](release-notes-v0.3.0-alpha.4.md)
+- [v0.3.0-alpha.5 MediaTools image bindings](release-notes-v0.3.0-alpha.5.md)
 - [Completed v0.2 refactor plan](plugin-refactor-implementation-plan.md)
 - [Reference migration status](v0.1-to-v0.2-migration.md#reference-cutover-status)
 

@@ -7,18 +7,39 @@ public issues.
 
 ## Development setup
 
-Use Node.js 24, npm 11, and Git with HTTPS access to GitHub.
+Use Node.js 24+, npm 11+, and Git with authenticated access to the pinned
+private dependency repositories. See [Getting started](docs/getting-started.md)
+for installation configuration and [Upgrading](docs/upgrading.md) for existing
+databases.
 
 ```text
 npm run setup
+npm run plugins:build
 npm run build
 ```
+
+`npm run setup` and `npm run setup:worktree` install the committed npm lockfile
+using native `npm ci`, including full-commit Git packages. Setup changes only
+checkout-local dependencies; it does not start services or databases. Build
+workspace packages before extensions and their catalog.
 
 Install Chromium before running browser tests:
 
 ```text
 npx playwright install chromium
 ```
+
+Browser fixtures use temporary state and ports 23173–23175. They do not use the
+production database. `npm run test:setup` separately proves fresh installation,
+required package imports, and lockfile preservation on rerun; it needs network
+access and Git credentials.
+
+GitHub Actions requires the `WORKSPACE2_PACKAGES_TOKEN` repository secret with
+read access to the pinned private package repositories. The workflow supplies it
+to Git only for dependency installation and the fresh-setup test. Fork pull
+requests without that secret cannot run these checks. Local setup uses the
+operator's existing Git credentials; Docker uses a build secret as documented
+in [Deployment](docs/deployment.md#linux-with-docker-compose).
 
 Do not commit runtime data, active `plugins/` contents, generated exports, local `.env` files, SQLite databases, logs, or browser artifacts.
 
@@ -62,10 +83,18 @@ npm run plugins:build
 npm run plugins:materialize -- --defaults
 npm run plugins:verify
 npm run check:openapi
+npm run check:mcp-contract
+npm run check:contracts
 npm run check:docs
 npm audit --omit=dev --audit-level=moderate
 git diff --check
 ```
+
+Release-specific checks are `npm run check:release` (source packaging and
+extension licenses), `npm run check:extension-packages` (packed authoring
+packages and a generated extension), and
+`npm run test:chromium --workspace @agentcanvas/extension-diagrams` (Mermaid
+rendering and conversion in Chromium). These use disposable fixtures.
 
 Explain the user-visible effect, contract or migration impact, tests added, and documentation updated in the pull request. Keep unrelated cleanup out of the same change.
 

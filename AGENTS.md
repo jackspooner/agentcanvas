@@ -4,7 +4,7 @@
 
 Run `npm run setup:worktree` with Node.js 24+, npm 11+, Git and authenticated access to the pinned private packages. It installs the committed npm lockfile without services or production data.
 
-Verification commands are listed in README. Build workspace packages before plugins and their catalog. Preserve package/application/external-plugin tests, isolated Playwright fixtures, format/lint, web/plugin builds, OpenAPI/MCP/contracts and docs checks. `npm run test:setup` separately proves fresh installation and lockfile preservation. Browser fixtures require matching Playwright Chromium and ports 23173–23175; they use temporary state.
+Verification commands are listed in [Contributing](CONTRIBUTING.md). Build workspace packages before plugins and their catalog. Preserve package/application/external-plugin tests, isolated Playwright fixtures, format/lint, web/plugin builds, OpenAPI/MCP/contracts and docs checks. `npm run test:setup` separately proves fresh installation and lockfile preservation. Browser fixtures require matching Playwright Chromium and ports 23173–23175; they use temporary state.
 
 Operating guidance is owned by `skills/agentcanvas/` and its companion inspection/layout packages.
 

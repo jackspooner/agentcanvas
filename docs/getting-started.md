@@ -1,13 +1,14 @@
 # Getting started
 
 This guide installs a development or local operator copy of AgentCanvas
-v0.3.0-alpha.2 with its three default extensions.
+v0.3.0-alpha.6 with its three default extensions.
 
 ## Prerequisites
 
 - Node.js 24 or newer.
 - npm 11 or newer.
 - Git with HTTPS access to GitHub.
+- Authenticated Git access to the pinned private dependency repositories.
 
 AgentCanvas has no user-account layer. It binds to loopback by default.
 Extensions are trusted executable dependencies.
@@ -34,16 +35,37 @@ Setup uses native `npm ci` and full-commit Git dependencies. Authenticate Git fo
 
 `npm run test:setup` exercises installation in a fresh temporary copy, checks required package imports and confirms a second setup preserves the lockfile. It is network-dependent and separate from application tests.
 
+Full verification commands and CI credential requirements are in
+[Contributing](../CONTRIBUTING.md). They are separate from the steps needed to
+start a local installation. The root application is distributed as GitHub
+source; its npm package is marked private. The SDK, testkit, and scaffolder
+remain unpublished to npm; use the [checkout-based authoring guide](plugin-authoring/README.md).
+
+## Configuration
+
 Copy `.env.example` to `.env` and check at least these values:
 
 ```dotenv
 AGENT_CANVAS_HOST=127.0.0.1
 AGENT_CANVAS_PORT=23003
 AGENT_CANVAS_PUBLIC_BASE_URL=http://127.0.0.1:23003
+AGENT_CANVAS_ALLOW_REMOTE=false
 AGENT_CANVAS_DB=./data/agent-canvas.sqlite
+AGENT_CANVAS_DEFAULT_SIZE=unlimited
 ```
 
 Do not put plugin secrets in `plugin.config.json`. A plugin declares the names of required environment variables in its manifest, while deployment owns their values.
+
+Set `AGENT_CANVAS_PLUGINS_ROOT` when separate runtimes need their own active
+extension folders and config files. Otherwise the runtime uses `plugins/`
+under the installation. The stdio MCP bridge connects to
+`AGENT_CANVAS_BASE_URL` when set, otherwise `AGENT_CANVAS_PUBLIC_BASE_URL`;
+see [MCP transports](http-and-mcp.md#mcp-transports).
+
+Non-loopback binding requires `AGENT_CANVAS_ALLOW_REMOTE=true` and does not add
+authentication. Configure `AGENT_CANVAS_ALLOWED_HOSTS` and
+`AGENT_CANVAS_ALLOWED_ORIGINS` for an intentional deployment behind an
+authenticated proxy. See [Security](../SECURITY.md) before exposing the service.
 
 ## Build and activate the default plugins
 
@@ -59,7 +81,9 @@ The default runtime set is:
 - `agentcanvas.markdown`
 - `agentcanvas.table`
 
-Filesystem images, Assets-2, Gallery, image overlays, video, and GLB viewing are built into `dist/plugin-catalog/` but are not activated by `--defaults`. AgentCanvas core requires no media provider.
+Filesystem images, Assets-2, Gallery, image overlays, video, GLB viewing,
+Diagrams, and MediaTools are built into `dist/plugin-catalog/` but are not
+activated by `--defaults`. AgentCanvas core requires no media provider.
 
 Folder presence is the only activation state. There is no `agentcanvas.config.mjs` and no enabled-plugin list.
 
@@ -89,7 +113,7 @@ curl http://127.0.0.1:23003/openapi.json
 Expected signals:
 
 - `/health` returns HTTP 200. Optional provider status appears under `dependencies` only when that provider is installed.
-- `/whoami` reports `version: "0.3.0-alpha.2"`, `pluginApi: "1.1.0"`, and the active extension IDs.
+- `/whoami` reports `version: "0.3.0-alpha.6"`, `pluginApi: "1.4.0"`, and the active extension IDs.
 - `/api/v1/plugins` contains sanitized plugin status without config values, environment values, secrets, or local paths.
 - `/` serves the built browser bundle from `/assets/...`.
 
@@ -154,7 +178,8 @@ Start a compatible [Assets-2](https://github.com/jackspooner/assets2) service, s
 ## Long-running operation
 
 For ready-to-use optional service setups, see [Deployment helpers](deployment.md)
-for Docker Compose and Windows Service Control Manager instructions.
+for Docker Compose, Linux systemd, Windows Service Control Manager, and the
+Windows user-session background launcher.
 
 After `npm run build`, a supervisor-neutral runtime command is:
 

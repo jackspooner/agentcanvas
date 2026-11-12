@@ -213,6 +213,13 @@ performs the same internal planning and validation before committing; it does
 not bypass those checks. Macro provenance retains exact-version and digest
 metadata, not raw invocation inputs.
 
+Definitions and invocation inputs are each limited to 256 KiB. A macro may
+generate at most 100 elements, and its result may not exceed 2,000 elements on
+the canvas. The table extension separately limits data to 50 columns, 500 rows,
+and 2,000 characters per cell. The
+[comparison-table example](examples/standard-comparison-table.macro.json) is
+documentation and proof input; it is not seeded into new installations.
+
 ## Plugin procedures
 
 Plugin procedures are exposed at:
@@ -253,6 +260,22 @@ The stdio command is a bridge to that resident endpoint:
 
 ```bash
 npm run mcp --silent
+```
+
+For clients that launch stdio servers directly, use absolute checkout paths:
+
+```json
+{
+  "mcpServers": {
+    "agent-canvas": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/AgentCanvas/node_modules/tsx/dist/cli.mjs",
+        "/absolute/path/to/AgentCanvas/src/mcp-v2/stdio.ts"
+      ]
+    }
+  }
+}
 ```
 
 It connects to `AGENT_CANVAS_BASE_URL` when that bridge-specific override is set; otherwise it uses the host's `AGENT_CANVAS_PUBLIC_BASE_URL`. It does not discover plugins, open SQLite, or construct a second registry. If the resident service is unavailable, stdio is unavailable.
