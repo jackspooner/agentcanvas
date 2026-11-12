@@ -5,19 +5,15 @@ AgentCanvas extension without importing private host modules or React Flow.
 
 ## 1. Scaffold the project
 
-From the AgentCanvas checkout:
+Follow the [public-source authoring build](testing-and-distribution.md#build-the-authoring-packages-from-public-source)
+and its [local-package example](testing-and-distribution.md#create-and-verify-an-extension-with-local-packages).
+They create a verified `signal-card` project without npm publishing or private
+GitHub dependencies. Keep its SDK/testkit tarballs available for later installs.
 
-```bash
-npm run build --workspace create-agentcanvas-extension
-npm exec --workspace create-agentcanvas-extension -- create-agentcanvas-extension signal-card
-cd signal-card
-npm install
-```
-
-The scaffold name accepts lowercase letters, numbers, and hyphens. It creates a standalone package; it does not need to live under AgentCanvas.
-
-Once `create-agentcanvas-extension` is published, use
-`npx create-agentcanvas-extension signal-card` instead.
+The scaffold name accepts lowercase letters, numbers, and hyphens. It creates
+a standalone package; it does not need to live under AgentCanvas. The generated
+manifest initially names unpublished SDK/testkit versions, so the local tarball
+installation is essential before continuing this tutorial.
 
 ## 2. Understand the generated layout
 

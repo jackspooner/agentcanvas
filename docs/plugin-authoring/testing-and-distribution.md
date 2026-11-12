@@ -120,12 +120,94 @@ Do not use the live database as the first integration target.
 
 ## Public-package proof
 
-Before claiming third-party compatibility, pack the SDK and testkit and install those tarballs into a project outside the AgentCanvas source/workspace tree:
+The SDK, testkit and scaffolder live in this repository and are not published
+to npm. Use the public-source build below to create local packages; no npm
+account or private GitHub access is needed for this authoring toolchain.
+Running the full AgentCanvas application is separate and still has the
+[private dependency requirements](../getting-started.md#prerequisites).
+
+### Build the authoring packages from public source
+
+Requires Node.js 24+, npm 11+, Git, Bash and `tar`, plus network access to public
+npm dependencies. These commands work in a Bash shell on Linux/macOS or WSL.
+Use a fresh sibling directory; `mkdir` deliberately refuses to overwrite one.
 
 ```bash
-npm pack --workspace @agentcanvas/extension-sdk --pack-destination <tarball-dir>
-npm pack --workspace @agentcanvas/extension-testkit --pack-destination <tarball-dir>
-npm install <tarball-dir>/agentcanvas-extension-sdk-*.tgz <tarball-dir>/agentcanvas-extension-testkit-*.tgz
+set -euo pipefail
+git clone https://github.com/jackspooner/agentcanvas.git
+cd agentcanvas
+AUTHORING_DIR="$(dirname "$PWD")/agentcanvas-authoring"
+mkdir "$AUTHORING_DIR"
+git archive HEAD \
+  packages/plugin-sdk packages/plugin-testkit \
+  packages/extension-sdk packages/extension-testkit \
+  packages/create-agentcanvas-plugin packages/create-agentcanvas-extension \
+  | tar -x -C "$AUTHORING_DIR"
+
+cd "$AUTHORING_DIR"
+npm init --yes
+npm pkg set private=true --json
+npm pkg set 'workspaces[0]=packages/*'
+npm install
+npm run build \
+  --workspace @agentcanvas/plugin-sdk \
+  --workspace @agentcanvas/plugin-testkit \
+  --workspace @agentcanvas/extension-sdk \
+  --workspace @agentcanvas/extension-testkit \
+  --workspace create-agentcanvas-plugin \
+  --workspace create-agentcanvas-extension
+npm run check --workspaces --if-present
+npm run test --workspaces --if-present
+
+mkdir tarballs
+npm pack --workspaces --pack-destination "$AUTHORING_DIR/tarballs"
 ```
 
-Build and package using only those public packages. The repository automates this proof with `npm run test:external-plugin` and the fixture documented in [External plugin proof](external-plugin-proof.md).
+Only the six authoring package sources are exported from the committed checkout;
+the application's root manifest, private dependencies and runtime data are not
+copied. The extension-named packages reuse the three compatibility packages, so
+all six are built together. Their runtime dependencies are local workspace
+packages and public npm packages.
+
+The first install creates a lockfile in the isolated build directory. Keep that
+lockfile and use `npm ci` there for repeat builds. Public dependency ranges can
+resolve newer versions on a new first install. To build a particular source
+version, check out its commit before `git archive`; rebuilding the same directory
+does not automatically update the exported source.
+
+### Create and verify an extension with local packages
+
+Continue in the same shell so `AUTHORING_DIR` still points to the build above:
+
+```bash
+mkdir -p "$AUTHORING_DIR/examples"
+cd "$AUTHORING_DIR/examples"
+node "$AUTHORING_DIR/packages/create-agentcanvas-extension/dist/cli.js" signal-card
+cd signal-card
+npm install "$AUTHORING_DIR"/tarballs/agentcanvas-*.tgz
+npm test
+npm run check
+npm run pack:extension
+npm run agentcanvas:verify
+```
+
+Install all four SDK/testkit tarballs in that single command. It replaces the
+generated project's unpublished registry references and supplies their
+compatibility dependencies; running plain `npm install` first would try to fetch
+unpublished packages. The wildcard assumes the fresh tarball directory above
+contains one version of each package.
+
+The result is `signal-card/plugin-dist/signal-card`, ready for the
+[host installation steps](README.md#how-activation-works). These checks do not
+start AgentCanvas or install into a running host. Continue the
+[tutorial](tutorial.md#2-understand-the-generated-layout) to customize it.
+
+The generated project records local tarball paths in its package manifest and
+lockfile. Keep the tarballs available, or copy them into a project-owned vendor
+directory and reinstall from those paths before sharing the source. Do not ship
+machine-specific absolute paths as a public dependency contract. The built
+extension distribution is separate from this development environment.
+
+Maintainers with a prepared full checkout can also run
+`npm run check:extension-packages` for the automated packed-package proof, and
+`npm run test:external-plugin` for the [external plugin fixture](external-plugin-proof.md).

@@ -7,26 +7,20 @@ renderers, snapshot renderers, or capabilities. New authors use
 
 ## The shortest path
 
-The scaffolder package is publication-ready but is not yet published. From
-this checkout, build and invoke it with:
+The SDK, testkit and scaffolder are built from this repository; no npm
+publication is required. Follow [Build the authoring packages from public
+source](testing-and-distribution.md#build-the-authoring-packages-from-public-source),
+then [Create and verify an extension with local packages](testing-and-distribution.md#create-and-verify-an-extension-with-local-packages).
 
-```sh
-npm run build --workspace create-agentcanvas-extension
-npm exec --workspace create-agentcanvas-extension -- create-agentcanvas-extension my-extension
-cd my-extension
-npm install
-npm test
-npm run pack:extension
-npm run agentcanvas:verify
-```
+That path requires Node.js 24+, npm 11+, Git and a Bash shell with `tar`. It
+builds the six authoring/compatibility packages in an isolated workspace and
+installs their tarballs into the generated extension. It uses only public
+source and public npm dependencies, without the application's private Git
+dependencies, an npm account or a running AgentCanvas service.
 
-After the package is published to npm, the equivalent public command is:
-
-```sh
-npx create-agentcanvas-extension my-extension
-```
-
-Do not describe the `npx` form as currently available until publication has actually occurred.
+The packages remain unpublished. Do not use `npx create-agentcanvas-extension`
+or plain `npm install` in a freshly generated project before installing the
+local SDK/testkit tarballs as documented.
 
 The generated Hello Card extension includes:
 
@@ -44,7 +38,8 @@ The generated Hello Card extension includes:
 
 Follow [Build your first extension](tutorial.md) for the complete workflow.
 
-For an isolated development host:
+With a separately prepared full AgentCanvas checkout, an isolated development
+host is also available:
 
 ```sh
 npm exec -- agentcanvas extension dev . --port 23083

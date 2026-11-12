@@ -8,6 +8,11 @@ author-maintained contribution declaration.
 
 Existing `@agentcanvas/plugin-sdk` consumers remain supported.
 
+This package is not published to npm. Use the [public-source build and local
+tarball installation guide](https://github.com/jackspooner/agentcanvas/blob/main/docs/plugin-authoring/testing-and-distribution.md#build-the-authoring-packages-from-public-source)
+to build it with its compatibility dependency, without private GitHub access
+or an npm account.
+
 Host API 1.4.0 adds managed `ServerPluginLifecycle`, provider-neutral
 `ImageSourceNotReadyError`, Gallery authoring and filesystem admission contracts.
 They are re-exported from this facade; offline activation never starts workers.

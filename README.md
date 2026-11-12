@@ -78,5 +78,6 @@ sandboxed. See [Security](SECURITY.md).
 - [Development and verification](CONTRIBUTING.md) and [change history](docs/changelog.md)
 
 The source application is MIT-licensed; see [LICENSE](LICENSE). The root npm
-package is private, and the SDK, testkit, and scaffolder are not yet published
-to npm. Use the checkout-based authoring instructions above.
+package is private. Build the unpublished SDK, testkit and scaffolder using the
+[public-source authoring instructions](docs/plugin-authoring/testing-and-distribution.md#build-the-authoring-packages-from-public-source);
+that isolated toolchain needs no private GitHub access or npm account.

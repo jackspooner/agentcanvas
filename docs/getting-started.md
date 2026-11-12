@@ -42,7 +42,9 @@ Full verification commands and CI credential requirements are in
 [Contributing](../CONTRIBUTING.md). They are separate from the steps needed to
 start a local installation. The root application is distributed as GitHub
 source; its npm package is marked private. The SDK, testkit, and scaffolder
-remain unpublished to npm; use the [checkout-based authoring guide](plugin-authoring/README.md).
+remain unpublished to npm. Extension authors can instead use the
+[isolated public-source build](plugin-authoring/testing-and-distribution.md#build-the-authoring-packages-from-public-source),
+which does not install the application or require its private dependencies.
 
 ## Configuration
 
